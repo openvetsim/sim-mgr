@@ -82,6 +82,7 @@ main( int argc, const char* argv[] )
 	//unsigned int val;
 	//int index;
 	int i;
+	int set_count = 0;
 	int sts;
 	char *cp;
 	std::string key;
@@ -228,15 +229,16 @@ main( int argc, const char* argv[] )
 			}
 			else if ( key.compare(0, 4, "set:" ) == 0 )
 			{
+				set_count++;
 				// set command: Split to segments to contruct the reference
 				v = explode(key, ':');
-				cout << " \"set\" : {\n    ";
+				cout << " \"set_" << set_count << "\" : {\n    ";
 				makejson(cout, "class", v[1] );
 				cout << ",\n    ";
 				makejson(cout, "param", v[2] );
 				cout << ",\n    ";
 				makejson(cout, "value", value );
-				cout << "\n    },\n";
+				cout << ",\n    ";
 				sts = 0;
 				
 				if ( v[1].compare("cardiac" ) == 0 )
@@ -344,6 +346,7 @@ main( int argc, const char* argv[] )
 				{
 					makejson(cout, "status", "ok" );
 				}
+				cout << "\n    }";
 			}
 			else
 			{
