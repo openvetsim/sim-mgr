@@ -69,7 +69,7 @@ struct cpr
 	int	compression;	// 0 to 100%
 	int release;		// 0 to 100%
 };
-struct defibrulation
+struct defibrillation
 {
 	int last;			// msec time of last shock
 	int energy;			// Energy in Joules of last shock
@@ -97,7 +97,7 @@ struct status
 	struct auscultation		auscultation;
 	struct pulse			pulse;
 	struct cpr				cpr;
-	struct defibrulation	defibrulation;
+	struct defibrillation	defibrillation;
 };
 struct instructor
 {

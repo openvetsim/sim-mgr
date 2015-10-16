@@ -104,9 +104,9 @@ main(int argc, char *argv[] )
 	simmgr_shm->status.cpr.compression = 0;
 	simmgr_shm->status.cpr.release = 0;
 	
-	// status/defibrulation
-	simmgr_shm->status.defibrulation.last = 0;
-	simmgr_shm->status.defibrulation.energy = 0;
+	// status/defibrillation
+	simmgr_shm->status.defibrillation.last = 0;
+	simmgr_shm->status.defibrillation.energy = 0;
 	
 	
 	// instructor/cardiac

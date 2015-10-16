@@ -220,10 +220,10 @@ main( int argc, const char* argv[] )
 				makejson(cout, "release", itoa(simmgr_shm->status.cpr.release, buffer, 10 ) );
 				cout << "\n},\n";
 				
-				cout << " \"defibrulation\" : {\n";
-				makejson(cout, "last", itoa(simmgr_shm->status.defibrulation.last, buffer, 10 ) );
+				cout << " \"defibrillation\" : {\n";
+				makejson(cout, "last", itoa(simmgr_shm->status.defibrillation.last, buffer, 10 ) );
 				cout << ",\n";
-				makejson(cout, "energy", itoa(simmgr_shm->status.defibrulation.energy, buffer, 10 ) );
+				makejson(cout, "energy", itoa(simmgr_shm->status.defibrillation.energy, buffer, 10 ) );
 				cout << "\n}\n";
 				
 			}
