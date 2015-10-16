@@ -371,3 +371,25 @@ getETH0_IP()
 	close(fd);
 	return eth0_ip;
 }
+
+char *
+itoa(int val, char *buf, int radix )
+{
+	if ( radix == 10 )
+	{
+		sprintf(buf, "%d", val );
+	}
+	else if ( radix == 16 )
+	{
+		sprintf(buf, "%x", val );
+	}
+	else if ( radix == 8 )
+	{
+		sprintf(buf, "%o", val );
+	}
+	else
+	{
+		sprintf(buf, "%s", "" );
+	}
+	return ( buf );
+}

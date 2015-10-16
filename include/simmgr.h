@@ -23,7 +23,7 @@ struct cardiac
 	int rate;	// Heart Rate in Beats per Minute
 	char pwave[STR_SIZE];
 	int pr_interval;	// PR interval in msec
-	int qrs;		// QRS in msec
+	int qrs_interval;		// QRS in msec
 	int bps_sys;	// Systolic
 	int bps_dia;	// Diastolic
 };
@@ -134,6 +134,7 @@ char *nth_occurrence(char *haystack, char *needle, int nth);
 char *do_command_read(const char *cmd_str, char *buffer, int max_len );
 void get_date(char *buffer );
 char *getETH0_IP();
+char *itoa(int val, char *buf, int radix );
 
 // Global Data
 //
