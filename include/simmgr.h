@@ -26,12 +26,12 @@ struct cardiac
 	int qrs_interval;		// QRS in msec
 	int bps_sys;	// Systolic
 	int bps_dia;	// Diastolic
+	unsigned int pulseCount;
 };
 struct scenario
 {
 	char active[STR_SIZE];	// Name of active scenario
 	char start[STR_SIZE];		// Date/Time scenario started
-	char start_msec;			// msec time at start of scenarion
 	
 	// We should add additional elements to show where in the scenario we are currently executing
 };
@@ -51,6 +51,7 @@ struct respiration
 	int exhalation_duration;	// in msec
 	
 	int rate;					// Breaths per minute
+	unsigned int breathCount;
 };
 
 struct auscultation

@@ -47,7 +47,7 @@
 
 #include <errno.h>
 #define RUNNING_DIR 		"/"
-#define LOCK_FILE_DIR        "/var/run/"
+#define LOCK_FILE_DIR        "/var/run/simmgr/"
 
 
 
@@ -235,7 +235,7 @@ void daemonize()
 	lfp = open(buffer, O_RDWR|O_CREAT, 0640 );
 	if ( lfp < 0 )
 	{
-		syslog(LOG_DAEMON | LOG_ERR, "Cannot open log file");
+		syslog(LOG_DAEMON | LOG_ERR, "open(%s) failed: %s", buffer, strerror(errno));
 		exit(1); /* can not open */
 	}
 	if ( lockf(lfp,F_TLOCK,0) < 0 )

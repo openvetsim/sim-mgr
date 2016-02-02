@@ -162,14 +162,14 @@ main( int argc, const char* argv[] )
 				makejson(cout, "active", simmgr_shm->status.scenario.active );
 				cout << ",\n";
 				makejson(cout, "start", simmgr_shm->status.scenario.start );
-				cout << ",\n";
-				makejson(cout, "start_msec", itoa(simmgr_shm->status.scenario.start_msec, buffer, 10) );
 				cout << "\n},\n";
 				
 				cout << " \"cardiac\" : {\n";
 				makejson(cout, "rhythm", simmgr_shm->status.cardiac.rhythm	);
 				cout << ",\n";
 				makejson(cout, "rate", itoa(simmgr_shm->status.cardiac.rate, buffer, 10 ) );
+				cout << ",\n";
+				makejson(cout, "pulseCount", itoa(simmgr_shm->status.cardiac.pulseCount, buffer, 10 ) );
 				cout << ",\n";
 				makejson(cout, "pwave", simmgr_shm->status.cardiac.pwave );
 				cout << ",\n";
@@ -198,6 +198,8 @@ main( int argc, const char* argv[] )
 				makejson(cout, "inhalation_duration", itoa(simmgr_shm->status.respiration.inhalation_duration, buffer, 10 ) );
 				cout << ",\n";
 				makejson(cout, "exhalation_duration", itoa(simmgr_shm->status.respiration.exhalation_duration, buffer, 10 ) );
+				cout << ",\n";
+				makejson(cout, "breathCount", itoa(simmgr_shm->status.respiration.breathCount, buffer, 10 ) );
 				cout << "\n},\n";
 				
 				cout << " \"auscultation\" : {\n";

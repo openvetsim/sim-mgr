@@ -3,7 +3,7 @@
  *
  * SimMgr deamon.
  *
- * Copyright 2015 Terence Kelleher. All rights reserved.
+ * Copyright 2016 Terence Kelleher. All rights reserved.
  *
  */
  
@@ -37,6 +37,19 @@ using namespace std;
 int start_scenario(const char *name );
 int scenario_run(void );
 void comm_check(void );
+
+/* str_thdata
+	structure to hold data to be passed to a thread
+*/
+typedef struct str_thdata
+{
+    int thread_no;
+    char message[100];
+} thdata;
+
+
+/* prototype for thread routine */
+void heart_thread ( void *ptr );
 
 int
 main(int argc, char *argv[] )
@@ -279,17 +292,20 @@ scenario_run(void )
 int
 start_scenario(const char *name )
 {
-	char *ptr;
-	char buffer[256];
-	struct timeb ms_time;
+	time_t rawtime;
+	struct tm * timeinfo;
+	char *timeBuf;
 	
-	sprintf(simmgr_shm->status.scenario.active, "%s", "default" );
-	ftime(&ms_time);
-	simmgr_shm->status.scenario.start_msec = ms_time.millitm;
-	ptr = do_command_read("/bin/date", buffer, sizeof(buffer)-1 );
-	if ( ptr != NULL )
-	{
-		sprintf(simmgr_shm->status.scenario.start, "%s", buffer );
-	}
+	time ( &rawtime );
+	timeinfo = localtime ( &rawtime );
+
+	
+	sprintf(simmgr_shm->status.scenario.active, "%s", name );
+	timeBuf = asctime(timeinfo );
+	// Remove the \n from the end of the timebuf string
+	timeBuf[strlen(timeBuf)-1] = 0;
+	
+	sprintf(simmgr_shm->status.scenario.start, "%s", timeBuf );
+	
 	return ( 0 );
 }
