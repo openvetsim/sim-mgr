@@ -115,9 +115,10 @@ set_pulse_rate(int bpm )
 	if (timer_settime(pulse_timer, 0, &its, NULL) == -1)
 	{
 		perror("set_pulse_rate: timer_settime");
+		sprintf(msgbuf, "set_pulse_rate(%d): timer_settime: %s", bpm, strerror(errno) );
+		log_message("", msgbuf );
 		exit ( -1 );
 	}
-	
 }
 
 void
@@ -145,7 +146,8 @@ set_breath_rate(int bpm )
 	if (timer_settime(breath_timer, 0, &its, NULL) == -1)
 	{
 		perror("set_breath_rate: timer_settime");
-		
+		sprintf(msgbuf, "set_breath_rate(%d): timer_settime %s", bpm, strerror(errno)  );
+		log_message("", msgbuf );
 		exit ( -1 );
 	}
 	
@@ -191,7 +193,7 @@ main(int argc, char *argv[] )
 	sfd = socket(AF_INET, SOCK_STREAM, 0);
 	if ( sfd < 0 ) 
 	{
-		sprintf(msgbuf, "pulse: socket() failed - exit" );
+		sprintf(msgbuf, "pulse: socket() failed - exit %s", strerror(errno) );
 		log_message("", msgbuf );
 		exit ( -1 );
 	}
@@ -204,7 +206,7 @@ main(int argc, char *argv[] )
 	server_addr.sin_port = htons(port);
 	if ( bind(sfd, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0 )
 	{		
-		sprintf(msgbuf, "pulse: bind() for port %d failed - exit", port );
+		sprintf(msgbuf, "pulse: bind() for port %d failed - exit $s", port, strerror(errno) );
 		log_message("", msgbuf );
 		exit ( -1 );
 	}
@@ -226,31 +228,39 @@ main(int argc, char *argv[] )
 	sigemptyset(&new_action.sa_mask);
 	if (sigaction(PULSE_TIMER_SIG, &new_action, NULL) == -1)
 	{
-	   perror("sigaction");
-	   exit ( -1 );
+		perror("sigaction");
+		sprintf(msgbuf, "sigaction() fails for Pulse Timer: %s", strerror(errno) );
+		log_message("", msgbuf );
+		exit ( -1 );
 	}
 	// Block timer signal temporarily
 	sigemptyset(&mask);
 	sigaddset(&mask, PULSE_TIMER_SIG);
 	if (sigprocmask(SIG_SETMASK, &mask, NULL) == -1)
 	{
-	   perror("sigprocmask");
-	   exit ( -1 );
+		perror("sigprocmask");
+		sprintf(msgbuf, "sigprocmask() fails for Pulse Timer %s", strerror(errno) );
+		log_message("", msgbuf );
+		exit ( -1 );
 	}
 	// Create the Timer
 	pulse_sev.sigev_notify = SIGEV_SIGNAL;
 	pulse_sev.sigev_signo = PULSE_TIMER_SIG;
 	pulse_sev.sigev_value.sival_ptr = &pulse_timer;
 	
-	if ( timer_create(1, &pulse_sev, &pulse_timer ) == -1 )
+	if ( timer_create(CLOCK_MONOTONIC, &pulse_sev, &pulse_timer ) == -1 )
 	{
 		perror("timer_create" );
+		sprintf(msgbuf, "timer_create() fails for Pulse Timer %s", strerror(errno) );
+		log_message("", msgbuf );
 		exit (-1);
 	}
     if (sigprocmask(SIG_UNBLOCK, &mask, NULL) == -1)
     {
-	   perror("sigprocmask");
-	   exit ( -1 );
+		perror("sigprocmask");
+		sprintf(msgbuf, "sigprocmask() fails for Pulse Timer%s ", strerror(errno) );
+		log_message("", msgbuf );
+		exit ( -1 );
 	}
 	
 	// Breath Timer Setup
@@ -259,25 +269,31 @@ main(int argc, char *argv[] )
 	sigemptyset(&new_action.sa_mask);
 	if (sigaction(BREATH_TIMER_SIG, &new_action, NULL) == -1)
 	{
-	   perror("sigaction");
-	   exit ( -1 );
+		perror("sigaction");
+		sprintf(msgbuf, "sigaction() fails for Breath Timer %s", strerror(errno) );
+		log_message("", msgbuf );
+		exit(-1 );
 	}
 	// Block timer signal temporarily
 	sigemptyset(&mask);
 	sigaddset(&mask, BREATH_TIMER_SIG);
 	if (sigprocmask(SIG_SETMASK, &mask, NULL) == -1)
 	{
-	   perror("sigprocmask");
-	   exit ( -1 );
+		perror("sigprocmask");
+		sprintf(msgbuf, "sigprocmask() fails for Breath Timer %s", strerror(errno) );
+		log_message("", msgbuf );
+		exit ( -1 );
 	}
 	// Create the Timer
 	breath_sev.sigev_notify = SIGEV_SIGNAL;
 	breath_sev.sigev_signo = BREATH_TIMER_SIG;
 	breath_sev.sigev_value.sival_ptr = &breath_timer;
 	
-	if ( timer_create(1, &breath_sev, &breath_timer ) == -1 )
+	if ( timer_create(CLOCK_MONOTONIC, &breath_sev, &breath_timer ) == -1 )
 	{
 		perror("timer_create" );
+		sprintf(msgbuf, "timer_create() fails for Breath Timer %s", strerror(errno) );
+		log_message("", msgbuf );
 		exit (-1);
 	}
 	
@@ -292,8 +308,10 @@ main(int argc, char *argv[] )
 	
     if (sigprocmask(SIG_UNBLOCK, &mask, NULL) == -1)
     {
-	   perror("sigprocmask");
-	   exit ( -1 );
+		perror("sigprocmask");
+		sprintf(msgbuf, "sigprocmask() fails for Breath Timer %s", strerror(errno) );
+		log_message("", msgbuf );
+		exit ( -1 );
 	}	
 	
 	pthread_create (&threadInfo, NULL, &process_child,(void *) NULL );
@@ -322,7 +340,8 @@ main(int argc, char *argv[] )
 			}
 		}
 	}
-	printf("Ending\n" );
+	sprintf(msgbuf, "simpulse terminates" );
+	log_message("", msgbuf );
 	exit (0 );
 }
 

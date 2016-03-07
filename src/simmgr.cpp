@@ -32,11 +32,15 @@
 
 #include "../include/simmgr.h" 
 
+#define SCENARIO_LOOP_COUNT	10		// Run the scenario every SCENARIO_LOOP_COUNT iterations of the 10 msec loop
+
 using namespace std;
 
 int start_scenario(const char *name );
 int scenario_run(void );
 void comm_check(void );
+void time_update(void );
+
 
 /* str_thdata
 	structure to hold data to be passed to a thread
@@ -56,8 +60,7 @@ main(int argc, char *argv[] )
 {
 	int sts;
 	char *ptr;
-	char buffer[256];
-	struct timeb ms_time;
+	int scenarioCount = SCENARIO_LOOP_COUNT;
 	
 	daemonize();
 	
@@ -149,24 +152,41 @@ main(int argc, char *argv[] )
 	
 	while ( 1 )
 	{
-		ptr = do_command_read("/bin/date", buffer, sizeof(buffer)-1 );
-		sprintf(simmgr_shm->server.server_time, "%s", buffer );
-		
-		ftime(&ms_time);
-		simmgr_shm->server.msec_time = ms_time.millitm;
-		
 		comm_check();
 		
-		(void)scenario_run();
+		if ( scenarioCount-- <= 0 )
+		{
+			scenarioCount = SCENARIO_LOOP_COUNT;
+			time_update();
+			(void)scenario_run();
+			
+		}
 	
 		usleep(10000);	// Sleep for 10 msec
 	}
 }
-
+/*
+ * time_update
+ *
+ * Get the localtime and write it as a string to the SHM data
+ */ 
+void
+time_update(void )
+{
+	char buf[256];
+	struct tm tm;
+	struct timeb timeb;
+	
+	(void)ftime(&timeb );
+	(void)localtime_r(&timeb.time, &tm );
+	(void)asctime_r(&tm, buf );
+	sprintf(simmgr_shm->server.server_time, "%s", buf );
+	simmgr_shm->server.msec_time = (((tm.tm_hour*60*60)+(tm.tm_min*60)+tm.tm_sec)*1000)+ timeb.millitm;
+}
 /*
  * comm_check
  *
- * verify that the comminucations path to the SimCtl is open and ok.
+ * verify that the communications path to the SimCtl is open and ok.
  * If not, try to reestablish.
  */
 void
@@ -285,6 +305,11 @@ scenario_run(void )
 	{
 		simmgr_shm->status.respiration.rate = simmgr_shm->instructor.respiration.rate;
 		simmgr_shm->instructor.respiration.rate = -1;
+	}
+	if ( simmgr_shm->instructor.general.temperature >= 0 )
+	{
+		simmgr_shm->status.general.temperature = simmgr_shm->instructor.general.temperature;
+		simmgr_shm->instructor.general.temperature = -1;
 	}
 	return ( 0 );
 }

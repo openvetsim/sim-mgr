@@ -110,8 +110,9 @@ main( int argc, const char* argv[] )
 	sprintf(cmd, "none" );
 	try 
 	{
-		Cgicc cgi;
 		
+		Cgicc cgi;
+
 		// Parse the submitted GET/POST elements
 		for( iter = cgi.getElements().begin(); iter != cgi.getElements().end(); ++iter )
 		{
@@ -232,7 +233,7 @@ main( int argc, const char* argv[] )
 			else if ( key.compare(0, 4, "set:" ) == 0 )
 			{
 				set_count++;
-				// set command: Split to segments to contruct the reference
+				// set command: Split to segments to construct the reference
 				v = explode(key, ':');
 				cout << " \"set_" << set_count << "\" : {\n    ";
 				makejson(cout, "class", v[1] );
@@ -332,6 +333,17 @@ main( int argc, const char* argv[] )
 						sts = 1;
 					}
 				}
+				else if ( v[1].compare("general" ) == 0 )
+				{
+					if ( v[2].compare("temperature" ) == 0 )
+					{
+						simmgr_shm->instructor.general.temperature = atoi(value.c_str() );
+					}
+					else
+					{
+						sts = 1;
+					}
+				}
 				else
 				{
 					sts = 2;
@@ -354,12 +366,14 @@ main( int argc, const char* argv[] )
 			{
 				makejson(cout, "Invalid Command", cmd );
 			}
-		}		
+		}
 	}
-	catch(exception& e) 
+	catch(exception& ex) 
 	{
 		// Caught a standard library exception
 		makejson(cout, "status", "Fail");
+		cout << ",\n    ";
+		makejson(cout, "err", ex.what() );
 		cout << "\n}\n";
 		return ( 0 );
 	}

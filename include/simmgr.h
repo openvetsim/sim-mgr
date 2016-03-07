@@ -88,6 +88,10 @@ struct server
 	char server_time[STR_SIZE];	// Linux date/timestamp
 	int msec_time;				// msec timer.
 };
+struct general
+{
+	int temperature;
+};
 struct status
 {
 	struct cardiac			cardiac;
@@ -99,12 +103,16 @@ struct status
 	struct pulse			pulse;
 	struct cpr				cpr;
 	struct defibrillation	defibrillation;
+	struct general			general;
 };
+
+// The instructor structure is commands from the Instructor Interface
 struct instructor
 {
 	struct cardiac		cardiac;
 	struct scenario 	scenario;
 	struct respiration	respiration;
+	struct general		general;
 };
 	
 // Data Structure of Shared memory file
