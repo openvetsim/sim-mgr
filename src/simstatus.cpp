@@ -64,6 +64,15 @@ std::vector<std::string> explode(std::string const & s, char delim)
     return result;
 }
 
+void
+releaseLock(int taken )
+{
+	if ( taken )
+	{
+		sem_post(&simmgr_shm->instructor.sema);
+	}
+}
+
 struct paramCmds paramCmds[] =
 {
 	{ "check", },
@@ -85,6 +94,9 @@ main( int argc, const char* argv[] )
 	int set_count = 0;
 	int sts;
 	char *cp;
+	int iiLockTaken = 0;
+	int trycount;
+	
 	std::string key;
 	std::string value;
 	std::string command;
@@ -113,6 +125,36 @@ main( int argc, const char* argv[] )
 		
 		Cgicc cgi;
 
+		// If any "set" commands are in the GET/POST list, then take the Instructor Interface lock
+		for( iter = cgi.getElements().begin(); iter != cgi.getElements().end(); ++iter )
+		{
+			key = iter->getName();
+			if ( key.compare(0, 4, "set:" ) == 0 )
+			{
+				// Take the mutex for the Instructor Command section
+				trycount = 0;
+				while ( ( sts = sem_trywait(&simmgr_shm->instructor.sema) ) != 0 )
+				{
+					if ( trycount++ > 50 )
+					{
+						makejson(cout, "status", "Fail");
+						cout << ",\n    ";
+						makejson(cout, "error", "Could not get Instructor Mutex");
+						cout << "\n}\n";
+						return ( 0 );
+					}
+					usleep(1000 );
+				}
+				iiLockTaken = 1;
+				break;
+			}
+		}
+		iter = cgi.getElement("time" );
+		if ( iter != cgi.getElements().end())
+		{
+			makejson(cout, "time", simmgr_shm->server.server_time );
+			cout << ",\n";
+		}
 		// Parse the submitted GET/POST elements
 		for( iter = cgi.getElements().begin(); iter != cgi.getElements().end(); ++iter )
 		{
@@ -258,6 +300,10 @@ main( int argc, const char* argv[] )
 					{
 						simmgr_shm->instructor.cardiac.rate = atoi(value.c_str() );
 					}
+					else if ( v[2].compare("transfer_time" ) == 0 )
+					{
+						simmgr_shm->instructor.cardiac.transfer_time = atoi(value.c_str() );
+					}
 					else if ( v[2].compare("pr_interval" ) == 0 )
 					{
 						simmgr_shm->instructor.cardiac.pr_interval = atoi(value.c_str() );
@@ -328,6 +374,10 @@ main( int argc, const char* argv[] )
 					{
 						simmgr_shm->instructor.respiration.rate = atoi(value.c_str() );
 					}
+					else if ( v[2].compare("transfer_time" ) == 0 )
+					{
+						simmgr_shm->instructor.cardiac.transfer_time = atoi(value.c_str() );
+					}
 					else
 					{
 						sts = 1;
@@ -375,9 +425,11 @@ main( int argc, const char* argv[] )
 		cout << ",\n    ";
 		makejson(cout, "err", ex.what() );
 		cout << "\n}\n";
+		releaseLock( iiLockTaken );
 		return ( 0 );
 	}
 	
 	cout << "\n}\n";
+	releaseLock( iiLockTaken );
 	return ( 0 );
 }

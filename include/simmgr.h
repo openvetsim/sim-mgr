@@ -1,6 +1,7 @@
 #ifndef _SIMMGR_H
 #define _SIMMGR_H
 
+#include <semaphore.h>
 
 // Defines
 //
@@ -20,7 +21,8 @@
 struct cardiac
 {
 	char rhythm[STR_SIZE];
-	int rate;	// Heart Rate in Beats per Minute
+	int rate;			// Heart Rate in Beats per Minute
+	int transfer_time;	// Trend length for change in rate;
 	char pwave[STR_SIZE];
 	int pr_interval;	// PR interval in msec
 	int qrs_interval;		// QRS in msec
@@ -51,6 +53,7 @@ struct respiration
 	int exhalation_duration;	// in msec
 	
 	int rate;					// Breaths per minute
+	int transfer_time;			// Trend length for change in rate;
 	unsigned int breathCount;
 };
 
@@ -109,6 +112,7 @@ struct status
 // The instructor structure is commands from the Instructor Interface
 struct instructor
 {
+	sem_t	sema;	// Mutex lock
 	struct cardiac		cardiac;
 	struct scenario 	scenario;
 	struct respiration	respiration;

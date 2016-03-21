@@ -124,6 +124,8 @@ main(int argc, char *argv[] )
 	simmgr_shm->status.defibrillation.last = 0;
 	simmgr_shm->status.defibrillation.energy = 0;
 	
+	// instructor/sema
+	sem_init(&simmgr_shm->instructor.sema, 1, 1 ); // pshared =1, value =1
 	
 	// instructor/cardiac
 	sprintf(simmgr_shm->instructor.cardiac.rhythm, "%s", "" );
@@ -148,7 +150,6 @@ main(int argc, char *argv[] )
 	simmgr_shm->instructor.respiration.inhalation_duration = -1;
 	simmgr_shm->instructor.respiration.exhalation_duration = -1;
 	simmgr_shm->instructor.respiration.rate = -1;
-	
 	
 	while ( 1 )
 	{
@@ -196,9 +197,41 @@ comm_check(void )
 }
 
 /*
- * default scenario
+ * Cardiac Process
  *
- * Needs to issue various syncs (TBD)
+ * Based on the rate and target selected, modify the pulse rate
+ */
+int startHeartRate = 0;
+int endHeartRate = 0;
+int currentHeartRate = 0;
+int setHeartTicksPerStep = 0;
+int setHeartTickCount = 0;
+
+#define SCENARIO_TICK_TIME 100000	// in usec
+
+void
+cardiacProcess(void )
+{
+	if ( endHeartRate != currentHeartRate )
+	{
+		if ( setHeartTickCount++ == setHeartTicksPerStep )
+		{
+			setHeartTickCount = 0;
+			if ( endHeartRate > currentHeartRate )
+			{
+				currentHeartRate++;
+			}
+			else
+			{
+				currentHeartRate--;
+			}
+			simmgr_shm->status.cardiac.rate = currentHeartRate;
+		}
+	}
+}
+ 
+/*
+ * Scenario execution
  *
  * Reads II commands and changes operating parameters
  */
@@ -206,15 +239,33 @@ int
 scenario_run(void )
 {
 	int sts;
+	int trycount;
+	// Lock the command interface before processing commands
+	// Release the MUTEX
+	
+	trycount = 0;
+	while ( ( sts = sem_trywait(&simmgr_shm->instructor.sema) ) != 0 )
+	{
+		if ( trycount++ > 10 )
+		{
+			// Could not get lock soon enough. Try again next time.
+			return ( -1 );
+		}
+		usleep(SCENARIO_TICK_TIME );
+	}
 	
 	// Check for instructor commands
+	
 	// Scenario
 	if ( strlen(simmgr_shm->instructor.scenario.active) > 0 )
 	{
 		sts = start_scenario(simmgr_shm->instructor.scenario.active );
 		if ( sts )
 		{
-			// Add error action
+			// Start Failure - revert to default
+			(void)start_scenario("default" );
+			
+			// TODO: Add a failure message back to the Instructor
 		}
 	}
 	
@@ -226,7 +277,20 @@ scenario_run(void )
 	}
 	if ( simmgr_shm->instructor.cardiac.rate >= 0 )
 	{
-		simmgr_shm->status.cardiac.rate = simmgr_shm->instructor.cardiac.rate;
+		int rate = simmgr_shm->instructor.cardiac.rate;
+		int time = simmgr_shm->instructor.cardiac.transfer_time;
+		if ( time > 0 )
+		{
+			startHeartRate = simmgr_shm->status.cardiac.rate;
+			endHeartRate = rate;
+			currentHeartRate = startHeartRate;
+
+			setHeartTicksPerStep = ( (time*1000*1000)/SCENARIO_TICK_TIME ) / ( abs(endHeartRate - startHeartRate) );
+		}
+		else
+		{
+			simmgr_shm->status.cardiac.rate = rate;
+		}
 		simmgr_shm->instructor.cardiac.rate = -1;
 	}
 	if ( strlen(simmgr_shm->instructor.cardiac.pwave ) > 0 )
@@ -259,6 +323,8 @@ scenario_run(void )
 		simmgr_shm->status.cardiac.bps_dia = simmgr_shm->instructor.cardiac.bps_dia;
 		simmgr_shm->instructor.cardiac.bps_dia = -1;
 	}
+	cardiacProcess();
+	
 	
 	// Respiration
 	if ( strlen(simmgr_shm->instructor.respiration.left_sound_in) > 0 )
@@ -311,6 +377,9 @@ scenario_run(void )
 		simmgr_shm->status.general.temperature = simmgr_shm->instructor.general.temperature;
 		simmgr_shm->instructor.general.temperature = -1;
 	}
+	// Release the MUTEX
+	sem_post(&simmgr_shm->instructor.sema);
+
 	return ( 0 );
 }
 

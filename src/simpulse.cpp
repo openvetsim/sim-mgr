@@ -1,8 +1,13 @@
 /*
- * pulse.cpp
+ * simpulse.cpp
  *
- * Time clock for the Cardiac and Respitory systems. This application monitors the shared
+ * Time clock for the Cardiac and Respiratory systems. This application monitors the shared
  * memory to get the rate parameters and issues sync signals to the various systems.
+ *
+ * This process runs independently from the SimMgr. It has two timers; one for the heart rate (pulse) and
+ * one for the breath rate (respiration). It runs as two threads. The primary thread listens for connections
+ * from clisents, and the child thread monitors the pulse and breath counts to send sync messages to the
+ * clients. 
  *
  * Listen for a connections on Port 50200 (SimMgr Event Port)
  *
@@ -206,7 +211,7 @@ main(int argc, char *argv[] )
 	server_addr.sin_port = htons(port);
 	if ( bind(sfd, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0 )
 	{		
-		sprintf(msgbuf, "pulse: bind() for port %d failed - exit $s", port, strerror(errno) );
+		sprintf(msgbuf, "pulse: bind() for port %d failed - exit %s", port, strerror(errno) );
 		log_message("", msgbuf );
 		exit ( -1 );
 	}
@@ -357,7 +362,7 @@ process_child(void *ptr )
 	
 	while ( 1 )
 	{
-		usleep(500 );		// 5 msec wait
+		usleep(5000 );		// 5 msec wait
 		if ( last_pulse != simmgr_shm->status.cardiac.pulseCount )
 		{
 			count = 0;
@@ -368,7 +373,7 @@ process_child(void *ptr )
 					fd = listeners[i].cfd;
 					
 					len = write(fd, pulseWord, strlen(pulseWord) );
-					if ( len < 0)
+					if ( len < 0) // This detects closed or disconnected listeners.
 					{
 						close(fd );
 						listeners[i].allocated = 0;
@@ -397,7 +402,7 @@ process_child(void *ptr )
 					fd = listeners[i].cfd;
 					
 					len = write(fd, breathWord, strlen(breathWord) );
-					if ( len < 0)
+					if ( len < 0) // This detects closed or disconnected listeners.
 					{
 						close(fd );
 						listeners[i].allocated = 0;
@@ -416,6 +421,8 @@ process_child(void *ptr )
 			}
 #endif
 		}
+		
+		// If the pulse rate has changed, then reset the timer
 		if ( currentPulseRate != simmgr_shm->status.cardiac.rate )
 		{
 			set_pulse_rate(simmgr_shm->status.cardiac.rate );
@@ -423,6 +430,8 @@ process_child(void *ptr )
 			sprintf(msgbuf, "Set Pulse to %d", currentPulseRate );
 			log_message("", msgbuf );
 		}
+		
+		// If the breath rate has changed, then reset the timer
 		if ( currentBreathRate != simmgr_shm->status.respiration.rate )
 		{
 			set_breath_rate(simmgr_shm->status.respiration.rate );
