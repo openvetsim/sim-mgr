@@ -23,7 +23,7 @@ packages:
 	
 Git:
 
-	$ apt-get install git
+	$ sudo apt-get install git
 	
 The LAMP Stack (Linux-Apache-MySQL-PHP) can be installed using the following commands:
 
