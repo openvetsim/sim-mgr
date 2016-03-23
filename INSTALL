@@ -10,6 +10,7 @@ initial development used Ubuntu 14.04 on an x86 system.
 In addition to the basic Desktop installation, you will need to install the following
 packages:
 
+	GIT
 	LAMP Stack:
 		Apache 2
 		MySQL 5.5
@@ -19,6 +20,10 @@ packages:
 	CGICC 
 	Open SSH Server
 	Opera
+	
+Git:
+
+	$ apt-get install git
 	
 The LAMP Stack (Linux-Apache-MySQL-PHP) can be installed using the following commands:
 
@@ -44,10 +49,6 @@ From your server console, execute the following commands:
 OpenSSH Server:
 
 	$ apt-get install openssh-server
-
-Git:
-
-	$ apt-get install git
 	
 CGICC:
 (from https://singhgurjot.wordpress.com/2012/05/14/how-to-use-cgicommon-gateway-interface-for-c-programming-in-ubuntu/)
