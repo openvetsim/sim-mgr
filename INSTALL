@@ -10,6 +10,7 @@ initial development used Ubuntu 14.04 on an x86 system.
 In addition to the basic Desktop installation, you will need to install the following
 packages:
 
+	GIT
 	LAMP Stack:
 		Apache 2
 		MySQL 5.5
@@ -20,6 +21,10 @@ packages:
 	Open SSH Server
 	Opera
 	
+Git:
+
+	$ sudo apt-get install git
+	
 The LAMP Stack (Linux-Apache-MySQL-PHP) can be installed using the following commands:
 
 	$ sudo apt-get update
@@ -29,7 +34,9 @@ Alternatively, you could install the separate components as detailed below.
 	
 PHPMYADMIN:
 Execute the following command:
-	$ apt-get install phpmyadmin
+	$ sudo apt-get install phpmyadmin
+	
+If asked, select the Apache web server to be reconfigured.
 	
 After the install completes, create a link from the 'www' directory to the location of phpmyadmin:
 
@@ -43,11 +50,7 @@ From your server console, execute the following commands:
 
 OpenSSH Server:
 
-	$ apt-get install openssh-server
-
-Git:
-
-	$ apt-get install git
+	$ sudo apt-get install openssh-server
 	
 CGICC:
 (from https://singhgurjot.wordpress.com/2012/05/14/how-to-use-cgicommon-gateway-interface-for-c-programming-in-ubuntu/)
