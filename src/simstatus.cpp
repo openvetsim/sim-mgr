@@ -253,6 +253,10 @@ main( int argc, const char* argv[] )
 				makejson(cout, "col", itoa(simmgr_shm->status.auscultation.col, buffer, 10 ) );
 				cout << "\n},\n";
 				
+				cout << " \"general\" : {\n";
+				makejson(cout, "temperature", itoa(simmgr_shm->status.general.temperature, buffer, 10 ) );
+				cout << "\n},\n";
+				
 				cout << " \"pulse\" : {\n";
 				makejson(cout, "position", itoa(simmgr_shm->status.pulse.position, buffer, 10 ) );
 				cout << "\n},\n";

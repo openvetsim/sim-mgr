@@ -93,7 +93,8 @@ struct server
 };
 struct general
 {
-	int temperature;
+	int temperature;			// degrees * 10, (eg 96.8 is 968)
+	int transfer_time;			// Trend length
 };
 struct status
 {
@@ -134,6 +135,16 @@ struct simmgr_shm
 	// Commands from Instructor Interface. Written by the II Ajax calls. Cleared by SimMgr when processed.
 	struct instructor instructor;
 
+};
+
+// For generic trend processor
+struct trend
+{
+	int start;
+	int end;
+	int current;
+	int ticksPerStep;
+	int tickCount;
 };
 
 // Prototypes
