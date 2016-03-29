@@ -56,7 +56,7 @@ The Common Gateway Interface (CGI) is a standard protocol for enabling applicati
 The software uses the CGICC library to build CGI programs in C++.
 
 To install CGICC files follow the steps given as:
-1. Open the terminal, and type the following commands-
+	Open the terminal, and type the following commands-
 	$ wget ftp://ftp.gnu.org/gnu/cgicc/cgicc-3.0.tar.gz
 	$ tar xvf cgicc-3.0.tar.gz
 	$ sudo -s
@@ -64,15 +64,21 @@ To install CGICC files follow the steps given as:
 	# apt-get install build-essential libcgicc5 libcgicc5-dev libcgicc-doc
 	# apt-get update
 
-To configure apache web server for CGI wdit the file /etc/apache2/sites-available/000-default.conf 
-to include the following within the VirtualHost definition:
+The Apache2 server may require configuration to enable CGI execution.  This may be set in the 
+site file, /etc/apache2/sites-available/000-default.conf). You should have a  definition that
+looks something like this:
 
-	<Directory "/var/www/html/cgi-bin">
+	ScriptAlias /cgi-bin/ "/var/lib/cgi-bin/"
+	<Directory "/var/lib/cgi-bin">
 		AllowOverride None
 		Options +ExecCGI -MultiViews +SymLinksIfOwnerMatch
 		Order allow,deny
 		Allow from all
 	</Directory>
+
+You may also need to refer to the file /etc/apache2/conf-available/serve-cgi-bin.conf to see where the
+CGI
+
 
 Chrome:
 	$ sudo sh -c 'echo "deb http://deb.opera.com/opera/ stable non-free" >> /etc/apt/sources.list.d/opera.list'
