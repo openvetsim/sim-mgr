@@ -83,11 +83,17 @@ beat_handler(int sig, siginfo_t *si, void *uc)
 {
 	if ( sig == PULSE_TIMER_SIG )
 	{
-		simmgr_shm->status.cardiac.pulseCount++;
+		if ( simmgr_shm->status.cardiac.rate > 0 )
+		{
+			simmgr_shm->status.cardiac.pulseCount++;
+		}
 	}
 	else if ( sig == BREATH_TIMER_SIG )
 	{
-		simmgr_shm->status.respiration.breathCount++;
+		if ( simmgr_shm->status.respiration.rate > 0 )
+		{
+			simmgr_shm->status.respiration.breathCount++;
+		}
 	}	
 }
 
@@ -104,6 +110,11 @@ set_pulse_rate(int bpm )
 	float fractpart;
 	float wait_time_nsec;
 	struct itimerspec its;
+	
+	if ( bpm == 0 )
+	{
+		bpm = 999;
+	}
 	
 	tempo = (float)bpm;
 	beat_per_sec = tempo / 60;
@@ -124,6 +135,7 @@ set_pulse_rate(int bpm )
 		log_message("", msgbuf );
 		exit ( -1 );
 	}
+
 }
 
 void
@@ -136,6 +148,10 @@ set_breath_rate(int bpm )
 	float wait_time_nsec;
 	struct itimerspec its;
 	
+	if ( bpm == 0 )
+	{
+		bpm = 999;
+	}
 	tempo = (float)bpm;
 	beat_per_sec = tempo / 60;
 	fractpart = modf( ( 1/beat_per_sec ), &intpart );
@@ -155,7 +171,6 @@ set_breath_rate(int bpm )
 		log_message("", msgbuf );
 		exit ( -1 );
 	}
-	
 }
 
 void

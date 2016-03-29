@@ -104,8 +104,6 @@ main(int argc, char *argv[] )
 	simmgr_shm->status.respiration.exhalation_duration = 1050;
 	simmgr_shm->status.respiration.rate = 20;
 	
-	// status/scenario
-	(void)start_scenario("default" );
 	
 	// status/auscultation
 	simmgr_shm->status.auscultation.side = 0;
@@ -150,6 +148,11 @@ main(int argc, char *argv[] )
 	simmgr_shm->instructor.respiration.inhalation_duration = -1;
 	simmgr_shm->instructor.respiration.exhalation_duration = -1;
 	simmgr_shm->instructor.respiration.rate = -1;
+	simmgr_shm->instructor.general.temperature = -1;
+	simmgr_shm->status.general.temperature = 1013;
+	
+	// status/scenario
+	(void)start_scenario("default" );
 	
 	while ( 1 )
 	{
@@ -201,35 +204,62 @@ comm_check(void )
  *
  * Based on the rate and target selected, modify the pulse rate
  */
-int startHeartRate = 0;
-int endHeartRate = 0;
-int currentHeartRate = 0;
-int setHeartTicksPerStep = 0;
-int setHeartTickCount = 0;
+struct trend cardiacTrend;
+struct trend respirationTrend;
+struct trend sysTrend;
+struct trend diaTrend;
+struct trend tempTrend;
 
 #define SCENARIO_TICK_TIME 100000	// in usec
 
-void
-cardiacProcess(void )
+int 
+clearTrend(struct trend *trend, int current )
 {
-	if ( endHeartRate != currentHeartRate )
+	trend->end = current;
+	trend->current = current;
+	
+	return ( trend->current );
+}
+int 
+setTrend(struct trend *trend, int end, int current, int duration )
+{
+	trend->end = end;
+	trend->tickCount = 0;
+
+	if ( duration > 0 )
 	{
-		if ( setHeartTickCount++ == setHeartTicksPerStep )
+		trend->current = current;
+		trend->ticksPerStep = ( (duration*1000*1000)/SCENARIO_TICK_TIME ) / ( abs(end - current) );
+	}
+	else
+	{
+		trend->current = end;
+	}
+	return ( trend->current );
+}
+
+int
+trendProcess(struct trend *trend )
+{
+	if ( trend->end != trend->current )
+	{
+		if ( trend->tickCount++ == trend->ticksPerStep )
 		{
-			setHeartTickCount = 0;
-			if ( endHeartRate > currentHeartRate )
+			trend->tickCount = 0;
+			if ( trend->end > trend->current )
 			{
-				currentHeartRate++;
+				trend->current++;
 			}
 			else
 			{
-				currentHeartRate--;
+				trend->current--;
 			}
-			simmgr_shm->status.cardiac.rate = currentHeartRate;
 		}
 	}
+	return ( trend->current );
 }
- 
+
+
 /*
  * Scenario execution
  *
@@ -277,21 +307,12 @@ scenario_run(void )
 	}
 	if ( simmgr_shm->instructor.cardiac.rate >= 0 )
 	{
-		int rate = simmgr_shm->instructor.cardiac.rate;
-		int time = simmgr_shm->instructor.cardiac.transfer_time;
-		if ( time > 0 )
-		{
-			startHeartRate = simmgr_shm->status.cardiac.rate;
-			endHeartRate = rate;
-			currentHeartRate = startHeartRate;
-
-			setHeartTicksPerStep = ( (time*1000*1000)/SCENARIO_TICK_TIME ) / ( abs(endHeartRate - startHeartRate) );
-		}
-		else
-		{
-			simmgr_shm->status.cardiac.rate = rate;
-		}
+		simmgr_shm->status.cardiac.rate = setTrend(&cardiacTrend, 
+											simmgr_shm->instructor.cardiac.rate,
+											simmgr_shm->status.cardiac.rate,
+											simmgr_shm->instructor.cardiac.transfer_time );
 		simmgr_shm->instructor.cardiac.rate = -1;
+		simmgr_shm->instructor.cardiac.transfer_time = -1;
 	}
 	if ( strlen(simmgr_shm->instructor.cardiac.pwave ) > 0 )
 	{
@@ -315,15 +336,22 @@ scenario_run(void )
 	}
 	if ( simmgr_shm->instructor.cardiac.bps_sys >= 0 )
 	{
-		simmgr_shm->status.cardiac.bps_sys = simmgr_shm->instructor.cardiac.bps_sys;
+		simmgr_shm->status.cardiac.bps_sys = setTrend(&sysTrend, 
+											simmgr_shm->instructor.cardiac.bps_sys,
+											simmgr_shm->status.cardiac.bps_sys,
+											simmgr_shm->instructor.cardiac.transfer_time );
 		simmgr_shm->instructor.cardiac.bps_sys = -1;
+		simmgr_shm->instructor.cardiac.transfer_time = -1;
 	}
 	if ( simmgr_shm->instructor.cardiac.bps_dia >= 0 )
 	{
-		simmgr_shm->status.cardiac.bps_dia = simmgr_shm->instructor.cardiac.bps_dia;
+		simmgr_shm->status.cardiac.bps_dia = setTrend(&diaTrend, 
+											simmgr_shm->instructor.cardiac.bps_dia,
+											simmgr_shm->status.cardiac.bps_dia,
+											simmgr_shm->instructor.cardiac.transfer_time );
 		simmgr_shm->instructor.cardiac.bps_dia = -1;
+		simmgr_shm->instructor.cardiac.transfer_time = -1;
 	}
-	cardiacProcess();
 	
 	
 	// Respiration
@@ -369,17 +397,35 @@ scenario_run(void )
 	}
 	if ( simmgr_shm->instructor.respiration.rate >= 0 )
 	{
-		simmgr_shm->status.respiration.rate = simmgr_shm->instructor.respiration.rate;
+		simmgr_shm->status.respiration.rate = setTrend(&respirationTrend, 
+											simmgr_shm->instructor.respiration.rate,
+											simmgr_shm->status.respiration.rate,
+											simmgr_shm->instructor.respiration.transfer_time );
 		simmgr_shm->instructor.respiration.rate = -1;
+		simmgr_shm->instructor.respiration.transfer_time = -1;
 	}
+	simmgr_shm->status.respiration.rate = trendProcess( &respirationTrend );
+	
 	if ( simmgr_shm->instructor.general.temperature >= 0 )
 	{
-		simmgr_shm->status.general.temperature = simmgr_shm->instructor.general.temperature;
-		simmgr_shm->instructor.general.temperature = -1;
+		simmgr_shm->status.general.temperature = setTrend(&tempTrend, 
+											simmgr_shm->instructor.general.temperature,
+											simmgr_shm->status.general.temperature,
+											simmgr_shm->instructor.general.transfer_time );
+		simmgr_shm->status.general.temperature = -1;
+		simmgr_shm->instructor.general.transfer_time = -1;
 	}
 	// Release the MUTEX
 	sem_post(&simmgr_shm->instructor.sema);
 
+	// Process the trends
+	
+	simmgr_shm->status.cardiac.rate = trendProcess(&cardiacTrend );
+	simmgr_shm->status.cardiac.bps_sys = trendProcess(&sysTrend );
+	simmgr_shm->status.cardiac.bps_dia = trendProcess(&diaTrend );
+	simmgr_shm->status.respiration.rate = trendProcess(&respirationTrend );
+	simmgr_shm->status.general.temperature = trendProcess(&tempTrend );
+	
 	return ( 0 );
 }
 
@@ -393,6 +439,12 @@ start_scenario(const char *name )
 	time ( &rawtime );
 	timeinfo = localtime ( &rawtime );
 
+	// Clear running trends
+	simmgr_shm->status.cardiac.rate = clearTrend(&cardiacTrend, 80 );
+	simmgr_shm->status.cardiac.bps_sys = clearTrend(&sysTrend, 105 );
+	simmgr_shm->status.cardiac.bps_dia = clearTrend(&diaTrend, 90  );
+	simmgr_shm->status.respiration.rate = clearTrend(&respirationTrend, 25 );
+	simmgr_shm->status.general.temperature = clearTrend(&tempTrend, 1017 );
 	
 	sprintf(simmgr_shm->status.scenario.active, "%s", name );
 	timeBuf = asctime(timeinfo );

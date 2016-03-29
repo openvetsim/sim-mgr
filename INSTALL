@@ -10,6 +10,7 @@ initial development used Ubuntu 14.04 on an x86 system.
 In addition to the basic Desktop installation, you will need to install the following
 packages:
 
+	GIT
 	LAMP Stack:
 		Apache 2
 		MySQL 5.5
@@ -20,6 +21,10 @@ packages:
 	Open SSH Server
 	Opera
 	
+Git:
+
+	$ sudo apt-get install git
+	
 The LAMP Stack (Linux-Apache-MySQL-PHP) can be installed using the following commands:
 
 	$ sudo apt-get update
@@ -29,7 +34,9 @@ Alternatively, you could install the separate components as detailed below.
 	
 PHPMYADMIN:
 Execute the following command:
-	$ apt-get install phpmyadmin
+	$ sudo apt-get install phpmyadmin
+	
+If asked, select the Apache web server to be reconfigured.
 	
 After the install completes, create a link from the 'www' directory to the location of phpmyadmin:
 
@@ -43,11 +50,7 @@ From your server console, execute the following commands:
 
 OpenSSH Server:
 
-	$ apt-get install openssh-server
-
-Git:
-
-	$ apt-get install git
+	$ sudo apt-get install openssh-server
 	
 CGICC:
 (from https://singhgurjot.wordpress.com/2012/05/14/how-to-use-cgicommon-gateway-interface-for-c-programming-in-ubuntu/)
@@ -56,7 +59,7 @@ The Common Gateway Interface (CGI) is a standard protocol for enabling applicati
 The software uses the CGICC library to build CGI programs in C++.
 
 To install CGICC files follow the steps given as:
-	Open the terminal, and type the following commands-
+1. Open the terminal, and type the following commands-
 	$ wget ftp://ftp.gnu.org/gnu/cgicc/cgicc-3.0.tar.gz
 	$ tar xvf cgicc-3.0.tar.gz
 	$ sudo -s
@@ -64,21 +67,15 @@ To install CGICC files follow the steps given as:
 	# apt-get install build-essential libcgicc5 libcgicc5-dev libcgicc-doc
 	# apt-get update
 
-The Apache2 server may require configuration to enable CGI execution.  This may be set in the 
-site file, /etc/apache2/sites-available/000-default.conf). You should have a  definition that
-looks something like this:
+To configure apache web server for CGI wdit the file /etc/apache2/sites-available/000-default.conf 
+to include the following within the VirtualHost definition:
 
-	ScriptAlias /cgi-bin/ "/var/lib/cgi-bin/"
-	<Directory "/var/lib/cgi-bin">
+	<Directory "/var/www/html/cgi-bin">
 		AllowOverride None
 		Options +ExecCGI -MultiViews +SymLinksIfOwnerMatch
 		Order allow,deny
 		Allow from all
 	</Directory>
-
-You may also need to refer to the file /etc/apache2/conf-available/serve-cgi-bin.conf to see where the
-CGI
-
 
 Chrome:
 	$ sudo sh -c 'echo "deb http://deb.opera.com/opera/ stable non-free" >> /etc/apt/sources.list.d/opera.list'
@@ -129,4 +126,4 @@ file /etc/apache2/mods-enabled/dir.conf. This is optional.
 Now, restart the Apache2 server:
 
 	$ sudo service apache2 restart
-	
+
