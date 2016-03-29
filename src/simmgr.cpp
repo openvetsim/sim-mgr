@@ -312,7 +312,6 @@ scenario_run(void )
 											simmgr_shm->status.cardiac.rate,
 											simmgr_shm->instructor.cardiac.transfer_time );
 		simmgr_shm->instructor.cardiac.rate = -1;
-		simmgr_shm->instructor.cardiac.transfer_time = -1;
 	}
 	if ( strlen(simmgr_shm->instructor.cardiac.pwave ) > 0 )
 	{
@@ -341,7 +340,6 @@ scenario_run(void )
 											simmgr_shm->status.cardiac.bps_sys,
 											simmgr_shm->instructor.cardiac.transfer_time );
 		simmgr_shm->instructor.cardiac.bps_sys = -1;
-		simmgr_shm->instructor.cardiac.transfer_time = -1;
 	}
 	if ( simmgr_shm->instructor.cardiac.bps_dia >= 0 )
 	{
@@ -350,7 +348,6 @@ scenario_run(void )
 											simmgr_shm->status.cardiac.bps_dia,
 											simmgr_shm->instructor.cardiac.transfer_time );
 		simmgr_shm->instructor.cardiac.bps_dia = -1;
-		simmgr_shm->instructor.cardiac.transfer_time = -1;
 	}
 	
 	
@@ -402,7 +399,6 @@ scenario_run(void )
 											simmgr_shm->status.respiration.rate,
 											simmgr_shm->instructor.respiration.transfer_time );
 		simmgr_shm->instructor.respiration.rate = -1;
-		simmgr_shm->instructor.respiration.transfer_time = -1;
 	}
 	simmgr_shm->status.respiration.rate = trendProcess( &respirationTrend );
 	
@@ -413,7 +409,6 @@ scenario_run(void )
 											simmgr_shm->status.general.temperature,
 											simmgr_shm->instructor.general.transfer_time );
 		simmgr_shm->status.general.temperature = -1;
-		simmgr_shm->instructor.general.transfer_time = -1;
 	}
 	// Release the MUTEX
 	sem_post(&simmgr_shm->instructor.sema);
