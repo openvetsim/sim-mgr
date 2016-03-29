@@ -6,7 +6,8 @@ CFLAGS=-pthread -Wall -g -ggdb
 ## librt is required by any C/C++ where shared memory and/or multiple threads are used
 LDFLAGS=-lrt
 
-CGIBIN=/usr/lib/cgi-bin
+## CGIBIN must be set for the location of the cgi-bin directory on your server
+CGIBIN=/var/lib/cgi-bin
 BIN=/usr/local/bin
 
 default: obj/simstatus.cgi obj/simmgr obj/simpulse

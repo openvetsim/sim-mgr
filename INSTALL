@@ -126,4 +126,4 @@ file /etc/apache2/mods-enabled/dir.conf. This is optional.
 Now, restart the Apache2 server:
 
 	$ sudo service apache2 restart
-	
+
