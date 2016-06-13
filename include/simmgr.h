@@ -1,3 +1,12 @@
+/*
+ * simmagr.h
+ *
+ * Simulation Manager
+ *
+ * Copyright (C) 2016 Terence Kelleher. All rights reserved.
+ *
+ */
+
 #ifndef _SIMMGR_H
 #define _SIMMGR_H
 
@@ -21,20 +30,31 @@
 struct cardiac
 {
 	char rhythm[STR_SIZE];
+	char vpc[STR_SIZE];
+	int vpc_freq;		// 0-100% - Frequencey of VPC insertions (when vpc is not set to "none")
+	char vfib_amplitude[STR_SIZE];	// low, med, high
+	int pea;			// Pulseless Electrical Activity
 	int rate;			// Heart Rate in Beats per Minute
+	int nibp_rate;		// Non-Invasive Rate - Only reports when cuff is on
 	int transfer_time;	// Trend length for change in rate;
 	char pwave[STR_SIZE];
 	int pr_interval;	// PR interval in msec
 	int qrs_interval;		// QRS in msec
 	int bps_sys;	// Systolic
 	int bps_dia;	// Diastolic
+	int pulse_strength;	// 0 - None, 3 - strong
 	unsigned int pulseCount;
+	char sound[STR_SIZE];
+	int heart_sound_volume;
+	int heart_sound_mute;
+	int ecg_indicator;
 };
 struct scenario
 {
 	char active[STR_SIZE];	// Name of active scenario
 	char start[STR_SIZE];		// Date/Time scenario started
-	
+	char runtime[STR_SIZE];
+	char state[STR_SIZE];
 	// We should add additional elements to show where in the scenario we are currently executing
 };
 
@@ -44,16 +64,29 @@ struct respiration
 	char left_sound_in[STR_SIZE];
 	char left_sound_out[STR_SIZE];
 	char left_sound_back[STR_SIZE];
+	int left_lung_sound_volume;
+	int left_lung_sound_mute;
 	char right_sound_in[STR_SIZE];
 	char right_sound_out[STR_SIZE];
 	char right_sound_back[STR_SIZE];
+	int right_lung_sound_volume;
+	int right_lung_sound_mute;
+	
+	//char left_lung_sound[STR_SIZE];
+	//char right_lung_sound[STR_SIZE];
 	
 	// Duration of in/ex
 	int inhalation_duration;	// in msec
 	int exhalation_duration;	// in msec
 	
+	int spo2;					// 0-100%
 	int rate;					// Breaths per minute
+	int etco2;					// End Tidal CO2
 	int transfer_time;			// Trend length for change in rate;
+	int etco2_indicator;
+	int spo2_indicator;
+	int chest_movement;
+	
 	unsigned int breathCount;
 };
 
@@ -72,6 +105,7 @@ struct cpr
 	int last;			// msec time of last compression
 	int	compression;	// 0 to 100%
 	int release;		// 0 to 100%
+	int duration;
 };
 struct defibrillation
 {
@@ -96,18 +130,30 @@ struct general
 	int temperature;			// degrees * 10, (eg 96.8 is 968)
 	int transfer_time;			// Trend length
 };
+struct vocals
+{
+	char filename[STR_SIZE];
+	int repeat;
+	int volume;
+	int play;
+	int mute;
+};
+
 struct status
 {
+	// Status of controlled parameters
 	struct cardiac			cardiac;
 	struct scenario 		scenario;
 	struct respiration		respiration;
+	struct general			general;
+	struct vocals			vocals;
 	
 	// Status of sensed actions
 	struct auscultation		auscultation;
 	struct pulse			pulse;
 	struct cpr				cpr;
 	struct defibrillation	defibrillation;
-	struct general			general;
+	
 };
 
 // The instructor structure is commands from the Instructor Interface
@@ -118,6 +164,8 @@ struct instructor
 	struct scenario 	scenario;
 	struct respiration	respiration;
 	struct general		general;
+	struct vocals			vocals;
+	
 };
 	
 // Data Structure of Shared memory file

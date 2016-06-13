@@ -1,7 +1,8 @@
-TARGETS= obj/simmgr obj/simpulse obj/simstatus.cgi
+TARGETS= obj/simmgr obj/simpulse obj/simstatus.cgi 
 
 ## -pthread (Posix Threads) is required where shared memory and/or multiple threads are used
 CFLAGS=-pthread -Wall -g -ggdb
+CXXFLAGS = -pthread -Wall -g -ggdb -std=c++11
 
 ## librt is required by any C/C++ where shared memory and/or multiple threads are used
 LDFLAGS=-lrt
@@ -10,16 +11,22 @@ LDFLAGS=-lrt
 CGIBIN=/var/lib/cgi-bin
 BIN=/usr/local/bin
 
-default: obj/simstatus.cgi obj/simmgr obj/simpulse
+default: obj/simstatus.cgi obj/simmgr obj/simpulse obj/scenario
 
+obj/scenario: src/scenario.cpp
+	g++ $(CPPFLAGS)-I/usr/include/libxml2  $(CXXFLAGS) -o obj/scenario src/scenario.cpp -lxml2
+	
+obj/tinyxml2.o: src/tinyxml2/tinyxml2.cpp src/tinyxml2/tinyxml2.h
+	g++ $(CPPFLAGS) $(CXXFLAGS) -g -c -o obj/tinyxml2.o src/tinyxml2/tinyxml2.cpp
+	
 obj/simstatus.cgi: src/simstatus.cpp src/sim-util.o include/simmgr.h
-	g++ $(CPPFLAGS) $(CFLAGS) -o obj/simstatus.cgi src/simstatus.cpp src/sim-util.c $(LDFLAGS) -lcgicc
+	g++ $(CPPFLAGS) $(CXXFLAGS) -o obj/simstatus.cgi src/simstatus.cpp src/sim-util.c $(LDFLAGS) -lcgicc
 
 obj/simmgr: src/simmgr.cpp src/sim-util.c include/simmgr.h
-	g++ $(CPPFLAGS) $(CFLAGS)  -lcgicc -o obj/simmgr src/simmgr.cpp  src/sim-util.c $(LDFLAGS)
+	g++ $(CPPFLAGS) $(CXXFLAGS)  -lcgicc -o obj/simmgr src/simmgr.cpp  src/sim-util.c $(LDFLAGS)
 	
 obj/simpulse: src/simpulse.cpp src/sim-util.c include/simmgr.h
-	g++ $(CPPFLAGS) $(CFLAGS)  -lcgicc -o obj/simpulse src/simpulse.cpp  src/sim-util.c $(LDFLAGS)
+	g++ $(CPPFLAGS) $(CXXFLAGS)  -lcgicc -o obj/simpulse src/simpulse.cpp  src/sim-util.c $(LDFLAGS)
 	
 install: check $(TARGETS) installDaemon
 	sudo cp -u obj/simstatus.cgi $(CGIBIN)
