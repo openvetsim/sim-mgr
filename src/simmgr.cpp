@@ -75,6 +75,7 @@ strToLower(char *buf )
 		buf[i] = (char)tolower(buf[i] );
 	}
 }
+
 int
 main(int argc, char *argv[] )
 {
@@ -117,16 +118,18 @@ main(int argc, char *argv[] )
 	simmgr_shm->status.cardiac.qrs_interval = 85;
 	simmgr_shm->status.cardiac.bps_sys = 105;
 	simmgr_shm->status.cardiac.bps_dia = 70;
-	simmgr_shm->status.cardiac.pulse_strength = 3;
-	sprintf(simmgr_shm->status.cardiac.sound, "%s", "none" );
+	simmgr_shm->status.cardiac.pulse_strength = 2;
+	sprintf(simmgr_shm->status.cardiac.heart_sound, "%s", "none" );
 	simmgr_shm->status.cardiac.heart_sound_volume = 10;
 	simmgr_shm->status.cardiac.heart_sound_mute = 0;
 	simmgr_shm->status.cardiac.ecg_indicator = 0;
 	
 	// status/respiration
+	sprintf(simmgr_shm->status.respiration.left_lung_sound, "%s", "normal" );
 	sprintf(simmgr_shm->status.respiration.left_sound_in, "%s", "normal" );
 	sprintf(simmgr_shm->status.respiration.left_sound_out, "%s", "normal" );
 	sprintf(simmgr_shm->status.respiration.left_sound_back, "%s", "normal" );
+	sprintf(simmgr_shm->status.respiration.right_lung_sound, "%s", "normal" );
 	sprintf(simmgr_shm->status.respiration.right_sound_in, "%s", "normal" );
 	sprintf(simmgr_shm->status.respiration.right_sound_out, "%s", "normal" );
 	sprintf(simmgr_shm->status.respiration.right_sound_back, "%s", "normal" );
@@ -188,7 +191,7 @@ main(int argc, char *argv[] )
 	sprintf(simmgr_shm->instructor.cardiac.vpc, "%s", "" );
 	sprintf(simmgr_shm->instructor.cardiac.vfib_amplitude, "%s", "" );
 	simmgr_shm->instructor.cardiac.pulse_strength = -1;
-	sprintf(simmgr_shm->instructor.cardiac.sound, "%s", "" );
+	sprintf(simmgr_shm->instructor.cardiac.heart_sound, "%s", "" );
 	simmgr_shm->instructor.cardiac.heart_sound_volume = -1;
 	simmgr_shm->instructor.cardiac.heart_sound_mute = -1;
 	simmgr_shm->instructor.cardiac.ecg_indicator = -1;
@@ -200,6 +203,7 @@ main(int argc, char *argv[] )
 	// The start times is ignored.
 	
 	// instructor/respiration
+	sprintf(simmgr_shm->instructor.respiration.left_lung_sound, "%s", "" );
 	sprintf(simmgr_shm->instructor.respiration.left_sound_in, "%s", "" );
 	sprintf(simmgr_shm->instructor.respiration.left_sound_out, "%s", "" );
 	sprintf(simmgr_shm->instructor.respiration.left_sound_back, "%s", "" );
@@ -207,6 +211,7 @@ main(int argc, char *argv[] )
 	simmgr_shm->instructor.respiration.left_lung_sound_mute = -1;
 	simmgr_shm->instructor.respiration.right_lung_sound_volume = -1;
 	simmgr_shm->instructor.respiration.right_lung_sound_mute = -1;
+	sprintf(simmgr_shm->instructor.respiration.right_lung_sound, "%s", "" );
 	sprintf(simmgr_shm->instructor.respiration.right_sound_in, "%s", "" );
 	sprintf(simmgr_shm->instructor.respiration.right_sound_out, "%s", "" );
 	sprintf(simmgr_shm->instructor.respiration.right_sound_back, "%s", "" );
@@ -227,7 +232,7 @@ main(int argc, char *argv[] )
 	simmgr_shm->instructor.vocals.mute = -1;
 	
 	// status/scenario
-	//(void)start_scenario("default" );
+	(void)start_scenario("default" );
 	
 	while ( 1 )
 	{
@@ -318,7 +323,6 @@ time_update(void )
 		sec = sec%60;
 		sprintf(simmgr_shm->status.scenario.runtime, "%02d:%02d:%02d", hour, min%60, sec);
 	}
-
 }
 /*
  * comm_check
@@ -345,8 +349,6 @@ struct trend tempTrend;
 struct trend spo2Trend;
 struct trend etco2Trend;
 
-#define SCENARIO_TICK_TIME 100000	// in usec
-
 int 
 clearTrend(struct trend *trend, int current )
 {
@@ -355,46 +357,74 @@ clearTrend(struct trend *trend, int current )
 	
 	return ( trend->current );
 }
+
+/*
+ * duration is in seconds
+*/
+
+
 int 
 setTrend(struct trend *trend, int end, int current, int duration )
 {
-	int diff;
+	double diff;
 	
-	trend->end = end;
-	trend->tickCount = 0;
-	diff = abs(end - current);
+	trend->end = (double)end;
+	diff = (double)abs(end - current);
 
 	if ( ( duration > 0 ) && ( diff > 0 ) )
 	{
-		trend->current = current;
-		trend->ticksPerStep = ( (duration*1000*1000)/SCENARIO_TICK_TIME ) / diff;
+		trend->current = (double)current;
+		trend->changePerSecond = diff / duration;
+		trend->nextTime = time(0) + 1;
 	}
 	else
 	{
 		trend->current = end;
+		trend->changePerSecond = 0;
+		trend->nextTime = 0;
 	}
-	return ( trend->current );
+	return ( (int)trend->current );
 }
 
 int
 trendProcess(struct trend *trend )
 {
-	if ( trend->end != trend->current )
+	time_t now;
+	double newval;
+	int rval;
+	
+	now = time(0);
+	
+	if ( trend->nextTime && ( trend->nextTime <= now ) )
 	{
-		if ( trend->tickCount++ == trend->ticksPerStep )
+		if ( trend->end > trend->current )
 		{
-			trend->tickCount = 0;
-			if ( trend->end > trend->current )
+			newval = trend->current + trend->changePerSecond;
+			if ( newval > trend->end )
 			{
-				trend->current++;
-			}
-			else
-			{
-				trend->current--;
+				newval = trend->end;
 			}
 		}
+		else
+		{
+			newval = trend->current - trend->changePerSecond;
+			if ( newval < trend->end )
+			{
+				newval = trend->end;
+			}
+		}
+		trend->current = newval;
+		if ( trend->current == trend->end )
+		{
+			trend->nextTime = 0;
+		}
+		else
+		{
+			trend->nextTime = now + 1;
+		}
 	}
-	return ( trend->current );
+	rval = (int)round(trend->current );
+	return ( rval );
 }
 
 
@@ -419,7 +449,7 @@ scenario_run(void )
 			// Could not get lock soon enough. Try again next time.
 			return ( -1 );
 		}
-		usleep(SCENARIO_TICK_TIME );
+		usleep(100000 );
 	}
 	iiLockTaken = 1;
 	
@@ -531,6 +561,11 @@ scenario_run(void )
 		simmgr_shm->status.cardiac.pea = simmgr_shm->instructor.cardiac.pea;
 		simmgr_shm->instructor.cardiac.pea = -1;
 	}	
+	if ( simmgr_shm->instructor.cardiac.pulse_strength >= 0 )
+	{
+		simmgr_shm->status.cardiac.pulse_strength = simmgr_shm->instructor.cardiac.pulse_strength;
+		simmgr_shm->instructor.cardiac.pulse_strength = -1;
+	}	
 	if ( simmgr_shm->instructor.cardiac.vpc_freq >= 0 )
 	{
 		simmgr_shm->status.cardiac.vpc_freq = simmgr_shm->instructor.cardiac.vpc_freq;
@@ -546,10 +581,10 @@ scenario_run(void )
 		sprintf(simmgr_shm->status.cardiac.vfib_amplitude, "%s", simmgr_shm->instructor.cardiac.vfib_amplitude );
 		sprintf(simmgr_shm->instructor.cardiac.vfib_amplitude, "%s", "" );
 	}
-	if ( strlen(simmgr_shm->instructor.cardiac.sound) > 0 )
+	if ( strlen(simmgr_shm->instructor.cardiac.heart_sound) > 0 )
 	{
-		sprintf(simmgr_shm->status.cardiac.sound, "%s", simmgr_shm->instructor.cardiac.sound );
-		sprintf(simmgr_shm->instructor.cardiac.sound, "%s", "" );
+		sprintf(simmgr_shm->status.cardiac.heart_sound, "%s", simmgr_shm->instructor.cardiac.heart_sound );
+		sprintf(simmgr_shm->instructor.cardiac.heart_sound, "%s", "" );
 	}
 	if ( simmgr_shm->instructor.cardiac.heart_sound_volume >= 0 )
 	{
@@ -567,36 +602,18 @@ scenario_run(void )
 		simmgr_shm->status.cardiac.ecg_indicator = simmgr_shm->instructor.cardiac.ecg_indicator;
 		simmgr_shm->instructor.cardiac.ecg_indicator = -1;
 	}
+	simmgr_shm->instructor.cardiac.transfer_time = -1;
+	
 	// Respiration
-	if ( strlen(simmgr_shm->instructor.respiration.left_sound_in) > 0 )
+	if ( strlen(simmgr_shm->instructor.respiration.left_lung_sound) > 0 )
 	{
-		sprintf(simmgr_shm->status.respiration.left_sound_in, "%s", simmgr_shm->instructor.respiration.left_sound_in );
-		sprintf(simmgr_shm->instructor.respiration.left_sound_in, "%s", "" );
+		sprintf(simmgr_shm->status.respiration.left_lung_sound, "%s", simmgr_shm->instructor.respiration.left_lung_sound );
+		sprintf(simmgr_shm->instructor.respiration.left_lung_sound, "%s", "" );
 	}
-	if ( strlen(simmgr_shm->instructor.respiration.left_sound_out) > 0 )
+	if ( strlen(simmgr_shm->instructor.respiration.right_lung_sound ) > 0 )
 	{
-		sprintf(simmgr_shm->status.respiration.left_sound_out, "%s", simmgr_shm->instructor.respiration.left_sound_out );
-		sprintf(simmgr_shm->instructor.respiration.left_sound_out, "%s", "" );
-	}
-	if ( strlen(simmgr_shm->instructor.respiration.left_sound_back ) > 0 )
-	{
-		sprintf(simmgr_shm->status.respiration.left_sound_back, "%s", simmgr_shm->instructor.respiration.left_sound_back );
-		sprintf(simmgr_shm->instructor.respiration.left_sound_back, "%s", "" );
-	}
-	if ( strlen(simmgr_shm->instructor.respiration.right_sound_in ) > 0 )
-	{
-		sprintf(simmgr_shm->status.respiration.right_sound_in, "%s", simmgr_shm->instructor.respiration.right_sound_in );
-		sprintf(simmgr_shm->instructor.respiration.right_sound_in, "%s", "" );
-	}
-	if ( strlen(simmgr_shm->instructor.respiration.right_sound_out ) > 0 )
-	{
-		sprintf(simmgr_shm->status.respiration.right_sound_out, "%s", simmgr_shm->instructor.respiration.right_sound_out );
-		sprintf(simmgr_shm->instructor.respiration.right_sound_out, "%s", "" );
-	}
-	if ( strlen(simmgr_shm->instructor.respiration.right_sound_back ) > 0 )
-	{
-		sprintf(simmgr_shm->status.respiration.right_sound_back, "%s", simmgr_shm->instructor.respiration.right_sound_back );
-		sprintf(simmgr_shm->instructor.respiration.right_sound_back, "%s", "" );
+		sprintf(simmgr_shm->status.respiration.right_lung_sound, "%s", simmgr_shm->instructor.respiration.right_lung_sound );
+		sprintf(simmgr_shm->instructor.respiration.right_lung_sound, "%s", "" );
 	}
 	if ( simmgr_shm->instructor.respiration.inhalation_duration >= 0 )
 	{
@@ -648,7 +665,7 @@ scenario_run(void )
 	
 	if ( simmgr_shm->instructor.respiration.etco2 >= 0 )
 	{
-		simmgr_shm->status.respiration.etco2 = setTrend(&spo2Trend, 
+		simmgr_shm->status.respiration.etco2 = setTrend(&etco2Trend, 
 											simmgr_shm->instructor.respiration.etco2,
 											simmgr_shm->status.respiration.etco2,
 											simmgr_shm->instructor.respiration.transfer_time );
@@ -669,6 +686,7 @@ scenario_run(void )
 		simmgr_shm->status.respiration.chest_movement = simmgr_shm->instructor.respiration.chest_movement;
 		simmgr_shm->instructor.respiration.chest_movement = -1;
 	}
+	simmgr_shm->instructor.respiration.transfer_time = -1;
 	
 	// General
 	if ( simmgr_shm->instructor.general.temperature >= 0 )
@@ -679,6 +697,7 @@ scenario_run(void )
 											simmgr_shm->instructor.general.transfer_time );
 		simmgr_shm->instructor.general.temperature = -1;
 	}
+	simmgr_shm->instructor.general.transfer_time = -1;
 	
 	// vocals
 	if ( strlen(simmgr_shm->instructor.vocals.filename) > 0 )

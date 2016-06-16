@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>
+#include <execinfo.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <syslog.h>
@@ -153,6 +154,45 @@ void log_message(const char *filename, const char* message)
 #endif
 }
 
+/*
+ * Function: signal_fault_handler
+ *
+ * Handle inbound signals.
+ *		SIGHUP is ignored 
+ *		SIGTERM closes the process
+ *
+ * Parameters: sig - the signal
+ *
+ * Returns: none
+ */
+void signal_fault_handler(int sig)
+{
+	int j, nptrs;
+#define SIZE 100
+	void *buffer[100];
+	char **strings;
+
+	nptrs = backtrace(buffer, SIZE);
+	//printf("backtrace() returned %d addresses\n", nptrs);
+
+	// The call backtrace_symbols_fd(buffer, nptrs, STDOUT_FILENO)
+	// would produce similar output to the following:
+	syslog(LOG_NOTICE, "%s", "fault");
+	
+	strings = backtrace_symbols(buffer, nptrs);
+	if (strings == NULL) 
+	{
+		syslog(LOG_NOTICE, "fault: %s", "no symbols");
+		exit(EXIT_FAILURE);
+	}
+	
+	for ( j = 0; j < nptrs; j++ )
+	{
+		syslog(LOG_NOTICE, "simstatus: %d: %s", j, strings[j]);
+	}
+	free(strings);
+	exit ( -1 );
+}
  /*
  * Function: signal_handler
  *
@@ -252,6 +292,7 @@ void daemonize()
 	signal(SIGTTIN,SIG_IGN);
 	signal(SIGHUP,signal_handler); /* catch hangup signal */
 	signal(SIGTERM,signal_handler); /* catch kill signal */
+	signal(SIGSEGV,signal_fault_handler );   // install our fault handler
 	
 	syslog (LOG_DAEMON | LOG_NOTICE, "%s started", program_invocation_short_name );
 }

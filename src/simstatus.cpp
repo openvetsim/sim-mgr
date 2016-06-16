@@ -6,7 +6,7 @@
  * Copyright 2015 Terence Kelleher. All rights reserved.
  *
  */
- 
+
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -139,7 +139,7 @@ main( int argc, const char* argv[] )
 	signal(SIGTTIN,SIG_IGN);
 	signal(SIGHUP,simstatus_signal_handler); /* catch hangup signal */
 	signal(SIGTERM,simstatus_signal_handler); /* catch kill signal */
-	
+	signal(SIGSEGV,signal_fault_handler );   // install our handler
 	cout << "Content-Type: application/json\r\n\r\n";
 	cout << "{\n";
 
@@ -156,7 +156,6 @@ main( int argc, const char* argv[] )
 	sprintf(cmd, "none" );
 	try 
 	{
-		
 		Cgicc cgi;
 
 		// If any "set" commands are in the GET/POST list, then take the Instructor Interface lock
@@ -272,31 +271,42 @@ main( int argc, const char* argv[] )
 				cout << ",\n";
 				makejson(cout, "bps_dia", itoa(simmgr_shm->status.cardiac.bps_dia, buffer, 10 ) );
 				cout << ",\n";
-				makejson(cout, "pulse_strength", itoa(simmgr_shm->status.cardiac.pulse_strength, buffer, 10 ) );
+				switch ( simmgr_shm->status.cardiac.pulse_strength )
+				{
+					case 0:
+						makejson(cout, "pulse_strength", "none" );
+						break;
+					case 1:
+						makejson(cout, "pulse_strength", "weak" );
+						break;
+					case 2:
+						makejson(cout, "pulse_strength", "medium" );
+						break;
+					case 3:
+						makejson(cout, "pulse_strength", "strong" );
+						break;
+					default:	// Should never happen
+						makejson(cout, "pulse_strength", itoa(simmgr_shm->status.cardiac.pulse_strength, buffer, 10) );
+						break;
+				}
 				cout << ",\n";
 				makejson(cout, "heart_sound_volume", itoa(simmgr_shm->status.cardiac.heart_sound_volume, buffer, 10 ) );
 				cout << ",\n";
 				makejson(cout, "heart_sound_mute", itoa(simmgr_shm->status.cardiac.heart_sound_mute, buffer, 10 ) );
 				cout << ",\n";
+				makejson(cout, "heart_sound", simmgr_shm->status.cardiac.heart_sound );
+				cout << ",\n";
 				makejson(cout, "ecg_indicator", itoa(simmgr_shm->status.cardiac.ecg_indicator, buffer, 10 ) );
 				cout << "\n},\n";
 				
 				cout << " \"respiration\" : {\n";
-				makejson(cout, "left_sound_in", simmgr_shm->status.respiration.left_sound_in );
-				cout << ",\n";
-				makejson(cout, "left_sound_out", simmgr_shm->status.respiration.left_sound_out );
-				cout << ",\n";
-				makejson(cout, "left_sound_back", simmgr_shm->status.respiration.left_sound_back );
+				makejson(cout, "left_lung_sound", simmgr_shm->status.respiration.left_lung_sound );
 				cout << ",\n";
 				makejson(cout, "left_lung_sound_volume", itoa(simmgr_shm->status.respiration.left_lung_sound_volume, buffer, 10 ) );
 				cout << ",\n";
 				makejson(cout, "left_lung_sound_mute", itoa(simmgr_shm->status.respiration.left_lung_sound_mute, buffer, 10 ) );
 				cout << ",\n";
-				makejson(cout, "right_sound_in", simmgr_shm->status.respiration.right_sound_in );
-				cout << ",\n";
-				makejson(cout, "right_sound_out", simmgr_shm->status.respiration.right_sound_out );
-				cout << ",\n";
-				makejson(cout, "right_sound_back", simmgr_shm->status.respiration.right_sound_back );
+				makejson(cout, "right_lung_sound", simmgr_shm->status.respiration.right_lung_sound );
 				cout << ",\n";
 				makejson(cout, "right_lung_sound_volume", itoa(simmgr_shm->status.respiration.right_lung_sound_volume, buffer, 10 ) );
 				cout << ",\n";
@@ -432,6 +442,45 @@ main( int argc, const char* argv[] )
 					{
 						simmgr_shm->instructor.cardiac.nibp_rate = atoi(value.c_str() );
 					}
+					else if ( v[2].compare("ecg_indicator" ) == 0 )
+					{
+						simmgr_shm->instructor.cardiac.ecg_indicator = atoi(value.c_str() );
+					}
+					else if ( v[2].compare("heart_sound" ) == 0 )
+					{
+						sprintf(simmgr_shm->instructor.cardiac.heart_sound, "%s", value.c_str() );
+					}
+					else if ( v[2].compare("heart_sound_volume" ) == 0 )
+					{
+						simmgr_shm->instructor.cardiac.heart_sound_volume = atoi(value.c_str() );
+					}
+					else if ( v[2].compare("heart_sound_mute" ) == 0 )
+					{
+						simmgr_shm->instructor.cardiac.heart_sound_mute = atoi(value.c_str() );
+					}
+					else if ( v[2].compare("pulse_strength" ) == 0 )
+					{
+						if ( value.compare("none" ) == 0 )
+						{
+							simmgr_shm->instructor.cardiac.pulse_strength = 0;
+						}
+						else if ( value.compare("weak" ) == 0 )
+						{
+							simmgr_shm->instructor.cardiac.pulse_strength = 1;
+						}
+						else if ( value.compare("medium" ) == 0 )
+						{
+							simmgr_shm->instructor.cardiac.pulse_strength = 2;
+						}
+						else if ( value.compare("strong" ) == 0 )
+						{
+							simmgr_shm->instructor.cardiac.pulse_strength = 3;
+						}
+						else
+						{
+							sts = 3;
+						}
+					}
 					else
 					{
 						sts = 1;
@@ -454,29 +503,13 @@ main( int argc, const char* argv[] )
 				}
 				else if ( v[1].compare("respiration" ) == 0 )
 				{
-					if ( v[2].compare("left_sound_in" ) == 0 )
+					if ( v[2].compare("left_lung_sound" ) == 0 )
 					{
-						sprintf(simmgr_shm->instructor.respiration.left_sound_in, "%s", value.c_str() );
+						sprintf(simmgr_shm->instructor.respiration.left_lung_sound, "%s", value.c_str() );
 					}
-					else if ( v[2].compare("left_sound_out" ) == 0 )
+					else if ( v[2].compare("right_lung_sound" ) == 0 )
 					{
-						sprintf(simmgr_shm->instructor.respiration.left_sound_out, "%s", value.c_str() );
-					}
-					else if ( v[2].compare("left_sound_back" ) == 0 )
-					{
-						sprintf(simmgr_shm->instructor.respiration.left_sound_back, "%s", value.c_str() );
-					}
-					else if ( v[2].compare("right_sound_in" ) == 0 )
-					{
-						sprintf(simmgr_shm->instructor.respiration.right_sound_in, "%s", value.c_str() );
-					}
-					else if ( v[2].compare("right_sound_out" ) == 0 )
-					{
-						sprintf(simmgr_shm->instructor.respiration.right_sound_out, "%s", value.c_str() );
-					}
-					else if ( v[2].compare("right_sound_back" ) == 0 )
-					{
-						sprintf(simmgr_shm->instructor.respiration.right_sound_back, "%s", value.c_str() );
+						sprintf(simmgr_shm->instructor.respiration.right_lung_sound, "%s", value.c_str() );
 					}
 					else if ( v[2].compare("inhalation_duration" ) == 0 )
 					{
@@ -486,9 +519,25 @@ main( int argc, const char* argv[] )
 					{
 						simmgr_shm->instructor.respiration.exhalation_duration = atoi(value.c_str() );
 					}
-					else if ( v[2].compare("rate" ) == 0 )
+					else if ( v[2].compare("left_lung_sound_volume" ) == 0 )
 					{
-						simmgr_shm->instructor.respiration.rate = atoi(value.c_str() );
+						simmgr_shm->instructor.respiration.left_lung_sound_volume = atoi(value.c_str() );
+					}
+					else if ( v[2].compare("left_lung_sound_mute" ) == 0 )
+					{
+						simmgr_shm->instructor.respiration.left_lung_sound_mute = atoi(value.c_str() );
+					}
+					else if ( v[2].compare("right_lung_sound_volume" ) == 0 )
+					{
+						simmgr_shm->instructor.respiration.right_lung_sound_volume = atoi(value.c_str() );
+					}
+					else if ( v[2].compare("right_lung_sound_volume" ) == 0 )
+					{
+						simmgr_shm->instructor.respiration.right_lung_sound_volume = atoi(value.c_str() );
+					}
+					else if ( v[2].compare("right_lung_sound_mute" ) == 0 )
+					{
+						simmgr_shm->instructor.respiration.right_lung_sound_mute = atoi(value.c_str() );
 					}
 					else if ( v[2].compare("spo2" ) == 0 )
 					{
@@ -502,6 +551,18 @@ main( int argc, const char* argv[] )
 					{
 						simmgr_shm->instructor.respiration.transfer_time = atoi(value.c_str() );
 					}
+					else if ( v[2].compare("etco2_indicator" ) == 0 )
+					{
+						simmgr_shm->instructor.respiration.etco2_indicator = atoi(value.c_str() );
+					}
+					else if ( v[2].compare("spo2_indicator" ) == 0 )
+					{
+						simmgr_shm->instructor.respiration.spo2_indicator = atoi(value.c_str() );
+					}
+					else if ( v[2].compare("chest_movement" ) == 0 )
+					{
+						simmgr_shm->instructor.respiration.chest_movement = atoi(value.c_str() );
+					}
 					else
 					{
 						sts = 1;
@@ -512,10 +573,37 @@ main( int argc, const char* argv[] )
 					if ( v[2].compare("temperature" ) == 0 )
 					{
 						simmgr_shm->instructor.general.temperature = atoi(value.c_str() );
-						}
+					}
 					else if ( v[2].compare("transfer_time" ) == 0 )
 					{
 						simmgr_shm->instructor.general.transfer_time = atoi(value.c_str() );
+					}
+					else
+					{
+						sts = 1;
+					}
+				}
+				else if ( v[1].compare("vocals" ) == 0 )
+				{
+					if ( v[2].compare("filename" ) == 0 )
+					{
+						sprintf(simmgr_shm->instructor.vocals.filename, "%s", value.c_str() );
+					}
+					else if ( v[2].compare("repeat" ) == 0 )
+					{
+						simmgr_shm->instructor.vocals.repeat = atoi(value.c_str() );
+					}
+					else if ( v[2].compare("volume" ) == 0 )
+					{
+						simmgr_shm->instructor.vocals.volume = atoi(value.c_str() );
+					}
+					else if ( v[2].compare("play" ) == 0 )
+					{
+						simmgr_shm->instructor.vocals.play = atoi(value.c_str() );
+					}
+					else if ( v[2].compare("mute" ) == 0 )
+					{
+						simmgr_shm->instructor.vocals.mute = atoi(value.c_str() );
 					}
 					else
 					{
@@ -533,6 +621,10 @@ main( int argc, const char* argv[] )
 				else if ( sts == 2 )
 				{
 					makejson(cout, "status", "invalid class" );
+				}
+				else if ( sts == 3 )
+				{
+					makejson(cout, "status", "invalid parameter" );
 				}
 				else
 				{

@@ -11,6 +11,7 @@
 #define _SIMMGR_H
 
 #include <semaphore.h>
+#include <time.h>
 
 // Defines
 //
@@ -44,7 +45,7 @@ struct cardiac
 	int bps_dia;	// Diastolic
 	int pulse_strength;	// 0 - None, 3 - strong
 	unsigned int pulseCount;
-	char sound[STR_SIZE];
+	char heart_sound[STR_SIZE];
 	int heart_sound_volume;
 	int heart_sound_mute;
 	int ecg_indicator;
@@ -61,11 +62,14 @@ struct scenario
 struct respiration
 {
 	// Sounds for Inhalation, Exhalation and Background
+	char left_lung_sound[STR_SIZE];		// Base Sound 
 	char left_sound_in[STR_SIZE];
 	char left_sound_out[STR_SIZE];
 	char left_sound_back[STR_SIZE];
 	int left_lung_sound_volume;
 	int left_lung_sound_mute;
+	
+	char right_lung_sound[STR_SIZE];		// Base Sound
 	char right_sound_in[STR_SIZE];
 	char right_sound_out[STR_SIZE];
 	char right_sound_back[STR_SIZE];
@@ -188,11 +192,13 @@ struct simmgr_shm
 // For generic trend processor
 struct trend
 {
-	int start;
-	int end;
-	int current;
-	int ticksPerStep;
-	int tickCount;
+	double start;
+	double end;
+	double current;
+	double changePerSecond;
+	time_t nextTime;
+	time_t endTime;
+	int seconds;
 };
 
 // Prototypes
@@ -207,6 +213,7 @@ char *do_command_read(const char *cmd_str, char *buffer, int max_len );
 void get_date(char *buffer );
 char *getETH0_IP();
 char *itoa(int val, char *buf, int radix );
+void signal_fault_handler(int sig);
 
 // Global Data
 //

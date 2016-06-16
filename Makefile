@@ -1,8 +1,8 @@
 TARGETS= obj/simmgr obj/simpulse obj/simstatus.cgi 
 
 ## -pthread (Posix Threads) is required where shared memory and/or multiple threads are used
-CFLAGS=-pthread -Wall -g -ggdb
-CXXFLAGS = -pthread -Wall -g -ggdb -std=c++11
+CFLAGS=-pthread -Wall -g -ggdb -rdynamic
+CXXFLAGS = -pthread -Wall -g -ggdb -rdynamic -std=c++11
 
 ## librt is required by any C/C++ where shared memory and/or multiple threads are used
 LDFLAGS=-lrt
