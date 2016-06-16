@@ -22,8 +22,8 @@ obj/tinyxml2.o: src/tinyxml2/tinyxml2.cpp src/tinyxml2/tinyxml2.h
 obj/simstatus.cgi: src/simstatus.cpp src/sim-util.o include/simmgr.h
 	g++ $(CPPFLAGS) $(CXXFLAGS) -o obj/simstatus.cgi src/simstatus.cpp src/sim-util.c $(LDFLAGS) -lcgicc
 
-obj/simmgr: src/simmgr.cpp src/sim-util.c include/simmgr.h
-	g++ $(CPPFLAGS) $(CXXFLAGS)  -lcgicc -o obj/simmgr src/simmgr.cpp  src/sim-util.c $(LDFLAGS)
+obj/simmgr: src/simmgr.cpp src/sim-log.c src/sim-util.c include/simmgr.h
+	g++ $(CPPFLAGS) $(CXXFLAGS)  -lcgicc -o obj/simmgr src/simmgr.cpp  src/sim-log.c src/sim-util.c $(LDFLAGS)
 	
 obj/simpulse: src/simpulse.cpp src/sim-util.c include/simmgr.h
 	g++ $(CPPFLAGS) $(CXXFLAGS)  -lcgicc -o obj/simpulse src/simpulse.cpp  src/sim-util.c $(LDFLAGS)

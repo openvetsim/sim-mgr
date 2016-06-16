@@ -56,6 +56,8 @@ struct scenario
 	char start[STR_SIZE];		// Date/Time scenario started
 	char runtime[STR_SIZE];
 	char state[STR_SIZE];
+	char scene_name[STR_SIZE];
+	int scene_id;
 	// We should add additional elements to show where in the scenario we are currently executing
 };
 
@@ -142,7 +144,13 @@ struct vocals
 	int play;
 	int mute;
 };
-
+struct logfile
+{
+	sem_t	sema;	// Mutex lock - Used to allow multiple writers
+	int		active;
+	int		lines_written;
+	char	filename[STR_SIZE];
+};
 struct status
 {
 	// Status of controlled parameters
@@ -187,6 +195,8 @@ struct simmgr_shm
 	// Commands from Instructor Interface. Written by the II Ajax calls. Cleared by SimMgr when processed.
 	struct instructor instructor;
 
+	// Log file status
+	struct logfile logfile;
 };
 
 // For generic trend processor
@@ -214,6 +224,21 @@ void get_date(char *buffer );
 char *getETH0_IP();
 char *itoa(int val, char *buf, int radix );
 void signal_fault_handler(int sig);
+
+// Defines and protos for sim-log
+#define SIMLOG_MODE_READ	0
+#define SIMLOG_MODE_WRITE	1
+#define SIMLOG_MODE_CREATE	2
+
+int simlog_create(void );			// Create new file
+int simlog_open(int rw );			// Open for Read or Write - Takes Mutex if writing
+int simlog_write(char *msg );		// Write line
+int simlog_read(char *rbuf );		// Read next line
+int simlog_read_line(char *rbuf, int lineno );		// Read line from line number
+void simlog_close();				// Closes file and release Mutex if held
+void simlog_end();
+void simlog_entry(char *msg );
+
 
 // Global Data
 //

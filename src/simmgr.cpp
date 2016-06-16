@@ -35,7 +35,9 @@
 
 #include "../include/simmgr.h" 
 
-#define SCENARIO_LOOP_COUNT	10		// Run the scenario every SCENARIO_LOOP_COUNT iterations of the 10 msec loop
+#define SCENARIO_LOOP_COUNT		25	// Run the scenario every SCENARIO_LOOP_COUNT iterations of the 10 msec loop
+#define SCENARIO_TIMECHECK	(SCENARIO_LOOP_COUNT - 1)
+#define SCENARIO_COMMCHECK  (SCENARIO_LOOP_COUNT - 10)
 
 using namespace std;
 
@@ -44,6 +46,7 @@ int scenario_run(void );
 void comm_check(void );
 void time_update(void );
 int iiLockTaken = 0;
+char buf[1024];
 
 // Time values, to track start time and elapsed time
 std::time_t scenario_start_time;
@@ -52,7 +55,7 @@ std::time_t scenario_run_time;
 
 enum ScenarioState { Stopped, Running, Paused, Terminate };
 ScenarioState scenario_state = Stopped;
-int scenario_terminate_count; 
+
 /* str_thdata
 	structure to hold data to be passed to a thread
 */
@@ -81,8 +84,7 @@ main(int argc, char *argv[] )
 {
 	int sts;
 	char *ptr;
-	int scenarioCount = SCENARIO_LOOP_COUNT;
-	
+	int scenarioCount;
 	daemonize();
 	
 	sts = initSHM(OPEN_WITH_CREATE );
@@ -231,21 +233,34 @@ main(int argc, char *argv[] )
 	simmgr_shm->instructor.vocals.play = -1;
 	simmgr_shm->instructor.vocals.mute = -1;
 	
-	// status/scenario
-	(void)start_scenario("default" );
+	// Log File
+	sem_init(&simmgr_shm->logfile.sema, 1, 1 ); // pshared =1, value =1
+	simmgr_shm->logfile.active = 0;
+	sprintf(simmgr_shm->logfile.filename, "%s", "" );
+	simmgr_shm->logfile.lines_written = 0;
 	
+	// status/scenario
+	// (void)start_scenario("default" );
+	
+	scenarioCount = 0;
 	while ( 1 )
 	{
-		comm_check();
+		scenarioCount++;
 		
-		if ( scenarioCount-- <= 0 )
+		if ( scenarioCount == SCENARIO_COMMCHECK )
 		{
-			scenarioCount = SCENARIO_LOOP_COUNT;
-			time_update();
-			(void)scenario_run();
-			
+			comm_check();
 		}
-	
+		else if ( scenarioCount == SCENARIO_TIMECHECK )
+		{
+			time_update();
+		}
+		else if ( scenarioCount >= SCENARIO_LOOP_COUNT )
+		{
+			scenarioCount = 0;
+			(void)scenario_run();
+		}
+
 		usleep(10000);	// Sleep for 10 msec
 	}
 }
@@ -282,7 +297,7 @@ updateScenarioState(ScenarioState new_state)
 					break;
 				case Terminate:
 					sprintf(simmgr_shm->status.scenario.state, "Terminate" );
-					scenario_terminate_count = 100;
+					(void)simlog_end();
 					break;
 				default:
 					sprintf(simmgr_shm->status.scenario.state, "Unknown" );
@@ -298,10 +313,11 @@ updateScenarioState(ScenarioState new_state)
  *
  * Get the localtime and write it as a string to the SHM data
  */ 
+int last_time_sec = -1;
+
 void
 time_update(void )
 {
-	char buf[256];
 	struct tm tm;
 	struct timeb timeb;
 	int hour;
@@ -323,6 +339,24 @@ time_update(void )
 		sec = sec%60;
 		sprintf(simmgr_shm->status.scenario.runtime, "%02d:%02d:%02d", hour, min%60, sec);
 	}
+	if ( ( sec == 0 ) && ( last_time_sec != 0 ) )
+	{
+		// Do periodic Stats update every minute
+		sprintf(buf, "VS: Temp: %0.1f; awRR: %d; HR: %d; BP: %d/%d; SPO2: %d; etCO2: %d mmHg; Probes: ECG: %s; SPO2: %s; ETCO2: %s",
+			((double)simmgr_shm->status.general.temperature) / 10,
+			simmgr_shm->status.respiration.rate,
+			simmgr_shm->status.cardiac.rate,
+			simmgr_shm->status.cardiac.bps_sys,
+			simmgr_shm->status.cardiac.bps_dia,
+			simmgr_shm->status.respiration.spo2,
+			simmgr_shm->status.respiration.etco2,
+			(simmgr_shm->status.cardiac.ecg_indicator == 1 ? "on" : "off"  ),
+			(simmgr_shm->status.respiration.spo2_indicator == 1 ? "on" : "off"  ),
+			(simmgr_shm->status.respiration.etco2_indicator == 1 ? "on" : "off"  )
+		);
+		simlog_entry(buf );
+	}
+	last_time_sec = sec;
 }
 /*
  * comm_check
@@ -504,20 +538,42 @@ scenario_run(void )
 	// Cardiac
 	if ( strlen(simmgr_shm->instructor.cardiac.rhythm ) > 0 )
 	{
-		sprintf(simmgr_shm->status.cardiac.rhythm, "%s", simmgr_shm->instructor.cardiac.rhythm );
+		if ( strcmp(simmgr_shm->status.cardiac.rhythm, simmgr_shm->instructor.cardiac.rhythm ) != 0 )
+		{
+			sprintf(simmgr_shm->status.cardiac.rhythm, "%s", simmgr_shm->instructor.cardiac.rhythm );
+			sprintf(buf, "%s: %s", "Cardiac Rhythm", simmgr_shm->instructor.cardiac.rhythm );
+			simlog_entry(buf );
+		}
 		sprintf(simmgr_shm->instructor.cardiac.rhythm, "%s", "" );
 	}
 	if ( simmgr_shm->instructor.cardiac.rate >= 0 )
 	{
-		simmgr_shm->status.cardiac.rate = setTrend(&cardiacTrend, 
+		if ( simmgr_shm->instructor.cardiac.rate != simmgr_shm->status.cardiac.rate )
+		{
+			simmgr_shm->status.cardiac.rate = setTrend(&cardiacTrend, 
 											simmgr_shm->instructor.cardiac.rate,
 											simmgr_shm->status.cardiac.rate,
 											simmgr_shm->instructor.cardiac.transfer_time );
+			if ( simmgr_shm->instructor.cardiac.transfer_time > 0 )
+			{
+				sprintf(buf, "%s: %d time %d", "Cardiac Rate", simmgr_shm->instructor.cardiac.rate, simmgr_shm->instructor.cardiac.transfer_time );
+			}
+			else
+			{
+				sprintf(buf, "%s: %d", "Cardiac Rate", simmgr_shm->instructor.cardiac.rate );
+			}
+			simlog_entry(buf );
+		}
 		simmgr_shm->instructor.cardiac.rate = -1;
 	}
 	if ( simmgr_shm->instructor.cardiac.nibp_rate >= 0 )
 	{
-		simmgr_shm->status.cardiac.nibp_rate = simmgr_shm->instructor.cardiac.nibp_rate;
+		if ( simmgr_shm->status.cardiac.nibp_rate != simmgr_shm->instructor.cardiac.nibp_rate )
+		{
+			simmgr_shm->status.cardiac.nibp_rate = simmgr_shm->instructor.cardiac.nibp_rate;
+			sprintf(buf, "%s: %d", "NIBP Rate", simmgr_shm->instructor.cardiac.rate );
+			simlog_entry(buf );
+		}
 		simmgr_shm->instructor.cardiac.nibp_rate = -1;
 	}
 	if ( strlen(simmgr_shm->instructor.cardiac.pwave ) > 0 )
@@ -599,7 +655,12 @@ scenario_run(void )
 	
 	if ( simmgr_shm->instructor.cardiac.ecg_indicator >= 0 )
 	{
-		simmgr_shm->status.cardiac.ecg_indicator = simmgr_shm->instructor.cardiac.ecg_indicator;
+		if ( simmgr_shm->status.cardiac.ecg_indicator != simmgr_shm->instructor.cardiac.ecg_indicator )
+		{
+			simmgr_shm->status.cardiac.ecg_indicator = simmgr_shm->instructor.cardiac.ecg_indicator;
+			sprintf(buf, "%s %s", "ECG Probe", (simmgr_shm->status.cardiac.ecg_indicator == 1 ? "Attached": "Removed") );
+			simlog_entry(buf );
+		}
 		simmgr_shm->instructor.cardiac.ecg_indicator = -1;
 	}
 	simmgr_shm->instructor.cardiac.transfer_time = -1;
@@ -673,17 +734,31 @@ scenario_run(void )
 	}
 	if ( simmgr_shm->instructor.respiration.etco2_indicator >= 0 )
 	{
-		simmgr_shm->status.respiration.etco2_indicator = simmgr_shm->instructor.respiration.etco2_indicator;
+		if ( simmgr_shm->status.respiration.etco2_indicator != simmgr_shm->instructor.respiration.etco2_indicator )
+		{
+			simmgr_shm->status.respiration.etco2_indicator = simmgr_shm->instructor.respiration.etco2_indicator;
+			sprintf(buf, "%s %s", "ETCO2 Probe", (simmgr_shm->status.respiration.etco2_indicator == 1 ? "Attached": "Removed") );
+			simlog_entry(buf );
+		}
+		
 		simmgr_shm->instructor.respiration.etco2_indicator = -1;
 	}
 	if ( simmgr_shm->instructor.respiration.spo2_indicator >= 0 )
 	{
-		simmgr_shm->status.respiration.spo2_indicator = simmgr_shm->instructor.respiration.spo2_indicator;
+		if ( simmgr_shm->status.respiration.spo2_indicator != simmgr_shm->instructor.respiration.spo2_indicator )
+		{
+			simmgr_shm->status.respiration.spo2_indicator = simmgr_shm->instructor.respiration.spo2_indicator;
+			sprintf(buf, "%s %s", "SPO2 Probe", (simmgr_shm->status.respiration.spo2_indicator == 1 ? "Attached": "Removed") );
+			simlog_entry(buf );
+		}
 		simmgr_shm->instructor.respiration.spo2_indicator = -1;
 	}
 	if ( simmgr_shm->instructor.respiration.chest_movement >= 0 )
 	{
-		simmgr_shm->status.respiration.chest_movement = simmgr_shm->instructor.respiration.chest_movement;
+		if ( simmgr_shm->status.respiration.chest_movement != simmgr_shm->instructor.respiration.chest_movement )
+		{
+			simmgr_shm->status.respiration.chest_movement = simmgr_shm->instructor.respiration.chest_movement;
+		}
 		simmgr_shm->instructor.respiration.chest_movement = -1;
 	}
 	simmgr_shm->instructor.respiration.transfer_time = -1;
@@ -743,7 +818,7 @@ scenario_run(void )
 	}
 	else if ( scenario_state == Terminate )
 	{
-		if ( scenario_terminate_count-- <= 0 )
+		if ( simmgr_shm->logfile.active == 0 )
 		{
 			updateScenarioState(Stopped );
 		}
@@ -773,8 +848,12 @@ start_scenario(const char *name )
 	sprintf(simmgr_shm->status.scenario.active, "%s", name );
 	
 	sprintf(simmgr_shm->status.scenario.start, "%s", timeBuf );
-
+	sprintf(simmgr_shm->status.scenario.runtime, "%s", "00:00:00" );
+	sprintf(simmgr_shm->status.scenario.scene_name, "%s", "init" );
+	simmgr_shm->status.scenario.scene_id = 0;
+	
 	updateScenarioState(Running );
+	(void)simlog_create();
 	
 	return ( 0 );
 }

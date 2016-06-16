@@ -355,7 +355,7 @@ checkExit(void )
 	return ( 0 );
 }
 
-// Issue a command and read the first line returned from it.
+// Issue a shell command and read the first line returned from it.
 char *
 do_command_read(const char *cmd_str, char *buffer, int max_len )
 {
@@ -434,3 +434,4 @@ itoa(int val, char *buf, int radix )
 	}
 	return ( buf );
 }
+
