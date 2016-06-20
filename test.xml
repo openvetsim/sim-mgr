@@ -196,5 +196,6 @@
 	<scene>
 		<title>End</title>
 		<id>4</id>
+		<end>Successful Completion</end>
 	</scene>
 </scenario>

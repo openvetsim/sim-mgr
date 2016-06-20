@@ -396,103 +396,10 @@ main( int argc, const char* argv[] )
 				cout << ",\n    ";
 				sts = 0;
 				
+				
 				if ( v[1].compare("cardiac" ) == 0 )
 				{
-					if ( v[2].compare("rhythm" ) == 0 )
-					{
-						sprintf(simmgr_shm->instructor.cardiac.rhythm, "%s", value.c_str() );
-					}
-					else if ( v[2].compare("vpc" ) == 0 )
-					{
-						sprintf(simmgr_shm->instructor.cardiac.vpc, "%s", value.c_str() );
-					}
-					else if ( v[2].compare("pea" ) == 0 )
-					{
-						simmgr_shm->instructor.cardiac.pea = atoi(value.c_str() );
-					}
-					else if ( v[2].compare("vpc_freq" ) == 0 )
-					{
-						simmgr_shm->instructor.cardiac.vpc_freq = atoi(value.c_str() );
-					}
-					else if ( v[2].compare("vfib_amplitude" ) == 0 )
-					{
-						sprintf(simmgr_shm->instructor.cardiac.vfib_amplitude, "%s", value.c_str() );
-					}
-					else if ( v[2].compare("pwave" ) == 0 )
-					{
-						sprintf(simmgr_shm->instructor.cardiac.pwave, "%s", value.c_str() );
-					}
-					else if ( v[2].compare("rate" ) == 0 )
-					{
-						simmgr_shm->instructor.cardiac.rate = atoi(value.c_str() );
-					}
-					else if ( v[2].compare("transfer_time" ) == 0 )
-					{
-						simmgr_shm->instructor.cardiac.transfer_time = atoi(value.c_str() );
-					}
-					else if ( v[2].compare("pr_interval" ) == 0 )
-					{
-						simmgr_shm->instructor.cardiac.pr_interval = atoi(value.c_str() );
-					}
-					else if ( v[2].compare("qrs_interval" ) == 0 )
-					{
-						simmgr_shm->instructor.cardiac.qrs_interval = atoi(value.c_str() );
-					}
-					else if ( v[2].compare("bps_sys" ) == 0 )
-					{
-						simmgr_shm->instructor.cardiac.bps_sys = atoi(value.c_str() );
-					}
-					else if ( v[2].compare("bps_dia" ) == 0 )
-					{
-						simmgr_shm->instructor.cardiac.bps_dia = atoi(value.c_str() );
-					}
-					else if ( v[2].compare("nibp_rate" ) == 0 )
-					{
-						simmgr_shm->instructor.cardiac.nibp_rate = atoi(value.c_str() );
-					}
-					else if ( v[2].compare("ecg_indicator" ) == 0 )
-					{
-						simmgr_shm->instructor.cardiac.ecg_indicator = atoi(value.c_str() );
-					}
-					else if ( v[2].compare("heart_sound" ) == 0 )
-					{
-						sprintf(simmgr_shm->instructor.cardiac.heart_sound, "%s", value.c_str() );
-					}
-					else if ( v[2].compare("heart_sound_volume" ) == 0 )
-					{
-						simmgr_shm->instructor.cardiac.heart_sound_volume = atoi(value.c_str() );
-					}
-					else if ( v[2].compare("heart_sound_mute" ) == 0 )
-					{
-						simmgr_shm->instructor.cardiac.heart_sound_mute = atoi(value.c_str() );
-					}
-					else if ( v[2].compare("pulse_strength" ) == 0 )
-					{
-						if ( value.compare("none" ) == 0 )
-						{
-							simmgr_shm->instructor.cardiac.pulse_strength = 0;
-						}
-						else if ( value.compare("weak" ) == 0 )
-						{
-							simmgr_shm->instructor.cardiac.pulse_strength = 1;
-						}
-						else if ( value.compare("medium" ) == 0 )
-						{
-							simmgr_shm->instructor.cardiac.pulse_strength = 2;
-						}
-						else if ( value.compare("strong" ) == 0 )
-						{
-							simmgr_shm->instructor.cardiac.pulse_strength = 3;
-						}
-						else
-						{
-							sts = 3;
-						}
-					}
-					else
-					{
-						sts = 1;
-					}
+					sts = cardiac_parse(v[2].c_str(), value.c_str(), &simmgr_shm->instructor.cardiac );
 				}
 				else if ( v[1].compare("scenario" ) == 0 )
 				{
@@ -511,112 +418,15 @@ main( int argc, const char* argv[] )
 				}
 				else if ( v[1].compare("respiration" ) == 0 )
 				{
-					if ( v[2].compare("left_lung_sound" ) == 0 )
-					{
-						sprintf(simmgr_shm->instructor.respiration.left_lung_sound, "%s", value.c_str() );
-					}
-					else if ( v[2].compare("right_lung_sound" ) == 0 )
-					{
-						sprintf(simmgr_shm->instructor.respiration.right_lung_sound, "%s", value.c_str() );
-					}
-					else if ( v[2].compare("inhalation_duration" ) == 0 )
-					{
-						simmgr_shm->instructor.respiration.inhalation_duration = atoi(value.c_str() );
-					}
-					else if ( v[2].compare("exhalation_duration" ) == 0 )
-					{
-						simmgr_shm->instructor.respiration.exhalation_duration = atoi(value.c_str() );
-					}
-					else if ( v[2].compare("left_lung_sound_volume" ) == 0 )
-					{
-						simmgr_shm->instructor.respiration.left_lung_sound_volume = atoi(value.c_str() );
-					}
-					else if ( v[2].compare("left_lung_sound_mute" ) == 0 )
-					{
-						simmgr_shm->instructor.respiration.left_lung_sound_mute = atoi(value.c_str() );
-					}
-					else if ( v[2].compare("right_lung_sound_volume" ) == 0 )
-					{
-						simmgr_shm->instructor.respiration.right_lung_sound_volume = atoi(value.c_str() );
-					}
-					else if ( v[2].compare("right_lung_sound_volume" ) == 0 )
-					{
-						simmgr_shm->instructor.respiration.right_lung_sound_volume = atoi(value.c_str() );
-					}
-					else if ( v[2].compare("right_lung_sound_mute" ) == 0 )
-					{
-						simmgr_shm->instructor.respiration.right_lung_sound_mute = atoi(value.c_str() );
-					}
-					else if ( v[2].compare("spo2" ) == 0 )
-					{
-						simmgr_shm->instructor.respiration.spo2 = atoi(value.c_str() );
-					}
-					else if ( v[2].compare("etco2" ) == 0 )
-					{
-						simmgr_shm->instructor.respiration.etco2 = atoi(value.c_str() );
-					}
-					else if ( v[2].compare("transfer_time" ) == 0 )
-					{
-						simmgr_shm->instructor.respiration.transfer_time = atoi(value.c_str() );
-					}
-					else if ( v[2].compare("etco2_indicator" ) == 0 )
-					{
-						simmgr_shm->instructor.respiration.etco2_indicator = atoi(value.c_str() );
-					}
-					else if ( v[2].compare("spo2_indicator" ) == 0 )
-					{
-						simmgr_shm->instructor.respiration.spo2_indicator = atoi(value.c_str() );
-					}
-					else if ( v[2].compare("chest_movement" ) == 0 )
-					{
-						simmgr_shm->instructor.respiration.chest_movement = atoi(value.c_str() );
-					}
-					else
-					{
-						sts = 1;
-					}
+					sts = respiration_parse(v[2].c_str(), value.c_str(), &simmgr_shm->instructor.respiration );
 				}
 				else if ( v[1].compare("general" ) == 0 )
 				{
-					if ( v[2].compare("temperature" ) == 0 )
-					{
-						simmgr_shm->instructor.general.temperature = atoi(value.c_str() );
-					}
-					else if ( v[2].compare("transfer_time" ) == 0 )
-					{
-						simmgr_shm->instructor.general.transfer_time = atoi(value.c_str() );
-					}
-					else
-					{
-						sts = 1;
-					}
+					sts = general_parse(v[2].c_str(), value.c_str(), &simmgr_shm->instructor.general );
 				}
 				else if ( v[1].compare("vocals" ) == 0 )
 				{
-					if ( v[2].compare("filename" ) == 0 )
-					{
-						sprintf(simmgr_shm->instructor.vocals.filename, "%s", value.c_str() );
-					}
-					else if ( v[2].compare("repeat" ) == 0 )
-					{
-						simmgr_shm->instructor.vocals.repeat = atoi(value.c_str() );
-					}
-					else if ( v[2].compare("volume" ) == 0 )
-					{
-						simmgr_shm->instructor.vocals.volume = atoi(value.c_str() );
-					}
-					else if ( v[2].compare("play" ) == 0 )
-					{
-						simmgr_shm->instructor.vocals.play = atoi(value.c_str() );
-					}
-					else if ( v[2].compare("mute" ) == 0 )
-					{
-						simmgr_shm->instructor.vocals.mute = atoi(value.c_str() );
-					}
-					else
-					{
-						sts = 1;
-					}
+					sts = general_parse(v[2].c_str(), value.c_str(), &simmgr_shm->instructor.general );
 				}
 				else
 				{

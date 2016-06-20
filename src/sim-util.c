@@ -20,6 +20,7 @@
 #include <sys/stat.h>
 #include <syslog.h>
 #include <string.h>
+#include <ctype.h>
 
 #include <arpa/inet.h>
 #include <sys/socket.h>
@@ -435,3 +436,48 @@ itoa(int val, char *buf, int radix )
 	return ( buf );
 }
 
+/**
+ * cleanString
+ *
+ * remove leading and trailing spaces. Reduce internal spaces to single. Remove tabs, newlines, CRs.
+*/
+#define WHERE_START		0
+#define WHERE_TEXT		1
+#define WHERE_SPACE		2
+
+void
+cleanString(char *strIn )
+{
+	char *in;
+	char *out;
+	int where = WHERE_START;
+	
+	in = (char *)strIn;
+	out = (char *)strIn;
+	while ( *in )
+	{
+		if ( isspace( *in ) )
+		{
+			switch ( where )
+			{
+				case WHERE_START:
+				case WHERE_SPACE:
+					break;
+				
+				case WHERE_TEXT:
+					*out = ' ';
+					out++;
+					where = WHERE_SPACE;
+					break;
+			}
+		}
+		else
+		{
+			where = WHERE_TEXT;
+			*out = *in;
+			out++;
+		}
+		in++;
+	}
+	*out = 0;
+}

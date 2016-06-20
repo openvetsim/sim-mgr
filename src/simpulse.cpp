@@ -209,6 +209,13 @@ main(int argc, char *argv[] )
 		log_message("", msgbuf );
 		sleep(10 );
 	}
+		// Wait for Shared Memory to become available
+	while ( initSHM(OPEN_ACCESS ) != 0 )
+	{
+		sprintf(msgbuf, "pulse: SHM Failed - waiting" );
+		log_message("", msgbuf );
+		sleep(10 );
+	}
 	
 	sfd = socket(AF_INET, SOCK_STREAM, 0);
 	if ( sfd < 0 ) 

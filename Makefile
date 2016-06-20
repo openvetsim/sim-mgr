@@ -1,4 +1,4 @@
-TARGETS= obj/simmgr obj/simpulse obj/simstatus.cgi 
+TARGETS= obj/simmgr obj/simpulse obj/simstatus.cgi obj/scenario
 
 ## -pthread (Posix Threads) is required where shared memory and/or multiple threads are used
 CFLAGS=-pthread -Wall -g -ggdb -rdynamic
@@ -13,20 +13,32 @@ BIN=/usr/local/bin
 
 default: obj/simstatus.cgi obj/simmgr obj/simpulse obj/scenario
 
-obj/scenario: src/scenario.cpp
-	g++ $(CPPFLAGS)-I/usr/include/libxml2  $(CXXFLAGS) -o obj/scenario src/scenario.cpp -lxml2
+obj/scenario: src/scenario.cpp obj/llist.o obj/sim-util.o obj/sim-parse.o obj/llist.o
+	g++ $(CPPFLAGS)-I/usr/include/libxml2  $(CXXFLAGS) -o obj/scenario src/scenario.cpp obj/sim-util.o obj/sim-parse.o obj/llist.o $(LDFLAGS) -lxml2
 	
 obj/tinyxml2.o: src/tinyxml2/tinyxml2.cpp src/tinyxml2/tinyxml2.h
 	g++ $(CPPFLAGS) $(CXXFLAGS) -g -c -o obj/tinyxml2.o src/tinyxml2/tinyxml2.cpp
-	
-obj/simstatus.cgi: src/simstatus.cpp src/sim-util.o include/simmgr.h
-	g++ $(CPPFLAGS) $(CXXFLAGS) -o obj/simstatus.cgi src/simstatus.cpp src/sim-util.c $(LDFLAGS) -lcgicc
 
-obj/simmgr: src/simmgr.cpp src/sim-log.c src/sim-util.c include/simmgr.h
-	g++ $(CPPFLAGS) $(CXXFLAGS)  -lcgicc -o obj/simmgr src/simmgr.cpp  src/sim-log.c src/sim-util.c $(LDFLAGS)
+obj/sim-util.o: src/sim-util.c include/simmgr.h
+	g++ $(CPPFLAGS) $(CXXFLAGS) -g -c -o obj/sim-util.o src/sim-util.c
+
+obj/sim-parse.o: src/sim-parse.c include/simmgr.h
+	g++ $(CPPFLAGS) $(CXXFLAGS) -g -c -o obj/sim-parse.o src/sim-parse.c
+
+obj/sim-log.o: src/sim-log.c include/simmgr.h
+	g++ $(CPPFLAGS) $(CXXFLAGS) -g -c -o obj/sim-log.o src/sim-log.c
+
+obj/llist.o: src/llist.c include/llist.h
+	g++ $(CPPFLAGS) $(CXXFLAGS) -g -c -o obj/llist.o src/llist.c
 	
-obj/simpulse: src/simpulse.cpp src/sim-util.c include/simmgr.h
-	g++ $(CPPFLAGS) $(CXXFLAGS)  -lcgicc -o obj/simpulse src/simpulse.cpp  src/sim-util.c $(LDFLAGS)
+obj/simstatus.cgi: src/simstatus.cpp obj/sim-util.o obj/sim-parse.o include/simmgr.h
+	g++ $(CPPFLAGS) $(CXXFLAGS) -o obj/simstatus.cgi src/simstatus.cpp obj/sim-util.o obj/sim-parse.o $(LDFLAGS) -lcgicc
+
+obj/simmgr: src/simmgr.cpp obj/sim-log.o obj/sim-util.o include/simmgr.h
+	g++ $(CPPFLAGS) $(CXXFLAGS)  -lcgicc -o obj/simmgr src/simmgr.cpp  obj/sim-log.o obj/sim-util.o $(LDFLAGS)
+	
+obj/simpulse: src/simpulse.cpp obj/sim-util.o include/simmgr.h
+	g++ $(CPPFLAGS) $(CXXFLAGS)  -lcgicc -o obj/simpulse src/simpulse.cpp  obj/sim-util.o $(LDFLAGS)
 	
 install: check $(TARGETS) installDaemon
 	sudo cp -u obj/simstatus.cgi $(CGIBIN)
@@ -38,6 +50,9 @@ install: check $(TARGETS) installDaemon
 	sudo cp -u obj/simpulse $(BIN)
 	sudo chown simmgr:simmgr $(BIN)/simpulse
 	sudo chmod u+s $(BIN)/simpulse
+	sudo cp -u obj/scenario $(BIN)
+	sudo chown simmgr:simmgr $(BIN)/scenario
+	sudo chmod u+s $(BIN)/scenario
 	
 installDaemon:
 	sudo cp -u simmgr.init /etc/init.d/simmgr

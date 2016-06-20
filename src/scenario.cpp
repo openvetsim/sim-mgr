@@ -5,11 +5,52 @@
  *
  * Copyright (C) 2016 Terence Kelleher. All rights reserved.
  *
+ * The Scenario runs as an independent process. It is execed from the simmgr and acts
+ * using the shared memory space to monitor the system and inject Initiator commands
+ * as controlled by the scenario script.
+ *
+ * The scenario script is an XML formatted file. It is parsed by the scenario process to
+ * define the various scenes. A scene contains a set of initialization parameters and
+ * a set a triggers.
+ *
+ * The scenario process runs as a child process of the simmgr daemon. It is started by
+ * the simmgr on command from the Instructor Interface and can be terminated on command
+ * as well. 
+ *
+ * On completion of the scenario, the scenario process is expected to enter a "Ending"
+ * scene. More than one ending scene may exist, allow outcomes with either a healthy
+ * or expired patient, or other states of health as well.
+ *
+ * Definitions:
+ *
+ * Init: A list of parameter definitions, with or without trends. The init parameters are
+ *       applied at the entry to a scene.
+ *       A global init is also defined. This is applied at the entry to the scenario.
+ *
+ *    Vocals in Init:
+ * 		Vocals may be set in an init definition. This may be used to invoke a vocalization
+ *      at the beginning of scene. The vocalization is invoked immeadiatly when parsed. fread 
+ *
+ * Scene: A state definition within the scenario. 
+ *
+ * Trigger: A criteria for termination of a scene. The trigger defines the paremeter to be
+ *          watched, the threshold for firing and the next scene to enter.
+ *
+ * Ending Scene: A scene that ends the scenario. This scene has an init, but no triggers. 
+ *          It also contains an <end> directive, which will cause the scenario process
+ *          to end.
+ *
+ * Process End:
+ *		On completion, the scenario process will print a single line and then exit. If the
+ *      end is due to entry of an ending sceen, the printed line is the content from the
+ *		<end> directive. If exit is due to an error, the line will describe the error.
  */
 
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <unistd.h>
+
 #include <libxml2/libxml/xmlreader.h>
 #include <libxml2/libxml/tree.h>
 #include <libxml2/libxml/parser.h>
@@ -19,7 +60,6 @@
 #include "../include/scenario.h"
 
 #ifdef LIBXML_READER_ENABLED
-
 
 struct xml_level xmlLevels[10];
 int xml_current_level = 0;
@@ -31,81 +71,83 @@ struct scenario_data *scenario;
 struct scenario_scene *new_scene;
 struct scenario_trigger *new_trigger;
 
-/**
- * cleanString
- *
- * remove leading and trailing spaces. Reduce internal spaces to single. Remove tabs, newlines, CRs.
-*/
-#define WHERE_START		0
-#define WHERE_TEXT		1
-#define WHERE_SPACE		2
-
-void
-cleanString(const xmlChar *strIn )
-{
-	char *in;
-	char *out;
-	int where = WHERE_START;
-	
-	in = (char *)strIn;
-	out = (char *)strIn;
-	while ( *in )
-	{
-		if ( isspace( *in ) )
-		{
-			switch ( where )
-			{
-				case WHERE_START:
-				case WHERE_SPACE:
-					break;
-				
-				case WHERE_TEXT:
-					*out = ' ';
-					out++;
-					where = WHERE_SPACE;
-					break;
-			}
-		}
-		else
-		{
-			where = WHERE_TEXT;
-			*out = *in;
-			out++;
-		}
-		in++;
-	}
-	*out = 0;
-}
-
-#define PARSE_STATE_NONE	0
-#define PARSE_STATE_INIT	1
-#define PARSE_STATE_SCENE	2
-
-#define PARSE_INIT_STATE_NONE			0
-#define PARSE_INIT_STATE_CARDIAC		1
-#define PARSE_INIT_STATE_RESPIRATION	2
-#define PARSE_INIT_STATE_GENERAL		3
-#define PARSE_INIT_STATE_SCENE			4
-
-#define PARSE_SCENE_STATE_NONE				0
-#define PARSE_SCENE_STATE_INIT				1
-#define PARSE_SCENE_STATE_INIT_CARDIAC		2
-#define PARSE_SCENE_STATE_INIT_RESPIRATION	3
-#define PARSE_SCENE_STATE_INIT_GENERAL		4
-#define PARSE_SCENE_STATE_TRIGS				5
-#define PARSE_SCENE_STATE_TRIG				6
-
 int parse_state = PARSE_STATE_NONE;
 int parse_init_state = PARSE_INIT_STATE_NONE;
 int parse_scene_state = PARSE_SCENE_STATE_NONE;
 
+static void initializeParameterStruct(struct instructor *initParams );
+static void processInit(struct instructor *initParams  );
+static void saveData(const xmlChar *xmlName, const xmlChar *xmlValue );
+static int readScenario(const char *filename);
+
+/**
+ * main:
+ * @argc: number of argument
+ * @argv: pointer to argument array
+ *
+ * Returns:
+ *		Exit val of 0 is successful completion.
+ *		Any other exit is failure.
+ */
+
+char usage[] = "[xml file name]";
+char msgbuf[1024];
+
+int 
+main(int argc, char **argv)
+{
+	if ( argc != 2 ) 
+	{
+		printf("%s: %s\n", argv[0], usage );
+        return(1);
+	}
+
+	// Wait for Shared Memory to become available
+	while ( initSHM(OPEN_ACCESS ) != 0 )
+	{
+		sprintf(msgbuf, "pulse: SHM Failed - waiting" );
+		log_message("", msgbuf );
+		sleep(10 );
+	}
+		
+	// Allocate and clear the base scenario structure
+	scenario = (struct scenario_data *)calloc(1, sizeof(struct scenario_data) );
+	initializeParameterStruct(&scenario->initParams );
+				
+    // Initialize the library and check potential ABI mismatches 
+    LIBXML_TEST_VERSION
+
+    if ( readScenario(argv[1]) < 0 )
+	{
+		return ( -1 );
+	}
+	
+    xmlCleanupParser();
+	
+    // this is to debug memory for regression tests
+    xmlMemoryDump();
+	
+	// Continue scenario execution
+	while ( 1 )
+	{
+		// Do periodic scenario check
+		
+		
+		// Sleep
+		usleep(250000 );	// Roughly a quarter second. usleep is not very accurate.
+	}
+	
+    return(0);
+}
+
 /**
 * initializeParameterStruct
-* &initParams: Pointer to a "struct instructor"
+* @initParams: Pointer to a "struct instructor"
 *
 * Initialize the paraneters structure to be "no set" on all parameters.
 * For strings, they are null. For numerics, they are -1.
 */
+
 static void
 initializeParameterStruct(struct instructor *initParams )
 {
@@ -131,7 +173,7 @@ initializeParameterStruct(struct instructor *initParams )
 }
 /**
 * processInit
-* &initParams: Pointer to a "struct instructor"
+* @initParams: Pointer to a "struct instructor"
 *
 * Transfer the instructions from the initParams to the instructor portion of
 * the shared data space, to activate all the controls.
@@ -173,6 +215,12 @@ saveData(const xmlChar *xmlName, const xmlChar *xmlValue )
 					}
 					break;
 				case PARSE_INIT_STATE_CARDIAC:
+					break;
+				case PARSE_SCENE_STATE_INIT_RESPIRATION:
+					break;
+				case PARSE_SCENE_STATE_INIT_GENERAL:
+					break;
+				case PARSE_SCENE_STATE_INIT_VOCALS:
 					break;
 					
 			}
@@ -238,24 +286,14 @@ saveData(const xmlChar *xmlName, const xmlChar *xmlValue )
 			break;
 	}
 }
-static void
-insert_llist(struct snode *entry, struct snode *list )
-{	
-	int limit = 100;
-	
-	// Scan to the first NULL entry (end of list)
-	while ( list->next )
-	{
-		list = list->next;
-		if ( limit-- == 0 )
-		{
-			fprintf(stderr, "insert_llist: Limit exceeded\n" );
-			exit ( -1 );
-		}
-	}
-	list->next = entry;
-}
 
+/**
+ * startParseState:
+ * @lvl: New level from XML
+ * @name: Name of the new level
+ *
+ * Process level change.
+*/
 
 static void
 startParseState(int lvl, char *name )
@@ -421,7 +459,7 @@ processNode(xmlTextReaderPtr reader)
 			break;
 		
 		case 3:	// Text
-			cleanString(value );
+			cleanString((char *)value );
 			saveData(name, value );
 			if ( verbose )
 			{
@@ -489,7 +527,7 @@ processNode(xmlTextReaderPtr reader)
  * Parse the scenario
  */
  
-static void
+static int
 readScenario(const char *filename)
 {
     xmlTextReaderPtr reader;
@@ -508,120 +546,16 @@ readScenario(const char *filename)
         if (ret != 0)
 		{
             fprintf(stderr, "%s : failed to parse\n", filename);
+			return ( -1 );
         }
     } 
 	else
 	{
         fprintf(stderr, "Unable to open %s\n", filename);
+		return ( -1 );
     }
+	return ( 0 );
 }
-/*
-static void
-processChild1(xmlNode * a_node, int depth )
-{
-    xmlNode *cur_node = NULL;
-
-    for (cur_node = a_node; cur_node; cur_node = cur_node->next)
-	{
-        if (cur_node->type == XML_ELEMENT_NODE)
-		{
-            printf("node type: Element, depth %d, name: %s\n", depth, cur_node->name);
-        }
-		else
-		{
-			printf("node type: %d, depth %d, name: %s\n", cur_node->type, depth, cur_node->name);
-		}
-        processChild1(cur_node->children, depth+1 );
-    }
-}
-*/
-/**
- * processDoc:
- * @a_node: the initial xml node to consider.
- *
- * Process the XML document
- */
-/*
-static void
-processDoc(xmlNode * a_node, int depth )
-{
-    xmlNode *cur_node = NULL;
-
-    for (cur_node = a_node; cur_node; cur_node = cur_node->next)
-	{
-        if (cur_node->type == XML_ELEMENT_NODE)
-		{
-            printf("node type: Element, depth %d, name: %s\n", depth, cur_node->name);
-        }
-		else
-		{
-			printf("node type: %d, depth %d, name: %s\n", cur_node->type, depth, cur_node->name);
-		}
-        processChild1(cur_node->children, depth+1 );
-    }
-}
-*/
-/**
- * parser:
- * @filename: a filename or an URL
- *
- * Parse the resource and free the resulting tree
- */
-/*
-static void
-parser(const char *filename)
-{
-    xmlDocPtr doc = NULL; // the resulting document tree 
-	xmlNode *root_element = NULL;
-	
-    doc = xmlReadFile(filename, NULL, 0);
-    if (doc == NULL) 
-	{
-        fprintf(stderr, "Failed to parse %s\n", filename);
-		return;
-    }
-	else
-	{
-		// Get the root element node
-		root_element = xmlDocGetRootElement(doc);
-
-		processDoc(root_element, 0);
-	}
-    xmlFreeDoc(doc);
-}
-*/
-char usage[] = "[xml file name]";
-
-int 
-main(int argc, char **argv)
-{
-	if ( argc != 2 ) 
-	{
-		printf("%s: %s\n", argv[0], usage );
-        return(1);
-	}
-	
-	// Allocate and clear the base scenario structure
-	scenario = (struct scenario_data *)calloc(1, sizeof(struct scenario_data) );
-	initializeParameterStruct(&scenario->initParams );
-				
-    // Initialize the library and check potential ABI mismatches 
-    LIBXML_TEST_VERSION
-
-    readScenario(argv[1]);
-	// parser(argv[1]);
-	
-    xmlCleanupParser();
-	
-    // this is to debug memory for regression tests
-    xmlMemoryDump();
-	
-	// Continue scenario execution
-	
-	
-    return(0);
-}
-
 
 #else
 int main(void) {

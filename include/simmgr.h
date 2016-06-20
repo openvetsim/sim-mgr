@@ -176,7 +176,7 @@ struct instructor
 	struct scenario 	scenario;
 	struct respiration	respiration;
 	struct general		general;
-	struct vocals			vocals;
+	struct vocals		vocals;
 	
 };
 	
@@ -224,6 +224,7 @@ void get_date(char *buffer );
 char *getETH0_IP();
 char *itoa(int val, char *buf, int radix );
 void signal_fault_handler(int sig);
+void cleanString(char *strIn );
 
 // Defines and protos for sim-log
 #define SIMLOG_MODE_READ	0
@@ -239,6 +240,11 @@ void simlog_close();				// Closes file and release Mutex if held
 void simlog_end();
 void simlog_entry(char *msg );
 
+// Shared Parse functions
+int cardiac_parse(const char *elem, const char *value, struct cardiac *card );
+int respiration_parse(const char *elem,  const char *value, struct respiration *resp );
+int general_parse(const char *elem,  const char *value, struct general *gen );
+int vocals_parse(const char *elem,  const char *value, struct vocals *voc );
 
 // Global Data
 //

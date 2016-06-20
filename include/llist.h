@@ -17,5 +17,6 @@ struct snode
 	struct snode *next;
 };
 
+void insert_llist(struct snode *entry, struct snode *list );
 
 #endif // _LLIST_H
