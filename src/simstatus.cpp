@@ -241,6 +241,10 @@ main( int argc, const char* argv[] )
 				cout << ",\n";
 				makejson(cout, "runtime", simmgr_shm->status.scenario.runtime );
 				cout << ",\n";
+				makejson(cout, "scene_name", simmgr_shm->status.scenario.scene_name );
+				cout << ",\n";
+				makejson(cout, "scene_id", itoa(simmgr_shm->status.scenario.scene_id, buffer, 10 ) );
+				cout << ",\n";
 				makejson(cout, "state", simmgr_shm->status.scenario.state );
 				cout << "\n},\n";
 				

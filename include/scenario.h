@@ -25,6 +25,7 @@
 #define PARSE_INIT_STATE_RESPIRATION	2
 #define PARSE_INIT_STATE_GENERAL		3
 #define PARSE_INIT_STATE_SCENE			4
+#define PARSE_INIT_STATE_VOCALS			5
 
 #define PARSE_SCENE_STATE_NONE				0
 #define PARSE_SCENE_STATE_INIT				1
@@ -32,9 +33,9 @@
 #define PARSE_SCENE_STATE_INIT_RESPIRATION	3
 #define PARSE_SCENE_STATE_INIT_GENERAL		4
 #define PARSE_SCENE_STATE_INIT_VOCALS		5
-
-#define PARSE_SCENE_STATE_TRIGS				20
-#define PARSE_SCENE_STATE_TRIG				21
+#define PARSE_SCENE_STATE_TIMEOUT			6
+#define PARSE_SCENE_STATE_TRIGS				7
+#define PARSE_SCENE_STATE_TRIG				8
 
 // Scenario
 struct scenario_data
@@ -69,7 +70,7 @@ struct scenario_scene
 	
 // A trigger is defined as a setting of a parameter, or the setting of a trend. A trend time of 0 indicates immediate.
 
-#define PARAMETER_NAME_LENGTH 128
+#define TRIGGER_NAME_LENGTH 	32
 #define TRIGGER_TEST_EQ			0
 #define TRIGGER_TEST_LTE		1
 #define TRIGGER_TEST_LT			2
@@ -81,7 +82,8 @@ struct scenario_scene
 struct scenario_trigger
 {
 	struct	snode trigger_list;
-	char 	parameter[PARAMETER_NAME_LENGTH];	// This is the full ascii name of the parameter, including path. eg: cardiac:rate
+	char 	param_class[TRIGGER_NAME_LENGTH];	// Class eg: cardiac, resipration, ...
+	char 	param_element[TRIGGER_NAME_LENGTH];	// Parameter eg: rate, transfer_time, ...
 	int		test;
 	int		value;		// Comaprison value
 	int		value2;		// Comaprison value (only for Inside/Outside)
@@ -90,7 +92,7 @@ struct scenario_trigger
 
 	
 // For Parsing the XML:
-
+#define PARAMETER_NAME_LENGTH	128
 struct xml_level
 {
 	int num;

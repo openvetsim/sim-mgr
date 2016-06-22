@@ -295,7 +295,7 @@ void daemonize()
 	signal(SIGTERM,signal_handler); /* catch kill signal */
 	signal(SIGSEGV,signal_fault_handler );   // install our fault handler
 	
-	syslog (LOG_DAEMON | LOG_NOTICE, "%s started", program_invocation_short_name );
+	syslog (LOG_DAEMON | LOG_NOTICE, "%s Started", program_invocation_short_name );
 }
 
 /*

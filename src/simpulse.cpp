@@ -14,7 +14,7 @@
  * 		1 - On connection, the daemon will fork a task to support the connection
  *		2 - Each connection waits on sync messages
  *
- * Copyright 2016 Terence Kelleher. All rights reserved.
+ * Copyright (C) 2016 Terence Kelleher. All rights reserved.
  *
  */
  
@@ -203,13 +203,6 @@ main(int argc, char *argv[] )
 #endif
 
 	// Wait for Shared Memory to become available
-	while ( initSHM(OPEN_ACCESS ) != 0 )
-	{
-		sprintf(msgbuf, "pulse: SHM Failed - waiting" );
-		log_message("", msgbuf );
-		sleep(10 );
-	}
-		// Wait for Shared Memory to become available
 	while ( initSHM(OPEN_ACCESS ) != 0 )
 	{
 		sprintf(msgbuf, "pulse: SHM Failed - waiting" );
@@ -449,8 +442,10 @@ process_child(void *ptr )
 		{
 			set_pulse_rate(simmgr_shm->status.cardiac.rate );
 			currentPulseRate = simmgr_shm->status.cardiac.rate;
+#ifdef DEBUG
 			sprintf(msgbuf, "Set Pulse to %d", currentPulseRate );
-			log_message("", msgbuf );
+ 			log_message("", msgbuf );
+#endif
 		}
 		
 		// If the breath rate has changed, then reset the timer
@@ -458,8 +453,10 @@ process_child(void *ptr )
 		{
 			set_breath_rate(simmgr_shm->status.respiration.rate );
 			currentBreathRate = simmgr_shm->status.respiration.rate;
+#ifdef DEBUG
 			sprintf(msgbuf, "Set Breath to %d", currentBreathRate );
 			log_message("", msgbuf );
+#endif
 		}
 	}
 

@@ -245,7 +245,9 @@ int cardiac_parse(const char *elem, const char *value, struct cardiac *card );
 int respiration_parse(const char *elem,  const char *value, struct respiration *resp );
 int general_parse(const char *elem,  const char *value, struct general *gen );
 int vocals_parse(const char *elem,  const char *value, struct vocals *voc );
-
+void initializeParameterStruct(struct instructor *initParams );
+void processInit(struct instructor *initParams  );
+int getValueFromName(char *param_class, char *param_element );
 // Global Data
 //
 #ifndef SIMUTIL

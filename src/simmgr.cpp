@@ -3,7 +3,7 @@
  *
  * SimMgr deamon.
  *
- * Copyright 2016 Terence Kelleher. All rights reserved.
+ * Copyright (C) 2016 Terence Kelleher. All rights reserved.
  *
  */
  
@@ -42,11 +42,14 @@
 using namespace std;
 
 int start_scenario(const char *name );
+int scenarioPid = -1;
+
 int scenario_run(void );
 void comm_check(void );
 void time_update(void );
 int iiLockTaken = 0;
 char buf[1024];
+char msgbuf[2048];
 
 // Time values, to track start time and elapsed time
 std::time_t scenario_start_time;
@@ -108,7 +111,7 @@ main(int argc, char *argv[] )
 	// server_time and msec_time are updated in the loop
 	
 	// status/cardiac
-	sprintf(simmgr_shm->status.cardiac.rhythm, "%s", "normal" );
+	sprintf(simmgr_shm->status.cardiac.rhythm, "%s", "sinus" );
 	sprintf(simmgr_shm->status.cardiac.vpc, "%s", "none" );
 	sprintf(simmgr_shm->status.cardiac.vfib_amplitude, "%s", "high" );
 	simmgr_shm->status.cardiac.vpc_freq = 10;
@@ -472,6 +475,10 @@ scenario_run(void )
 {
 	int sts;
 	int trycount;
+	int oldRate;
+	int newRate;
+	int period;
+	
 	// Lock the command interface before processing commands
 	// Release the MUTEX
 	
@@ -811,7 +818,24 @@ scenario_run(void )
 		simmgr_shm->status.cardiac.rate = trendProcess(&cardiacTrend );
 		simmgr_shm->status.cardiac.bps_sys = trendProcess(&sysTrend );
 		simmgr_shm->status.cardiac.bps_dia = trendProcess(&diaTrend );
-		simmgr_shm->status.respiration.rate = trendProcess(&respirationTrend );
+		oldRate = simmgr_shm->status.respiration.rate;
+		newRate = trendProcess(&respirationTrend );
+		if ( oldRate != newRate )
+		{
+			if ( newRate > 0 )
+			{
+				simmgr_shm->status.respiration.rate = newRate;
+				period = (1000*60)/newRate;	// Period in msec from rate per minute
+				simmgr_shm->status.respiration.inhalation_duration = period / 2;
+				simmgr_shm->status.respiration.exhalation_duration = period - simmgr_shm->status.respiration.inhalation_duration;
+			}
+			else
+			{
+				simmgr_shm->status.respiration.rate = 0;
+				simmgr_shm->status.respiration.inhalation_duration = 0;
+				simmgr_shm->status.respiration.exhalation_duration = 0;
+			}
+		}
 		simmgr_shm->status.respiration.spo2 = trendProcess( &spo2Trend );
 		simmgr_shm->status.respiration.etco2 = trendProcess( &etco2Trend );
 		simmgr_shm->status.general.temperature = trendProcess(&tempTrend );
@@ -831,29 +855,55 @@ int
 start_scenario(const char *name )
 {
 	char timeBuf[64];
-
+	char fname[128];
+	
 	scenario_start_time = std::time(nullptr );
 	std::strftime(timeBuf, 60, "%c", std::localtime(&scenario_start_time ));
 	
 	// Clear running trends
-	simmgr_shm->status.cardiac.rate = clearTrend(&cardiacTrend, 80 );
-	simmgr_shm->status.cardiac.nibp_rate = 80;
-	simmgr_shm->status.cardiac.bps_sys = clearTrend(&sysTrend, 105 );
-	simmgr_shm->status.cardiac.bps_dia = clearTrend(&diaTrend, 90  );
-	simmgr_shm->status.respiration.rate = clearTrend(&respirationTrend, 25 );
-	simmgr_shm->status.respiration.spo2 = clearTrend(&spo2Trend, 97 );
-	simmgr_shm->status.respiration.etco2 = clearTrend(&etco2Trend, 34 );
-	simmgr_shm->status.general.temperature = clearTrend(&tempTrend, 1017 );
+	(void)clearTrend(&cardiacTrend, simmgr_shm->status.cardiac.rate );
+	(void)clearTrend(&sysTrend, simmgr_shm->status.cardiac.bps_sys  );
+	(void)clearTrend(&diaTrend, simmgr_shm->status.cardiac.bps_dia  );
+	(void)clearTrend(&respirationTrend, simmgr_shm->status.respiration.rate );
+	(void)clearTrend(&spo2Trend, simmgr_shm->status.respiration.spo2 );
+	(void)clearTrend(&etco2Trend, simmgr_shm->status.respiration.etco2 );
+	(void)clearTrend(&tempTrend, simmgr_shm->status.general.temperature );
 	
-	sprintf(simmgr_shm->status.scenario.active, "%s", name );
-	
-	sprintf(simmgr_shm->status.scenario.start, "%s", timeBuf );
-	sprintf(simmgr_shm->status.scenario.runtime, "%s", "00:00:00" );
-	sprintf(simmgr_shm->status.scenario.scene_name, "%s", "init" );
-	simmgr_shm->status.scenario.scene_id = 0;
-	
-	updateScenarioState(Running );
-	(void)simlog_create();
-	
+	// exec the new scenario
+	scenarioPid = fork();
+	if ( scenarioPid == 0 )
+	{
+		// Child
+		sprintf(fname, "%s/%s.xml", "/var/www/html/scenarios", name );
+		sprintf(msgbuf, "Start Scenario: execl %s  %s", "/usr/local/bin/scenario", fname );
+		log_message("", msgbuf ); 
+		
+		execl("/usr/local/bin/scenario", "scenario", fname, (char *)0 );
+		// execl does not return on success 
+		sprintf(msgbuf, "Start Scenario: execl fails for %s :%s", name, strerror(errno ) );
+		log_message("", msgbuf ); 
+	}
+	else if ( scenarioPid > 0 )
+	{
+		// Parent
+		sprintf(msgbuf, "Start Scenario: %s Pid is %d", name, scenarioPid );
+		log_message("", msgbuf ); 
+		sprintf(simmgr_shm->status.scenario.active, "%s", name );
+		
+		sprintf(simmgr_shm->status.scenario.start, "%s", timeBuf );
+		sprintf(simmgr_shm->status.scenario.runtime, "%s", "00:00:00" );
+		//sprintf(simmgr_shm->status.scenario.scene_name, "%s", "init" );
+		//simmgr_shm->status.scenario.scene_id = 0;
+		
+		updateScenarioState(Running );
+		(void)simlog_create();
+	}
+	else
+	{
+		// Failed
+		sprintf(msgbuf, "fork Fails %s", strerror(errno) );
+		log_message("", msgbuf );
+	}
+
 	return ( 0 );
 }

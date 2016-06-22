@@ -29,3 +29,9 @@ insert_llist(struct snode *entry, struct snode *list )
 	}
 	list->next = entry;
 }
+
+struct snode *
+get_next_llist(struct snode *entry )
+{
+	return ( entry->next );
+}
