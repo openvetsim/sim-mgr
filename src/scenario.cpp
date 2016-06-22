@@ -524,6 +524,12 @@ saveData(const xmlChar *xmlName, const xmlChar *xmlValue )
 						sts = vocals_parse(xmlLevels[xml_current_level].name, value, &scenario->initParams.vocals );
 					}
 					break;
+				case PARSE_INIT_STATE_MEDIA:
+					if ( xml_current_level == 3 )
+					{
+						sts = media_parse(xmlLevels[xml_current_level].name, value, &scenario->initParams.media );
+					}
+					break;
 				case PARSE_INIT_STATE_SCENE:
 					if ( ( xml_current_level == 2 ) && ( strcmp(xmlLevels[xml_current_level].name, "scene" ) == 0 ) )
 					{
@@ -609,6 +615,12 @@ saveData(const xmlChar *xmlName, const xmlChar *xmlValue )
 					if ( xml_current_level == 4 )
 					{
 						sts = vocals_parse(xmlLevels[4].name, value, &new_scene->initParams.vocals );
+					}
+					break;
+				case PARSE_SCENE_STATE_INIT_MEDIA:
+					if ( xml_current_level == 4 )
+					{
+						sts = media_parse(xmlLevels[4].name, value, &new_scene->initParams.media );
 					}
 					break;
 				case PARSE_SCENE_STATE_TRIGS:
@@ -798,6 +810,14 @@ startParseState(int lvl, char *name )
 					{
 						parse_init_state = PARSE_INIT_STATE_GENERAL;
 					}
+					else if ( strcmp(name, "vocals" ) == 0 )
+					{
+						parse_init_state = PARSE_INIT_STATE_VOCALS;
+					}
+					else if ( strcmp(name, "media" ) == 0 )
+					{
+						parse_init_state = PARSE_INIT_STATE_MEDIA;
+					}
 					else if ( strcmp(name, "scene" ) == 0 )
 					{
 						parse_init_state = PARSE_INIT_STATE_SCENE;
@@ -851,6 +871,10 @@ startParseState(int lvl, char *name )
 					else if ( strcmp(name, "vocals" ) == 0 )
 					{
 						parse_scene_state = PARSE_SCENE_STATE_INIT_VOCALS;
+					}
+					else if ( strcmp(name, "media" ) == 0 )
+					{
+						parse_scene_state = PARSE_SCENE_STATE_INIT_MEDIA;
 					}
 					break;
 				case PARSE_STATE_INIT:

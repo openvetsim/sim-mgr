@@ -260,6 +260,29 @@ vocals_parse(const char *elem,  const char *value, struct vocals *voc )
 	}
 	return ( sts );
 }
+int
+media_parse(const char *elem,  const char *value, struct media *med )
+{
+	int sts = 0;
+	
+	if ( ( ! elem ) || ( ! value) || ( ! med ) )
+	{
+		return ( -14 );
+	}
+	if ( strcmp(elem, "filename" ) == 0 )
+	{
+		sprintf(med->filename, "%s", value );
+	}
+	else if ( strcmp(elem, "play" ) == 0 )
+	{
+		med->play = atoi(value );
+	}
+	else
+	{
+		sts = 1;
+	}
+	return ( sts );
+}
 
 /**
 * initializeParameterStruct
@@ -309,6 +332,10 @@ initializeParameterStruct(struct instructor *initParams )
 	initParams->vocals.volume = -1;
 	initParams->vocals.play = -1;
 	initParams->vocals.mute = -1;
+	
+	initParams->media.play = -1;
+	
+	initParams->scenario.record = -1;
 }
 
 /**
@@ -333,22 +360,15 @@ processInit(struct instructor *initParams  )
 			exit ( -1 );
 		}
 		usleep(1000 );
-	}
-	if ( 1 )
-	{
-		printf("cardiac rate: %d\n", initParams->cardiac.rate );
-		printf("cardiac sys: %d\n", initParams->cardiac.bps_sys );
-		printf("cardiac dia: %d\n", initParams->cardiac.bps_dia );
-		printf("sizeof cardiac %ld\n", sizeof(struct cardiac) );
-	}
-		
+	}	
 	// Copy initParams to shared instructor interface (not the sema or scenario sections)
 
 	memcpy(&simmgr_shm->instructor.cardiac, &initParams->cardiac, sizeof(struct cardiac) );
 	memcpy(&simmgr_shm->instructor.respiration, &initParams->respiration, sizeof(struct respiration) );
 	memcpy(&simmgr_shm->instructor.general, &initParams->general, sizeof(struct general) );
 	memcpy(&simmgr_shm->instructor.vocals, &initParams->vocals, sizeof(struct vocals) );
-
+	memcpy(&simmgr_shm->instructor.media, &initParams->media, sizeof(struct media) );
+	
 	// Release the lock
 	sem_post(&simmgr_shm->instructor.sema);
 	// Delay to allow simmgr to pick up the changes

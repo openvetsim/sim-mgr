@@ -245,6 +245,8 @@ main( int argc, const char* argv[] )
 				cout << ",\n";
 				makejson(cout, "scene_id", itoa(simmgr_shm->status.scenario.scene_id, buffer, 10 ) );
 				cout << ",\n";
+				makejson(cout, "record", itoa(simmgr_shm->status.scenario.record, buffer, 10 ) );
+				cout << ",\n";
 				makejson(cout, "state", simmgr_shm->status.scenario.state );
 				cout << "\n},\n";
 				
@@ -371,6 +373,12 @@ main( int argc, const char* argv[] )
 				makejson(cout, "position", itoa(simmgr_shm->status.pulse.position, buffer, 10 ) );
 				cout << "\n},\n";
 
+				cout << " \"media\" : {\n";
+				makejson(cout, "filename", simmgr_shm->status.media.filename );
+				cout << ",\n";
+				makejson(cout, "play", itoa(simmgr_shm->status.media.play, buffer, 10 ) );
+				cout << "\n},\n";
+				
 				cout << " \"cpr\" : {\n";
 				makejson(cout, "last", itoa(simmgr_shm->status.cpr.last, buffer, 10 ) );
 				cout << ",\n";
@@ -415,6 +423,10 @@ main( int argc, const char* argv[] )
 					{
 						sprintf(simmgr_shm->instructor.scenario.state, "%s", value.c_str() );
 					}
+					else if ( v[2].compare("record" ) == 0 )
+					{
+						simmgr_shm->instructor.scenario.record = atoi(value.c_str() );
+					}
 					else
 					{
 						sts = 1;
@@ -430,7 +442,11 @@ main( int argc, const char* argv[] )
 				}
 				else if ( v[1].compare("vocals" ) == 0 )
 				{
-					sts = general_parse(v[2].c_str(), value.c_str(), &simmgr_shm->instructor.general );
+					sts = vocals_parse(v[2].c_str(), value.c_str(), &simmgr_shm->instructor.vocals );
+				}
+				else if ( v[1].compare("media" ) == 0 )
+				{
+					sts = media_parse(v[2].c_str(), value.c_str(), &simmgr_shm->instructor.media );
 				}
 				else
 				{

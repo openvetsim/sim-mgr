@@ -42,6 +42,7 @@
 using namespace std;
 
 int start_scenario(const char *name );
+void recordStartStop(int record );
 int scenarioPid = -1;
 
 int scenario_run(void );
@@ -178,9 +179,14 @@ main(int argc, char *argv[] )
 	// status/general
 	simmgr_shm->status.general.temperature = 1017;
 	
+	// status/media
+	sprintf(simmgr_shm->status.media.filename, "%s", "" );
+	simmgr_shm->status.media.play = 0;
+	
 	// status/scenario
 	sprintf(simmgr_shm->status.scenario.active, "%s", "default" );
 	sprintf(simmgr_shm->status.scenario.state, "%s", "Stopped" );
+	simmgr_shm->instructor.scenario.record = 0;
 	
 	// instructor/sema
 	sem_init(&simmgr_shm->instructor.sema, 1, 1 ); // pshared =1, value =1
@@ -208,7 +214,8 @@ main(int argc, char *argv[] )
 	// instructor/scenario
 	sprintf(simmgr_shm->instructor.scenario.active, "%s", "" );
 	sprintf(simmgr_shm->instructor.scenario.state, "%s", "" );
-
+	simmgr_shm->instructor.scenario.record = -1;
+	
 	// The start times is ignored.
 	
 	// instructor/respiration
@@ -232,6 +239,12 @@ main(int argc, char *argv[] )
 	simmgr_shm->instructor.respiration.etco2_indicator = -1;
 	simmgr_shm->instructor.respiration.spo2_indicator = -1;
 	simmgr_shm->instructor.respiration.chest_movement = -1;
+	
+	// instructor/media
+	sprintf(simmgr_shm->instructor.media.filename, "%s", "" );
+	simmgr_shm->instructor.media.play = -1;
+	
+	// instructor/general
 	simmgr_shm->instructor.general.temperature = -1;
 
 	sprintf(simmgr_shm->instructor.vocals.filename, "%s", "" );
@@ -501,6 +514,11 @@ scenario_run(void )
 	// Check for instructor commands
 	
 	// Scenario
+	if ( simmgr_shm->instructor.scenario.record > 0 )
+	{
+		recordStartStop(simmgr_shm->instructor.scenario.record );
+		simmgr_shm->instructor.scenario.record = -1;
+	}
 	if ( strlen(simmgr_shm->instructor.scenario.state ) > 0 )
 	{
 		strToLower(simmgr_shm->instructor.scenario.state );
@@ -534,21 +552,17 @@ scenario_run(void )
 	}
 	if ( strlen(simmgr_shm->instructor.scenario.active) > 0 )
 	{
-		if ( scenario_state != Terminate )
+		sprintf(msgbuf, "Set Active: %s State %d", simmgr_shm->instructor.scenario.active, scenario_state );
+		log_message("", msgbuf ); 
+		switch ( scenario_state )
 		{
-			if ( scenario_state == Stopped )
-			{
-				/*
-				sts = start_scenario(simmgr_shm->instructor.scenario.active );
-				if ( sts )
-				{
-					// Start Failure 
-					
-					// TODO: Add a failure message back to the Instructor
-				}
-				*/
-			}
-			sprintf(simmgr_shm->instructor.scenario.active, "%s", "" );
+			case Terminate:
+			default:
+				break;
+			case Stopped:
+				sprintf(simmgr_shm->status.scenario.active, "%s", simmgr_shm->instructor.scenario.active );
+				sprintf(simmgr_shm->instructor.scenario.active, "%s", "" );
+				break;
 		}
 	}
 	
@@ -818,6 +832,18 @@ scenario_run(void )
 		simmgr_shm->instructor.vocals.mute = -1;
 	}
 	
+	// media
+	if ( strlen(simmgr_shm->instructor.media.filename) > 0 )
+	{
+		sprintf(simmgr_shm->status.media.filename, "%s", simmgr_shm->instructor.media.filename );
+		sprintf(simmgr_shm->instructor.media.filename, "%s", "" );
+	}
+	if ( simmgr_shm->instructor.media.play != -1 )
+	{
+		simmgr_shm->status.media.play = simmgr_shm->instructor.media.play;
+		simmgr_shm->instructor.media.play = -1;
+	}
+	
 	// Release the MUTEX
 	sem_post(&simmgr_shm->instructor.sema);
 	iiLockTaken = 0;
@@ -860,7 +886,49 @@ scenario_run(void )
 	return ( 0 );
 }
 
-
+/**
+ * recordStartStop
+ * @record - Start if 1, Stop if 0
+ *
+ * Fork and then process start with external server
+ */
+ 
+void
+recordStartStop(int record )
+{
+	//char fname[128];
+	int pid;
+	sprintf(msgbuf, "Start/Stop Record: %d", record );
+	log_message("", msgbuf ); 
+	
+	pid = fork();
+	
+	if ( pid < 0 )
+	{
+		sprintf(msgbuf, "Start/Stop Record: Fork Failed %s", strerror(errno )  );
+		log_message("", msgbuf ); 
+	}
+	else if ( pid == 0 )
+	{
+		// Child
+		
+		// Sleep to simluate comm with server (until we get the server code functioning)
+		sleep(7 );
+		if ( record )
+		{
+			// Start Record
+			simmgr_shm->status.scenario.record = 1;
+		}
+		else
+		{
+			// Stop Record
+			simmgr_shm->status.scenario.record = 0;
+		}
+		// Stop the child
+		exit ( 0 );
+	}
+	
+}
 int
 start_scenario(const char *name )
 {

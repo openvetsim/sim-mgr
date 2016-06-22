@@ -50,15 +50,16 @@ struct cardiac
 	int heart_sound_mute;
 	int ecg_indicator;
 };
+
 struct scenario
 {
-	char active[STR_SIZE];	// Name of active scenario
+	char active[STR_SIZE];		// Name of active scenario
 	char start[STR_SIZE];		// Date/Time scenario started
 	char runtime[STR_SIZE];
 	char state[STR_SIZE];
-	char scene_name[STR_SIZE];
-	int scene_id;
-	// We should add additional elements to show where in the scenario we are currently executing
+	char scene_name[STR_SIZE];	// Currently running scene
+	int scene_id;				// Currently running scene
+	int record;					// Set in initiator section to start/stop video recording
 };
 
 struct respiration
@@ -136,6 +137,11 @@ struct general
 	int temperature;			// degrees * 10, (eg 96.8 is 968)
 	int transfer_time;			// Trend length
 };
+struct media
+{
+	char filename[STR_SIZE];
+	int play;
+};
 struct vocals
 {
 	char filename[STR_SIZE];
@@ -159,6 +165,7 @@ struct status
 	struct respiration		respiration;
 	struct general			general;
 	struct vocals			vocals;
+	struct media			media;
 	
 	// Status of sensed actions
 	struct auscultation		auscultation;
@@ -177,6 +184,7 @@ struct instructor
 	struct respiration	respiration;
 	struct general		general;
 	struct vocals		vocals;
+	struct media		media;
 	
 };
 	
@@ -245,6 +253,7 @@ int cardiac_parse(const char *elem, const char *value, struct cardiac *card );
 int respiration_parse(const char *elem,  const char *value, struct respiration *resp );
 int general_parse(const char *elem,  const char *value, struct general *gen );
 int vocals_parse(const char *elem,  const char *value, struct vocals *voc );
+int media_parse(const char *elem,  const char *value, struct media *med );
 void initializeParameterStruct(struct instructor *initParams );
 void processInit(struct instructor *initParams  );
 int getValueFromName(char *param_class, char *param_element );
