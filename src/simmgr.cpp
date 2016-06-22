@@ -178,6 +178,10 @@ main(int argc, char *argv[] )
 	// status/general
 	simmgr_shm->status.general.temperature = 1017;
 	
+	// status/scenario
+	sprintf(simmgr_shm->status.scenario.active, "%s", "default" );
+	sprintf(simmgr_shm->status.scenario.state, "%s", "Stopped" );
+	
 	// instructor/sema
 	sem_init(&simmgr_shm->instructor.sema, 1, 1 ); // pshared =1, value =1
 	iiLockTaken = 0;
@@ -514,6 +518,10 @@ scenario_run(void )
 			{
 				updateScenarioState(Running );
 			}
+			else if ( scenario_state == Stopped )
+			{
+				sts = start_scenario(simmgr_shm->status.scenario.active );
+			}
 		}
 		else if ( strcmp(simmgr_shm->instructor.scenario.state, "terminate" ) == 0 )
 		{
@@ -530,6 +538,7 @@ scenario_run(void )
 		{
 			if ( scenario_state == Stopped )
 			{
+				/*
 				sts = start_scenario(simmgr_shm->instructor.scenario.active );
 				if ( sts )
 				{
@@ -537,6 +546,7 @@ scenario_run(void )
 					
 					// TODO: Add a failure message back to the Instructor
 				}
+				*/
 			}
 			sprintf(simmgr_shm->instructor.scenario.active, "%s", "" );
 		}
@@ -856,6 +866,10 @@ start_scenario(const char *name )
 {
 	char timeBuf[64];
 	char fname[128];
+
+	sprintf(msgbuf, "Start Scenario Request: %s", name );
+	log_message("", msgbuf ); 
+	sprintf(fname, "%s/%s.xml", "/var/www/html/scenarios", name );
 	
 	scenario_start_time = std::time(nullptr );
 	std::strftime(timeBuf, 60, "%c", std::localtime(&scenario_start_time ));
@@ -874,7 +888,7 @@ start_scenario(const char *name )
 	if ( scenarioPid == 0 )
 	{
 		// Child
-		sprintf(fname, "%s/%s.xml", "/var/www/html/scenarios", name );
+		
 		sprintf(msgbuf, "Start Scenario: execl %s  %s", "/usr/local/bin/scenario", fname );
 		log_message("", msgbuf ); 
 		
