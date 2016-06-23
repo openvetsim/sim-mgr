@@ -173,10 +173,7 @@ struct status
 	struct cpr				cpr;
 	struct defibrillation	defibrillation;
 	
-};
-struct event_inj
-{
-	char name[STR_SIZE];
+	char 	eventName[STR_SIZE];
 };
 
 // The instructor structure is commands from the Instructor Interface
@@ -189,9 +186,17 @@ struct instructor
 	struct general		general;
 	struct vocals		vocals;
 	struct media		media;
-	struct event_inj	event_inj;
+	char	eventName[STR_SIZE];
 };
-	
+
+struct event_inj
+{
+	time_t	time;
+	char 	eventName[STR_SIZE];
+};
+
+#define EVENT_LIST_SIZE		128
+
 // Data Structure of Shared memory file
 struct simmgr_shm
 {
@@ -209,6 +214,12 @@ struct simmgr_shm
 
 	// Log file status
 	struct logfile logfile;
+	
+	// Event List - Used to post multiple messages to the various listeners
+	// Must only be written when instructor.sema is held
+	
+	int eventListNext;	// Index to the last event written ( 0 to EVENT_LIST_SIZE-1 )
+	struct event_inj	eventList[EVENT_LIST_SIZE];
 };
 
 // For generic trend processor

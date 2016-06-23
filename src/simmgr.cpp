@@ -45,7 +45,7 @@ int start_scenario(const char *name );
 void recordStartStop(int record );
 int scenarioPid = -1;
 
-int scenario_run(void );
+int scan_commands(void );
 void comm_check(void );
 void time_update(void );
 int iiLockTaken = 0;
@@ -259,8 +259,8 @@ main(int argc, char *argv[] )
 	sprintf(simmgr_shm->logfile.filename, "%s", "" );
 	simmgr_shm->logfile.lines_written = 0;
 	
-	// status/scenario
-	// (void)start_scenario("default" );
+	// Event List
+	simmgr_shm->eventListNext = 0;
 	
 	scenarioCount = 0;
 	while ( 1 )
@@ -278,7 +278,7 @@ main(int argc, char *argv[] )
 		else if ( scenarioCount >= SCENARIO_LOOP_COUNT )
 		{
 			scenarioCount = 0;
-			(void)scenario_run();
+			(void)scan_commands();
 		}
 
 		usleep(10000);	// Sleep for 10 msec
@@ -483,22 +483,24 @@ trendProcess(struct trend *trend )
 
 
 /*
- * Scenario execution
+ * Scan commands from Initiator Interface
  *
  * Reads II commands and changes operating parameters
+ *
+ * Note: Events are added to the Event List directly by the source initiators and read
+ * by the scenario process. Events are not handled here.
  */
 int
-scenario_run(void )
+scan_commands(void )
 {
 	int sts;
 	int trycount;
 	int oldRate;
 	int newRate;
 	int period;
+	int doRecord = 0;
 	
 	// Lock the command interface before processing commands
-	// Release the MUTEX
-	
 	trycount = 0;
 	while ( ( sts = sem_trywait(&simmgr_shm->instructor.sema) ) != 0 )
 	{
@@ -516,7 +518,7 @@ scenario_run(void )
 	// Scenario
 	if ( simmgr_shm->instructor.scenario.record > 0 )
 	{
-		recordStartStop(simmgr_shm->instructor.scenario.record );
+		doRecord = 1;
 		simmgr_shm->instructor.scenario.record = -1;
 	}
 	if ( strlen(simmgr_shm->instructor.scenario.state ) > 0 )
@@ -883,6 +885,13 @@ scenario_run(void )
 			updateScenarioState(Stopped );
 		}
 	}
+	
+	// This must be done after the lock has been released as the recordStartStop process may block.
+	if ( doRecord )
+	{
+		recordStartStop(simmgr_shm->instructor.scenario.record );
+	}
+	
 	return ( 0 );
 }
 

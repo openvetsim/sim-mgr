@@ -82,6 +82,7 @@ struct paramCmds paramCmds[] =
 };
 int debug = 0;
 int iiLockTaken = 0;
+char buf[2048];		// Used for logging messages
 
 /*
  * Function: simstatus_signal_handler
@@ -121,7 +122,7 @@ main( int argc, const char* argv[] )
 	int set_count = 0;
 	int sts;
 	char *cp;
-	
+	int eventNext;
 	int trycount;
 
 	std::string key;
@@ -472,7 +473,18 @@ main( int argc, const char* argv[] )
 			}
 			else if ( key.compare(0, 6, "event:" ) == 0 )
 			{
-				sprintf(simmgr_shm->instructor.event_inj.name, "%s", value.c_str() );
+				// Event: add to event list at end and increment eventListNext
+				eventNext = simmgr_shm->eventListNext + 1;
+				if ( eventNext >= EVENT_LIST_SIZE )
+				{
+					eventNext = 0;
+				}
+				sprintf(simmgr_shm->eventList[eventNext].eventName, "%s", value.c_str() );
+				simmgr_shm->eventList[eventNext].time = time(NULL);
+				simmgr_shm->eventListNext = eventNext;
+				sprintf(buf, "Event: %s", simmgr_shm->instructor.eventName );
+				simlog_entry(buf );
+				
 				cout << " \"event\" : {\n    ";
 				makejson(cout, "event_id", value );
 				cout << "\n    }";
