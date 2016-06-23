@@ -174,6 +174,10 @@ struct status
 	struct defibrillation	defibrillation;
 	
 };
+struct event_inj
+{
+	char name[STR_SIZE];
+};
 
 // The instructor structure is commands from the Instructor Interface
 struct instructor
@@ -185,7 +189,7 @@ struct instructor
 	struct general		general;
 	struct vocals		vocals;
 	struct media		media;
-	
+	struct event_inj	event_inj;
 };
 	
 // Data Structure of Shared memory file

@@ -19,6 +19,7 @@
 #define PARSE_STATE_NONE	0
 #define PARSE_STATE_INIT	1
 #define PARSE_STATE_SCENE	2
+#define PARSE_STATE_EVENTS	3
 
 #define PARSE_INIT_STATE_NONE			0
 #define PARSE_INIT_STATE_CARDIAC		1
@@ -51,6 +52,7 @@ struct scenario_data
 	struct instructor initParams;
 	
 	struct snode scene_list;
+	struct snode event_list;
 };
 
 struct scenario_scene
@@ -69,6 +71,7 @@ struct scenario_scene
 	struct snode trigger_list;
 };
 
+
 	
 // A trigger is defined as a setting of a parameter, or the setting of a trend. A trend time of 0 indicates immediate.
 
@@ -80,6 +83,9 @@ struct scenario_scene
 #define TRIGGER_TEST_GT			4
 #define TRIGGER_TEST_INSIDE		5
 #define TRIGGER_TEST_OUTSIDE	6
+#define TRIGGER_TEST_EVENT		7	// Special - Wait for Event Injection from Instructor (or mannequin )
+
+// Note: When Test is TRIGGER_TEST_EVENT, the param_element is the event_id
 
 struct scenario_trigger
 {
@@ -92,6 +98,14 @@ struct scenario_trigger
 	int 	scene;		// ID of next scene
 };
 
+struct scenario_event
+{
+	struct	snode event_list;
+	char	event_catagory_name[NORMAL_STRING_SIZE];
+	char	event_catagory_title[NORMAL_STRING_SIZE];
+	char	event_title[NORMAL_STRING_SIZE];
+	char	event_id[NORMAL_STRING_SIZE];
+};
 	
 // For Parsing the XML:
 #define PARAMETER_NAME_LENGTH	128

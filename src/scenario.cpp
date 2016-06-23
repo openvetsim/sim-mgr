@@ -47,10 +47,12 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include <unistd.h>
 #include <time.h>
+
 
 #include <libxml2/libxml/xmlreader.h>
 #include <libxml2/libxml/tree.h>
@@ -69,6 +71,10 @@ int xml_current_level = 0;
 int line_number = 0;
 const char *xml_filename;
 int verbose = 0;
+int checkOnly = 0;
+
+char current_event_catagory[NORMAL_STRING_SIZE];
+char current_event_title[NORMAL_STRING_SIZE];
 
 int current_scene_id = -1;
 struct scenario_scene *current_scene;
@@ -76,6 +82,7 @@ struct scenario_scene *current_scene;
 struct scenario_data *scenario;
 struct scenario_scene *new_scene;
 struct scenario_trigger *new_trigger;
+struct scenario_event *new_event;
 
 int parse_state = PARSE_STATE_NONE;
 int parse_init_state = PARSE_INIT_STATE_NONE;
@@ -111,7 +118,7 @@ const char *parse_scene_states[] =
 
 const char *trigger_tests[] =
 {
-	"EQ", "LTE", "LT", "GTE", "GT", "INSIDE", "OUTSIDE"
+	"EQ", "LTE", "LT", "GTE", "GT", "INSIDE", "OUTSIDE", "EVENT"
 };
 
 /**
@@ -124,37 +131,73 @@ const char *trigger_tests[] =
  *		Any other exit is failure.
  */
 
-char usage[] = "[xml file name]";
+char usage[] = "[-cv] xml-file-name";
 char msgbuf[1024];
+char getArgList[] = "cv";
 
 int 
 main(int argc, char **argv)
 {
 	int loopCount;
+	int c;
 	
-	if ( ! verbose )
+	opterr = 0;
+	while ((c = getopt(argc, argv, getArgList )) != -1 )
 	{
-		daemonize();
+		switch (c)
+		{
+			case 'c':
+				checkOnly = 1;
+				break;
+			case 'v':
+				verbose = 1;
+				break;
+			case '?':
+				if (isprint (optopt))
+					fprintf (stderr, "Unknown option `-%c'.\n", optopt);
+				else
+					fprintf (stderr,
+						   "Unknown option character `\\x%x'.\n",
+						   optopt);
+				return 1;
+			default:
+				abort();
+		}
+		
 	}
-	if ( argc != 2 ) 
+	if ( optind >= argc )
 	{
-		sprintf(msgbuf, "%s: %s\n", argv[0], usage );
-		log_message("", msgbuf );
-		// printf("%s: %s\n", argv[0], usage );
+		//sprintf(msgbuf, "%s: %s\n", argv[0], usage );
+		//log_message("", msgbuf );
+		printf("%s: %s\n", argv[0], usage );
         return(1);
 	}
 	
-	sprintf(msgbuf, "scenario: Start %s", argv[1] );
-	log_message("", msgbuf );
-		
-	// Wait for Shared Memory to become available
-	while ( initSHM(OPEN_ACCESS ) != 0 )
+	sprintf(msgbuf, "scenario: Start %s", argv[optind] );
+	if ( !checkOnly )
 	{
-		sprintf(msgbuf, "scenario: SHM Failed - waiting" );
 		log_message("", msgbuf );
-		sleep(10 );
+	}
+	if ( verbose )
+	{
+		fprintf(stderr, "%s\n", msgbuf );
 	}
 		
+	if ( checkOnly )
+	{
+		// For check only, fake the share memory space
+		simmgr_shm = (struct simmgr_shm *)calloc(1, sizeof(struct simmgr_shm ) );
+	}
+	else
+	{
+		// Wait for Shared Memory to become available
+		while ( initSHM(OPEN_ACCESS ) != 0 )
+		{
+			sprintf(msgbuf, "scenario: SHM Failed - waiting" );
+			log_message("", msgbuf );
+			sleep(10 );
+		}
+	}
 	// Allocate and clear the base scenario structure
 	scenario = (struct scenario_data *)calloc(1, sizeof(struct scenario_data) );
 	initializeParameterStruct(&scenario->initParams );
@@ -162,10 +205,18 @@ main(int argc, char **argv)
     // Initialize the library and check potential ABI mismatches 
     LIBXML_TEST_VERSION
 
-    if ( readScenario(argv[1]) < 0 )
+    if ( readScenario(argv[optind]) < 0 )
 	{
+		
 		sprintf(msgbuf, "scenario: readScenario Fails" );
-		log_message("", msgbuf );
+		if ( !checkOnly )
+		{
+			log_message("", msgbuf );
+		}
+		if ( verbose )
+		{
+			fprintf(stderr, "%s\n", msgbuf );
+		}
 		return ( -1 );
 	}
 	
@@ -174,7 +225,7 @@ main(int argc, char **argv)
     // this is to debug memory for regression tests
     xmlMemoryDump();
 	
-	if ( verbose )
+	if ( verbose || checkOnly )
 	{
 		printf("Showing scenes\n" );
 		showScenes();
@@ -184,17 +235,33 @@ main(int argc, char **argv)
 		printf("Calling findScene for scenario\n" );
 	}
 	sprintf(msgbuf, "scenario: Calling findScene for scenario" );
-	log_message("", msgbuf );
+	if ( !checkOnly )
+	{
+		log_message("", msgbuf );
+	}
+	if ( verbose )
+	{
+		fprintf(stderr, "%s\n", msgbuf );
+	}
 	// Get the name of the current scene
 	current_scene = findScene(current_scene_id );
 	if ( ! current_scene )
 	{
-		fprintf(stderr, "Starting scene not found\n" );
 		sprintf(msgbuf, "Starting scene not found" );
-		log_message("", msgbuf );
+		if ( !checkOnly )
+		{
+			log_message("", msgbuf );
+		}
+		if ( verbose )
+		{
+			fprintf(stderr, "%s\n", msgbuf );
+		}
 		exit ( -2);
 	}
-	
+	if ( checkOnly )
+	{
+		return ( 0 );
+	}
 	
 	sprintf(simmgr_shm->status.scenario.scene_name, "%s", current_scene->name );
 	
@@ -318,7 +385,9 @@ showScenes()
 	struct snode *snode;
 	struct scenario_scene *scene;
 	struct scenario_trigger *trig;
+	struct scenario_event *event;
 	struct snode *t_snode;
+	struct snode *e_snode;
 	
 	snode = scenario->scene_list.next;
 	
@@ -327,15 +396,33 @@ showScenes()
 		scene = (struct scenario_scene *)snode;
 		printf("Scene %d: %s\n", scene->id, scene->name );
 
+		printf("  Triggers:\n" );
 		t_snode = scene->trigger_list.next;
 		while ( t_snode )
 		{
 			trig = (struct scenario_trigger *)t_snode;
-			printf("Trigger: %s:%s, %s, %d, %d\n", 
-				trig->param_class, trig->param_element, trigger_tests[trig->test], trig->value, trig->value2 );
+			if ( trig->test == TRIGGER_TEST_EVENT )
+			{
+				printf("      Event : %s\n", trig->param_element );
+			}
+			else
+			{
+				printf("      %s:%s, %s, %d, %d\n", 
+					trig->param_class, trig->param_element, trigger_tests[trig->test], trig->value, trig->value2 );
+			}
 			t_snode = get_next_llist(t_snode );
 		}
+		
 		snode = get_next_llist(snode );
+	}
+	printf("Events:\n" );
+	e_snode = scenario->event_list.next;
+	while ( e_snode )
+	{
+		event = (struct scenario_event *)e_snode;
+		printf("      '%s'\t'%s'\t'%s'\t'%s'\n", 
+			event->event_catagory_name, event->event_catagory_title, event->event_title, event->event_id );
+		e_snode = get_next_llist(e_snode );
 	}
 	return ( NULL );
 }
@@ -643,6 +730,11 @@ saveData(const xmlChar *xmlName, const xmlChar *xmlValue )
 						{
 							new_trigger->scene = atoi(value );
 						}
+						else if ( strcmp(xmlLevels[4].name, "event" ) == 0 )
+						{
+							sprintf(new_trigger->param_element, "%s", value );
+							new_trigger->test = TRIGGER_TEST_EVENT;
+						}
 						else
 						{
 							sts = 1;
@@ -673,6 +765,7 @@ saveData(const xmlChar *xmlName, const xmlChar *xmlValue )
 						sts = 2;
 					}
 					break;
+				
 					
 				case PARSE_SCENE_STATE_INIT:
 				default:
@@ -686,6 +779,33 @@ saveData(const xmlChar *xmlName, const xmlChar *xmlValue )
 			}
 			break;
 		
+		case PARSE_STATE_EVENTS:
+			if ( xml_current_level == 3 )
+			{
+				if ( strcmp(xmlLevels[3].name, "name" ) == 0 )
+				{
+					// Set the current Category Name
+					sprintf(current_event_catagory, "%s", value );
+				}
+				else if ( strcmp(xmlLevels[3].name, "title" ) == 0 )
+				{
+					// Set the current Category Name
+					sprintf(current_event_title, "%s", value );
+				}
+			}
+			else if ( xml_current_level == 4 )
+			{
+				if ( strcmp(xmlLevels[4].name, "title" ) == 0 )
+				{
+					sprintf(new_event->event_title, "%s", value );
+				}
+				else if ( strcmp(xmlLevels[4].name, "id" ) == 0 )
+				{
+					sprintf(new_event->event_id, "%s", value );
+				}
+			}
+			break;
+			
 		default:
 			if ( verbose && strcmp(xmlLevels[1].name, "header" ) == 0 )
 			{
@@ -793,7 +913,14 @@ startParseState(int lvl, char *name )
 					printf("***** New Scene started ******\n" );
 				}
 			}
+			else if ( strcmp(name, "events" ) == 0 )
+			{
+				parse_state = PARSE_STATE_EVENTS;
+				sprintf(current_event_catagory, "%s", "" );
+				sprintf(current_event_title, "%s", "" );
+			}
 			break;
+			
 		case 2:	// 
 			switch ( parse_state )
 			{
@@ -876,25 +1003,49 @@ startParseState(int lvl, char *name )
 					{
 						parse_scene_state = PARSE_SCENE_STATE_INIT_MEDIA;
 					}
+					if ( ( parse_scene_state == PARSE_SCENE_STATE_TRIGS ) &&
+						 ( strcmp(name, "trigger" ) == 0 ) )
+					{
+						new_trigger = (struct scenario_trigger *)calloc(1, sizeof(struct scenario_trigger ) );
+						insert_llist(&new_trigger->trigger_list, &new_scene->trigger_list );
+
+						parse_scene_state = PARSE_SCENE_STATE_TRIG;
+						if ( verbose )
+						{
+							printf("***** New Trigger started ******\n" );
+						}
+					}
 					break;
+				case PARSE_STATE_EVENTS:
+					if ( strcmp(name, "event" ) == 0 )
+					{
+						if ( verbose )
+						{
+							printf("New Event %s : %s\n",	current_event_catagory, current_event_title );
+						}
+						new_event = (struct scenario_event *)calloc(1, sizeof(struct scenario_event ) );
+						insert_llist(&new_event->event_list, &scenario->event_list );
+						
+						sprintf(new_event->event_catagory_name, "%s", current_event_catagory );
+						sprintf(new_event->event_catagory_title, "%s", current_event_title );
+						
+						if ( verbose )
+						{
+							printf("***** New Event started ******\n" );
+						}
+					}
+					break;
+					
 				case PARSE_STATE_INIT:
-				
 				case PARSE_STATE_NONE:
 					break;
 			}
+			
+			
+			break;
+
 			if ( ( parse_scene_state == PARSE_SCENE_STATE_TRIGS ) &&
 				 ( strcmp(name, "trigger" ) == 0 ) )
-			{
-				new_trigger = (struct scenario_trigger *)calloc(1, sizeof(struct scenario_trigger ) );
-				insert_llist(&new_trigger->trigger_list, &new_scene->trigger_list );
-				parse_scene_state = PARSE_SCENE_STATE_TRIG;
-				if ( verbose )
-				{
-					printf("***** New Trigger started ******\n" );
-				}
-			}
-			break;
-			
 		default:
 			break;
 	}

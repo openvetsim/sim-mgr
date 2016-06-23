@@ -470,6 +470,14 @@ main( int argc, const char* argv[] )
 				}
 				cout << "\n    }";
 			}
+			else if ( key.compare(0, 6, "event:" ) == 0 )
+			{
+				sprintf(simmgr_shm->instructor.event_inj.name, "%s", value.c_str() );
+				cout << " \"event\" : {\n    ";
+				makejson(cout, "event_id", value );
+				cout << "\n    }";
+				sts = 0;
+			}
 			else
 			{
 				makejson(cout, "Invalid Command", cmd );
