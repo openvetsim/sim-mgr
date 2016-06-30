@@ -72,6 +72,7 @@ int line_number = 0;
 const char *xml_filename;
 int verbose = 0;
 int checkOnly = 0;
+int errCount = 0;
 
 char current_event_catagory[NORMAL_STRING_SIZE];
 char current_event_title[NORMAL_STRING_SIZE];
@@ -98,6 +99,7 @@ static void startScene(int sceneId );
 struct timespec loopStart;
 struct timespec loopStop;
 int elapsed_msec;
+int eventLast;	// Index of last processed event_callback
 
 const char *parse_states[] =
 {
@@ -201,7 +203,9 @@ main(int argc, char **argv)
 	// Allocate and clear the base scenario structure
 	scenario = (struct scenario_data *)calloc(1, sizeof(struct scenario_data) );
 	initializeParameterStruct(&scenario->initParams );
-				
+	
+	eventLast = simmgr_shm->eventListNext;	// Start processing event at the next posted event
+	
     // Initialize the library and check potential ABI mismatches 
     LIBXML_TEST_VERSION
 
@@ -256,11 +260,12 @@ main(int argc, char **argv)
 		{
 			fprintf(stderr, "%s\n", msgbuf );
 		}
+		sprintf(simmgr_shm->status.scenario.state, "%s", "Stopped" );
 		exit ( -2);
 	}
 	if ( checkOnly )
 	{
-		return ( 0 );
+		return ( errCount );
 	}
 	
 	sprintf(simmgr_shm->status.scenario.scene_name, "%s", current_scene->name );
@@ -302,6 +307,8 @@ main(int argc, char **argv)
 		
 		if ( strcmp(simmgr_shm->status.scenario.state, "Terminate" ) == 0 )	// Check for termination
 		{
+			// If the scenario needs to do any cleanup, this is the place.
+			// After setting state to Stopped, the simmgr will kill the scenario process
 			sprintf(msgbuf, "scenario: Terminate" );
 			log_message("", msgbuf );
 			sprintf(simmgr_shm->status.scenario.state, "Stopped" );
@@ -371,14 +378,85 @@ findScene(int scene_id )
 	return ( NULL );
 }
 
+/**
+ *  scanForDuplicateScene
+ * @scene_id
+ *
+ * Returns the number of matches found.
+*/
 
+int
+scanForDuplicateScene(int sceneId )
+{
+	struct snode *snode;
+	struct scenario_scene *scene;
+	int match = 0;
+	
+	snode = scenario->scene_list.next;
+	
+	while ( snode )
+	{
+		scene = (struct scenario_scene *)snode;
+		if ( scene->id == sceneId )
+		{
+			match++;
+		}
+		snode = get_next_llist(snode );
+	}
+	if ( match < 1 )
+	{
+		printf("ERROR: Scene ID %d not found\n", sceneId );
+		errCount++;
+	}
+	else if ( match > 1 )
+	{
+		printf("ERROR: duplicate check, Scene ID %d found %d times\n", sceneId, match );
+		errCount++;
+	}
+	return ( errCount );
+}
+/**
+ *  scanForDuplicateEvent
+ * @scene_id
+ *
+ * Returns the number of matches found.
+*/
+
+int
+scanForDuplicateEvent(char *eventId )
+{
+	struct snode *snode;
+	struct scenario_event *event;
+	int match = 0;
+	
+	snode = scenario->event_list.next;
+	
+	while ( snode )
+	{
+		event = (struct scenario_event *)snode;
+		if ( strcmp(event->event_id, eventId ) != 0 )
+		{
+			match++;
+		}
+		snode = get_next_llist(snode );
+	}
+	if ( match < 1 )
+	{
+		printf("ERROR: Event ID %s not found\n", eventId );
+		errCount++;
+	}
+	else if ( match > 1 )
+	{
+		printf("ERROR: duplicate check, Event ID %s found %d times\n", eventId, match );
+		errCount++;
+	}
+	return ( errCount );
+}
 /**
  *  showScenes
  * @scene_id
  *
 */
-
-
 static struct scenario_scene *
 showScenes()
 {
@@ -388,6 +466,9 @@ showScenes()
 	struct scenario_event *event;
 	struct snode *t_snode;
 	struct snode *e_snode;
+	int duplicates;
+	int tcount = 0;
+	int timeout = 0;
 	
 	snode = scenario->scene_list.next;
 	
@@ -395,24 +476,53 @@ showScenes()
 	{
 		scene = (struct scenario_scene *)snode;
 		printf("Scene %d: %s\n", scene->id, scene->name );
-
-		printf("  Triggers:\n" );
+		if ( scene->id < 0 )
+		{
+			printf("ERROR: Scene ID %d is invalid\n",
+				scene->id );
+			errCount++;
+		}
+		duplicates = scanForDuplicateScene(scene->id );
+		if ( duplicates != 1 )
+		{
+			printf("ERROR: Scene ID %d has %d entries\n",
+				scene->id, duplicates );
+			errCount++;
+		}
+		if ( scene->timeout > 0 )
+		{
+			printf("\tTimeout: %d Scene %d\n", scene->timeout, scene->timeout_scene );
+			timeout++;
+		}
+		printf("\tTriggers:\n" );
 		t_snode = scene->trigger_list.next;
 		while ( t_snode )
 		{
+			tcount++;
 			trig = (struct scenario_trigger *)t_snode;
 			if ( trig->test == TRIGGER_TEST_EVENT )
 			{
-				printf("      Event : %s\n", trig->param_element );
+				printf("\t\tEvent : %s\n", trig->param_element );
 			}
 			else
 			{
-				printf("      %s:%s, %s, %d, %d\n", 
+				printf("\t\t%s:%s, %s, %d, %d\n", 
 					trig->param_class, trig->param_element, trigger_tests[trig->test], trig->value, trig->value2 );
 			}
 			t_snode = get_next_llist(t_snode );
 		}
-		
+		if ( ( tcount == 0 ) && ( timeout == 0 ) && ( scene->id != 0 ) )
+		{
+			printf("ERROR: Scene ID %d has no trigger/timeout events\n",
+				scene->id );
+			errCount++;
+		}
+		if ( ( scene->id == 0 ) && ( tcount != 0 ) && ( timeout != 0 ) )
+		{
+			printf("ERROR: End Scene ID %d has %d triggers %d timeouts. Should be none.\n",
+				scene->id, tcount, timeout );
+			errCount++;
+		}
 		snode = get_next_llist(snode );
 	}
 	printf("Events:\n" );
@@ -420,8 +530,15 @@ showScenes()
 	while ( e_snode )
 	{
 		event = (struct scenario_event *)e_snode;
-		printf("      '%s'\t'%s'\t'%s'\t'%s'\n", 
+		printf("\t'%s'\t'%s'\t'%s'\t'%s'\n", 
 			event->event_catagory_name, event->event_catagory_title, event->event_title, event->event_id );
+		duplicates = scanForDuplicateEvent(event->event_id );
+		if ( duplicates != 1 )
+		{
+			printf("ERROR: Event ID %s has %d entries\n",
+				event->event_id, duplicates );
+			errCount++;
+		}
 		e_snode = get_next_llist(e_snode );
 	}
 	return ( NULL );
@@ -429,7 +546,7 @@ showScenes()
 /**
 * scene_check
 *
-* Scan through the triggers and change scene if needed
+* Scan through the events and triggers and change scene if needed
 */
 
 static void
@@ -442,6 +559,25 @@ scene_check(void )
 	int msec_diff;
 	int sec_diff;
 	
+	// Event checks 
+	while ( simmgr_shm->eventListNext != eventLast )
+	{
+		eventLast++;
+		snode = scenario->event_list.next;
+		while ( snode )
+		{
+			trig = (struct scenario_trigger *)snode;
+			if ( trig->test == TRIGGER_TEST_EVENT )
+			{
+				if ( strcmp(trig->param_element, simmgr_shm->eventList[eventLast].eventName ) == 0 )
+				{
+					startScene(trig->scene );
+				}
+			}
+		}
+	}
+	
+	// Trigger Checks
 	snode = current_scene->trigger_list.next;
 	while ( snode )
 	{
@@ -528,26 +664,32 @@ startScene(int sceneId )
 		fprintf(stderr, "Scene %d not found", sceneId );
 		sprintf(msgbuf, "Scene %d not found", sceneId );
 		log_message("", msgbuf );
-		exit ( -2);
+		sprintf(simmgr_shm->status.scenario.state, "%s", "Terminate" );
 	}
-	
-	sprintf(simmgr_shm->status.scenario.scene_name, "%s", current_scene->name );
-	if ( verbose )
-	{
-		printf("New scene %s\n", current_scene->name );
-	}
-	sprintf(msgbuf, "New Scene %d %s", sceneId, current_scene->name );
-	log_message("", msgbuf );
-	processInit(&current_scene->initParams );
 	elapsed_msec = 0;
-	/*
-	if ( current_scene->scene_id == 0 )
+	sprintf(simmgr_shm->status.scenario.scene_name, "%s", current_scene->name );
+	simmgr_shm->status.scenario.scene_id = sceneId;
+	
+	if ( current_scene->id <= 0 )
 	{
-		sprintf(msgbuf, "End Scene", sceneId, current_scene->name );
+		if ( verbose )
+		{
+			printf("End scene %s\n", current_scene->name );
+		}
+		sprintf(msgbuf, "End Scene %d %s", sceneId, current_scene->name );
 		log_message("", msgbuf );
-		sprintf(simmgr_shm->status.scenario.scene_state, "%s", "Terminate" );
+		sprintf(simmgr_shm->status.scenario.state, "%s", "Terminate" );
 	}
-	*/
+	else
+	{
+		if ( verbose )
+		{
+			printf("New scene %s\n", current_scene->name );
+		}
+		sprintf(msgbuf, "New Scene %d %s", sceneId, current_scene->name );
+		log_message("", msgbuf );
+		processInit(&current_scene->initParams );
+	}
 }
 /**
  * saveData:
