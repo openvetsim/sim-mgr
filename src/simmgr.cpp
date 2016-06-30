@@ -82,6 +82,15 @@ strToLower(char *buf )
 		buf[i] = (char)tolower(buf[i] );
 	}
 }
+void
+killScenario(int arg1, void *arg2 )
+{
+	if ( scenarioPid > 0 )
+	{
+		kill( scenarioPid, SIGTERM );
+		scenarioPid = -1;
+	}
+}
 
 int
 main(int argc, char *argv[] )
@@ -90,6 +99,8 @@ main(int argc, char *argv[] )
 	char *ptr;
 	int scenarioCount;
 	daemonize();
+	
+	sts = on_exit(killScenario, (void *)0 );
 	
 	sts = initSHM(OPEN_WITH_CREATE );
 	if ( sts < 0 )
@@ -308,6 +319,7 @@ updateScenarioState(ScenarioState new_state)
 			{
 				case Stopped:
 					sprintf(simmgr_shm->status.scenario.state, "Stopped" );
+					(void)simlog_end();
 					break;
 				case Running:
 					sprintf(simmgr_shm->status.scenario.state, "Running" );
@@ -498,7 +510,7 @@ scan_commands(void )
 	int oldRate;
 	int newRate;
 	int period;
-	int doRecord = 0;
+	int doRecord = -1;
 	
 	// Lock the command interface before processing commands
 	trycount = 0;
@@ -516,11 +528,12 @@ scan_commands(void )
 	// Check for instructor commands
 	
 	// Scenario
-	if ( simmgr_shm->instructor.scenario.record > 0 )
+	if ( simmgr_shm->instructor.scenario.record >= 0 )
 	{
-		doRecord = 1;
+		doRecord = simmgr_shm->instructor.scenario.record;
 		simmgr_shm->instructor.scenario.record = -1;
 	}
+	
 	if ( strlen(simmgr_shm->instructor.scenario.state ) > 0 )
 	{
 		strToLower(simmgr_shm->instructor.scenario.state );
@@ -545,7 +558,14 @@ scan_commands(void )
 		}
 		else if ( strcmp(simmgr_shm->instructor.scenario.state, "terminate" ) == 0 )
 		{
-			if ( (  scenario_state == Running ) || ( scenario_state == Paused ) )
+			if ( scenario_state != Terminate )
+			{
+				updateScenarioState(Terminate );
+			}
+		}
+		else if ( strcmp(simmgr_shm->instructor.scenario.state, "stopped" ) == 0 )
+		{
+			if ( scenario_state != Stopped )
 			{
 				updateScenarioState(Terminate );
 			}
@@ -882,14 +902,24 @@ scan_commands(void )
 	{
 		if ( simmgr_shm->logfile.active == 0 )
 		{
-			updateScenarioState(Stopped );
+			// updateScenarioState(Stopped );
 		}
 	}
-	
-	// This must be done after the lock has been released as the recordStartStop process may block.
-	if ( doRecord )
+	else if ( scenario_state == Stopped )
 	{
-		recordStartStop(simmgr_shm->instructor.scenario.record );
+		if ( simmgr_shm->logfile.active == 0 )
+		{
+			updateScenarioState(Stopped );
+		}
+		if ( scenarioPid )
+		{
+			killScenario(1, NULL );
+		}
+	}
+	// This must be done after the lock has been released as the recordStartStop process may block.
+	if ( doRecord >= 0 )
+	{
+		recordStartStop(doRecord );
 	}
 	
 	return ( 0 );
@@ -920,7 +950,8 @@ recordStartStop(int record )
 	else if ( pid == 0 )
 	{
 		// Child
-		
+		sprintf(msgbuf, "Start/Stop Record: %d  %p", record, simmgr_shm  );
+		log_message("", msgbuf ); 
 		// Sleep to simluate comm with server (until we get the server code functioning)
 		sleep(7 );
 		if ( record )
