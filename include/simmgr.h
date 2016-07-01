@@ -17,6 +17,7 @@
 //
 #define SIMMGR_VERSION		1
 #define STR_SIZE			64
+#define COMMENT_SIZE		1024
 #define SIMMGR_SHM_NAME		"simmgr"
 #define LOG_TO_FILE			0
 
@@ -25,6 +26,13 @@
 #define	OPEN_WITH_CREATE	1
 #define OPEN_ACCESS			0
 
+enum ScenarioState
+{ 
+	Stopped, 
+	Running, 
+	Paused, 
+	Terminate
+};
 
 // Data Structures
 //
@@ -195,7 +203,12 @@ struct event_inj
 	char 	eventName[STR_SIZE];
 };
 
+struct comment_inj
+{
+	char 	comment[COMMENT_SIZE];
+};
 #define EVENT_LIST_SIZE		128
+#define COMMENT_LIST_SIZE	4
 
 // Data Structure of Shared memory file
 struct simmgr_shm
@@ -217,9 +230,13 @@ struct simmgr_shm
 	
 	// Event List - Used to post multiple messages to the various listeners
 	// Must only be written when instructor.sema is held
-	
 	int eventListNext;	// Index to the last event written ( 0 to EVENT_LIST_SIZE-1 )
 	struct event_inj	eventList[EVENT_LIST_SIZE];
+	
+	// Comment List - Used to post comments into the log
+	// Must only be written when instructor.sema is held
+	int commentListNext;	// Index to the last comment written ( 0 to COMMENT_LIST_SIZE-1 )
+	struct comment_inj	commentList[COMMENT_LIST_SIZE];
 };
 
 // For generic trend processor
@@ -262,6 +279,10 @@ int simlog_read_line(char *rbuf, int lineno );		// Read line from line number
 void simlog_close();				// Closes file and release Mutex if held
 void simlog_end();
 void simlog_entry(char *msg );
+int takeInstructorLock();
+void releaseInstructorLock();
+void addEvent(char *str );
+void addComment(char *str );
 
 // Shared Parse functions
 int cardiac_parse(const char *elem, const char *value, struct cardiac *card );

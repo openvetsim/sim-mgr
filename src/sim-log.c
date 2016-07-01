@@ -71,11 +71,23 @@ simlog_create()
 void
 simlog_entry(char *msg )
 {
-	if ( strlen(simlog_file ) > 0 )
+	int sts;
+	
+	if ( strlen(msg) == 0 )
 	{
-		(void)simlog_open(SIMLOG_MODE_WRITE );
-		(void)simlog_write(msg );
-		(void)simlog_close();
+		log_message("", "simlog_entry with null message" );
+	}
+	else
+	{
+		if ( ( strlen(simlog_file ) > 0 ) && simmgr_shm->logfile.active );
+		{
+			sts = simlog_open(SIMLOG_MODE_WRITE );
+			if ( sts ==0 )
+			{
+				(void)simlog_write(msg );
+				(void)simlog_close();
+			}
+		}
 	}
 }
 
@@ -162,7 +174,11 @@ simlog_write(char *msg )
 		log_message("", "simlog_write overlength string" );
 		return ( -1 );
 	}
-	
+	if ( strlen(msg) <= 0 )
+	{
+		log_message("", "simlog_write empty string" );
+		return ( -1 );
+	}
 	fprintf(simlog_fd, "%s %s\n", simmgr_shm->status.scenario.runtime, msg );
 
 	simlog_line++;
@@ -232,12 +248,17 @@ simlog_close()
 void
 simlog_end()
 {
-	if ( simlog_fd == NULL )
+	int sts;
+	
+	if ( ( simlog_fd == NULL ) && ( simmgr_shm->logfile.active ) ) 
 	{
-		simlog_open(SIMLOG_MODE_WRITE );
+		sts = simlog_open(SIMLOG_MODE_WRITE );
+		if ( sts ==0 )
+		{
+			simlog_write((char *)"End" );
+			simlog_close();
+		}
 	}
-	simlog_write((char *)"End" );
-	simlog_close();
 	simmgr_shm->logfile.active = 0;
 }
 	

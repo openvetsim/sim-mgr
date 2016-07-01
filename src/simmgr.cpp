@@ -36,14 +36,19 @@
 #include "../include/simmgr.h" 
 
 #define SCENARIO_LOOP_COUNT		25	// Run the scenario every SCENARIO_LOOP_COUNT iterations of the 10 msec loop
-#define SCENARIO_TIMECHECK	(SCENARIO_LOOP_COUNT - 1)
-#define SCENARIO_COMMCHECK  (SCENARIO_LOOP_COUNT - 10)
+#define SCENARIO_TIMECHECK		(SCENARIO_LOOP_COUNT - 1)
+#define SCENARIO_EVENTCHECK		(SCENARIO_LOOP_COUNT - 2)
+#define SCENARIO_COMMCHECK  	(SCENARIO_LOOP_COUNT - 10)
 
 using namespace std;
 
 int start_scenario(const char *name );
 void recordStartStop(int record );
+void checkEvents(void );
+
 int scenarioPid = -1;
+int lastEventLogged = 0;
+int lastCommentLogged = 0;
 
 int scan_commands(void );
 void comm_check(void );
@@ -57,7 +62,7 @@ std::time_t scenario_start_time;
 std::time_t now;
 std::time_t scenario_run_time;
 
-enum ScenarioState { Stopped, Running, Paused, Terminate };
+
 ScenarioState scenario_state = Stopped;
 
 /* str_thdata
@@ -272,13 +277,22 @@ main(int argc, char *argv[] )
 	
 	// Event List
 	simmgr_shm->eventListNext = 0;
+	lastEventLogged = 0;
+	
+	// Comment List
+	simmgr_shm->commentListNext = 0;
+	lastCommentLogged = 0;
 	
 	scenarioCount = 0;
 	while ( 1 )
 	{
 		scenarioCount++;
 		
-		if ( scenarioCount == SCENARIO_COMMCHECK )
+		if ( scenarioCount == SCENARIO_EVENTCHECK )
+		{
+			checkEvents();
+		}
+		else if ( scenarioCount == SCENARIO_COMMCHECK )
 		{
 			comm_check();
 		}
@@ -335,6 +349,8 @@ updateScenarioState(ScenarioState new_state)
 					sprintf(simmgr_shm->status.scenario.state, "Unknown" );
 					break;
 			}
+			sprintf(msgbuf, "State: %s ", simmgr_shm->status.scenario.state );
+			log_message("", msgbuf ); 
 		}
 	}
 	return ( rval );
@@ -362,7 +378,7 @@ time_update(void )
 	sprintf(simmgr_shm->server.server_time, "%s", buf );
 	simmgr_shm->server.msec_time = (((tm.tm_hour*60*60)+(tm.tm_min*60)+tm.tm_sec)*1000)+ timeb.millitm;
 	
-	if ( scenario_state != Stopped )
+	if ( scenario_state == Running )
 	{
 		now = std::time(nullptr );
 		sec = (int)difftime(now, scenario_start_time );
@@ -370,25 +386,30 @@ time_update(void )
 		hour = min / 60;
 		sec = sec%60;
 		sprintf(simmgr_shm->status.scenario.runtime, "%02d:%02d:%02d", hour, min%60, sec);
+	
+		if ( ( sec == 0 ) && ( last_time_sec != 0 ) )
+		{
+			// Do periodic Stats update every minute
+			sprintf(buf, "VS: Temp: %0.1f; awRR: %d; HR: %d; BP: %d/%d; SPO2: %d; etCO2: %d mmHg; Probes: ECG: %s; SPO2: %s; ETCO2: %s",
+				((double)simmgr_shm->status.general.temperature) / 10,
+				simmgr_shm->status.respiration.rate,
+				simmgr_shm->status.cardiac.rate,
+				simmgr_shm->status.cardiac.bps_sys,
+				simmgr_shm->status.cardiac.bps_dia,
+				simmgr_shm->status.respiration.spo2,
+				simmgr_shm->status.respiration.etco2,
+				(simmgr_shm->status.cardiac.ecg_indicator == 1 ? "on" : "off"  ),
+				(simmgr_shm->status.respiration.spo2_indicator == 1 ? "on" : "off"  ),
+				(simmgr_shm->status.respiration.etco2_indicator == 1 ? "on" : "off"  )
+			);
+			simlog_entry(buf );
+		}
+		last_time_sec = sec;
 	}
-	if ( ( sec == 0 ) && ( last_time_sec != 0 ) )
+	else if ( scenario_state == Stopped )
 	{
-		// Do periodic Stats update every minute
-		sprintf(buf, "VS: Temp: %0.1f; awRR: %d; HR: %d; BP: %d/%d; SPO2: %d; etCO2: %d mmHg; Probes: ECG: %s; SPO2: %s; ETCO2: %s",
-			((double)simmgr_shm->status.general.temperature) / 10,
-			simmgr_shm->status.respiration.rate,
-			simmgr_shm->status.cardiac.rate,
-			simmgr_shm->status.cardiac.bps_sys,
-			simmgr_shm->status.cardiac.bps_dia,
-			simmgr_shm->status.respiration.spo2,
-			simmgr_shm->status.respiration.etco2,
-			(simmgr_shm->status.cardiac.ecg_indicator == 1 ? "on" : "off"  ),
-			(simmgr_shm->status.respiration.spo2_indicator == 1 ? "on" : "off"  ),
-			(simmgr_shm->status.respiration.etco2_indicator == 1 ? "on" : "off"  )
-		);
-		simlog_entry(buf );
+		last_time_sec = -1;
 	}
-	last_time_sec = sec;
 }
 /*
  * comm_check
@@ -538,6 +559,12 @@ scan_commands(void )
 	{
 		strToLower(simmgr_shm->instructor.scenario.state );
 		
+		sprintf(msgbuf, "State Request: %s Current %s State %d", 
+			simmgr_shm->instructor.scenario.state,
+			simmgr_shm->status.scenario.state,
+			scenario_state );
+		log_message("", msgbuf ); 
+		
 		if ( strcmp(simmgr_shm->instructor.scenario.state, "paused" ) == 0 )
 		{
 			if ( scenario_state == Running )
@@ -567,7 +594,7 @@ scan_commands(void )
 		{
 			if ( scenario_state != Stopped )
 			{
-				updateScenarioState(Terminate );
+				updateScenarioState(Stopped );
 			}
 		}
 		sprintf(simmgr_shm->instructor.scenario.state, "%s", "" );
@@ -607,7 +634,7 @@ scan_commands(void )
 											simmgr_shm->instructor.cardiac.rate,
 											simmgr_shm->status.cardiac.rate,
 											simmgr_shm->instructor.cardiac.transfer_time );
-			if ( simmgr_shm->instructor.cardiac.transfer_time > 0 )
+			if ( simmgr_shm->instructor.cardiac.transfer_time >= 0 )
 			{
 				sprintf(buf, "%s: %d time %d", "Cardiac Rate", simmgr_shm->instructor.cardiac.rate, simmgr_shm->instructor.cardiac.transfer_time );
 			}
@@ -902,7 +929,7 @@ scan_commands(void )
 	{
 		if ( simmgr_shm->logfile.active == 0 )
 		{
-			// updateScenarioState(Stopped );
+			updateScenarioState(Terminate );
 		}
 	}
 	else if ( scenario_state == Stopped )
@@ -1028,4 +1055,42 @@ start_scenario(const char *name )
 	}
 
 	return ( 0 );
+}
+
+/*
+ * checkEvents
+ * 
+ * Scan through the event list and log any new events
+ * Also scan comment list and and new ones to log file
+ */
+
+void
+checkEvents(void )
+{
+	if ( ( lastEventLogged != simmgr_shm->eventListNext ) ||
+		 ( lastCommentLogged != simmgr_shm->commentListNext ) )
+	{
+		takeInstructorLock();
+		while ( lastEventLogged != simmgr_shm->eventListNext )
+		{
+			lastEventLogged++;
+			sprintf(msgbuf, "Event: %s", simmgr_shm->eventList[lastEventLogged].eventName );
+			simlog_entry(msgbuf );
+		}
+		while ( lastCommentLogged != simmgr_shm->commentListNext )
+		{
+			lastCommentLogged++;
+			if ( strlen(simmgr_shm->commentList[lastCommentLogged].comment ) == 0 )
+			{
+				sprintf(msgbuf, "Null Comment: lastCommentLogged is %d simmgr_shm->commentListNext is %d State is %d\n",
+					lastCommentLogged, simmgr_shm->commentListNext, scenario_state );
+				lastCommentLogged = simmgr_shm->commentListNext;
+			}
+			else
+			{
+				simlog_entry(simmgr_shm->commentList[lastCommentLogged].comment );
+			}
+		}
+		releaseInstructorLock();
+	}
 }

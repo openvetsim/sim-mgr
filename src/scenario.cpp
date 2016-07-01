@@ -74,6 +74,9 @@ int verbose = 0;
 int checkOnly = 0;
 int errCount = 0;
 
+// Internal state is tracked to compare to the overall state, for detecting changes
+ScenarioState scenario_state;
+
 char current_event_catagory[NORMAL_STRING_SIZE];
 char current_event_title[NORMAL_STRING_SIZE];
 
@@ -123,6 +126,10 @@ const char *trigger_tests[] =
 	"EQ", "LTE", "LT", "GTE", "GT", "INSIDE", "OUTSIDE", "EVENT"
 };
 
+const char *trigger_tests_sym[] =
+{
+	"==", "<=", "<", ">=", ">", "", "", ""
+};
 /**
  * main:
  * @argc: number of argument
@@ -142,6 +149,7 @@ main(int argc, char **argv)
 {
 	int loopCount;
 	int c;
+	int sts;
 	
 	opterr = 0;
 	while ((c = getopt(argc, argv, getArgList )) != -1 )
@@ -285,6 +293,9 @@ main(int argc, char **argv)
 		printf("Calling processInit for Scene %d, %s \n", current_scene->id, current_scene->name );
 	}
 	
+	// Set our internal state to running
+	scenario_state = Running;
+	
 	startScene(current_scene_id );
 	
 	
@@ -307,27 +318,41 @@ main(int argc, char **argv)
 		
 		if ( strcmp(simmgr_shm->status.scenario.state, "Terminate" ) == 0 )	// Check for termination
 		{
-			// If the scenario needs to do any cleanup, this is the place.
-			// After setting state to Stopped, the simmgr will kill the scenario process
-			sprintf(msgbuf, "scenario: Terminate" );
-			log_message("", msgbuf );
-			sprintf(simmgr_shm->status.scenario.state, "Stopped" );
-			break;
+			if ( scenario_state != Terminate )
+			{
+				// If the scenario needs to do any cleanup, this is the place.
+				
+				// After setting state to Stopped, the simmgr will kill the scenario process
+				sprintf(msgbuf, "scenario: Terminate" );
+				log_message("", msgbuf );
+				sts = takeInstructorLock();
+				if ( !sts )
+				{					
+					sprintf(simmgr_shm->instructor.scenario.state, "Stopped" );
+					releaseInstructorLock();
+					scenario_state = Terminate;
+				}
+			}
 		}
 		else if ( strcmp(simmgr_shm->status.scenario.state, "Stopped" ) == 0 )
 		{
-			sprintf(msgbuf, "scenario: Stopped" );
-			log_message("", msgbuf );
-			break;
+			if ( scenario_state != Stopped )
+			{
+				sprintf(msgbuf, "scenario: Stopped" );
+				log_message("", msgbuf );
+				scenario_state = Stopped;
+			}
 		}
 		else if ( strcmp(simmgr_shm->status.scenario.state, "Running" ) == 0 )
 		{
 			// Do periodic scenario check
 			scene_check();
+			scenario_state = Running;
 		}
 		else if ( strcmp(simmgr_shm->status.scenario.state, "Paused" ) == 0 )
 		{
 			// Nothing
+			scenario_state = Paused;
 		}
 		if ( loopCount++ == 100 )
 		{
@@ -354,7 +379,7 @@ findScene(int scene_id )
 {
 	struct snode *snode;
 	struct scenario_scene *scene;
-	int limit = 10;
+	int limit = 50;
 	
 	snode = scenario->scene_list.next;
 	
@@ -543,6 +568,52 @@ showScenes()
 	}
 	return ( NULL );
 }
+
+void
+logTrigger(struct scenario_trigger *trig, int time )
+{
+	int sts;
+	
+	if ( trig )
+	{
+		switch ( trig->test )
+		{
+			case TRIGGER_TEST_EVENT:
+				sprintf(msgbuf, "Trig Event: %s", trig->param_element );
+				break;
+		
+			case TRIGGER_TEST_INSIDE:
+				sprintf(msgbuf, "Trig: %d < %s:%s < %d", 
+					trig->value, trig->param_class, trig->param_element, trig->value2 );
+				break;
+		
+			case TRIGGER_TEST_OUTSIDE:
+				sprintf(msgbuf, "Trig: %d > %s:%s > %d", 
+					trig->value, trig->param_class, trig->param_element, trig->value2 );
+				break;
+				
+			default:
+				sprintf(msgbuf, "Trig: %s:%s %s %d", 
+					trig->param_class, trig->param_element, trigger_tests_sym[trig->test], trig->value );
+				break;
+		}
+	}
+	else if ( time )
+	{
+		sprintf(msgbuf, "Trig: Timeout %d seconds", time );
+	}
+	else
+	{
+		sprintf(msgbuf, "Trig: unknown" );
+	}
+		
+	sts = takeInstructorLock();
+	if ( sts == 0 )
+	{
+		addComment(msgbuf );
+		releaseInstructorLock();
+	}
+}			
 /**
 * scene_check
 *
@@ -563,7 +634,7 @@ scene_check(void )
 	while ( simmgr_shm->eventListNext != eventLast )
 	{
 		eventLast++;
-		snode = scenario->event_list.next;
+		snode = current_scene->trigger_list.next;
 		while ( snode )
 		{
 			trig = (struct scenario_trigger *)snode;
@@ -571,9 +642,12 @@ scene_check(void )
 			{
 				if ( strcmp(trig->param_element, simmgr_shm->eventList[eventLast].eventName ) == 0 )
 				{
+					logTrigger(trig, 0 );
 					startScene(trig->scene );
+					return;
 				}
 			}
+			snode = get_next_llist(snode );
 		}
 	}
 	
@@ -632,6 +706,7 @@ scene_check(void )
 
 		if ( met )
 		{
+			logTrigger(trig, 0 );
 			startScene(trig->scene );
 			return;
 		}
@@ -647,6 +722,7 @@ scene_check(void )
 		elapsed_msec += msec_diff;
 		if ( elapsed_msec >=  ( current_scene->timeout * 1000 ) )
 		{
+			logTrigger((struct scenario_trigger *)0, current_scene->timeout );
 			startScene(current_scene->timeout_scene );
 		}
 	}
@@ -658,14 +734,19 @@ scene_check(void )
 static void
 startScene(int sceneId )
 {
-	current_scene = findScene(sceneId );
-	if ( ! current_scene )
+	struct scenario_scene *new_scene;
+	new_scene = findScene(sceneId );
+	if ( ! new_scene )
 	{
 		fprintf(stderr, "Scene %d not found", sceneId );
 		sprintf(msgbuf, "Scene %d not found", sceneId );
 		log_message("", msgbuf );
-		sprintf(simmgr_shm->status.scenario.state, "%s", "Terminate" );
+		takeInstructorLock();
+		sprintf(simmgr_shm->instructor.scenario.state, "%s", "Terminate" );
+		releaseInstructorLock();
+		return;
 	}
+	current_scene = new_scene;
 	elapsed_msec = 0;
 	sprintf(simmgr_shm->status.scenario.scene_name, "%s", current_scene->name );
 	simmgr_shm->status.scenario.scene_id = sceneId;
@@ -678,7 +759,9 @@ startScene(int sceneId )
 		}
 		sprintf(msgbuf, "End Scene %d %s", sceneId, current_scene->name );
 		log_message("", msgbuf );
-		sprintf(simmgr_shm->status.scenario.state, "%s", "Terminate" );
+		takeInstructorLock();
+		sprintf(simmgr_shm->instructor.scenario.state, "%s", "Terminate" );
+		releaseInstructorLock();
 	}
 	else
 	{

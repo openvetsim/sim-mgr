@@ -189,7 +189,7 @@ void signal_fault_handler(int sig)
 	
 	for ( j = 0; j < nptrs; j++ )
 	{
-		syslog(LOG_NOTICE, "simstatus: %d: %s", j, strings[j]);
+		syslog(LOG_NOTICE, "%d: %s", j, strings[j]);
 	}
 	free(strings);
 	exit ( -1 );
@@ -414,6 +414,14 @@ getETH0_IP()
 	return eth0_ip;
 }
 
+/*
+ * itoa
+ * @val - Value to be converted
+ * @buf - Pointer to buffer for the string to be returned
+ * @radix - the Radix (8,10,16)
+ *
+* Return the 'val' as a string in the requested radix
+*/
 char *
 itoa(int val, char *buf, int radix )
 {
@@ -480,4 +488,88 @@ cleanString(char *strIn )
 		in++;
 	}
 	*out = 0;
+}
+
+/*
+ * takeInstructorLock
+ * @
+ *
+ * Call to take the Instructor area lock
+ */	
+ 
+int
+takeInstructorLock()
+{
+	int trycount = 0;
+	int sts;
+	
+	while ( ( sts = sem_trywait(&simmgr_shm->instructor.sema) ) != 0 )
+	{
+		if ( trycount++ > 50 )
+		{
+			fprintf(stderr, "%s", "failed to take Instructor lock" );
+			return ( -1 );
+		}
+		usleep(1000 );
+	}
+	return ( 0 );
+}
+
+/*
+ * releaseInstructorLock
+ * @
+ *
+ * Call to release the Instructor area lock
+ */	
+void
+releaseInstructorLock()
+{
+	sem_post(&simmgr_shm->instructor.sema);
+}
+
+/*
+ * addEvent
+ * @str - pointer to event to add
+ *
+ * Must be called with instructor lock held
+ */
+static char buf[2048];
+void
+addEvent(char *str )
+{
+	int eventNext;
+
+	// Event: add to event list at end and increment eventListNext
+	eventNext = simmgr_shm->eventListNext + 1;
+	if ( eventNext >= EVENT_LIST_SIZE )
+	{
+		eventNext = 0;
+	}
+	sprintf(simmgr_shm->eventList[eventNext].eventName, "%s", str );
+	simmgr_shm->eventListNext = eventNext;
+	sprintf(buf, "Event: %d %s", eventNext, str );
+	log_message("", buf );
+}
+
+/*
+ * addComment
+ * @str - pointer to comment to add
+ *
+ * Must be called with instructor lock held
+ */	
+void
+addComment(char *str )
+{
+	int commentNext;
+	
+	// Event: add to event list at end and increment commentListNext
+	commentNext = simmgr_shm->commentListNext + 1;
+	if ( commentNext >= COMMENT_LIST_SIZE )
+	{
+		commentNext = 0;
+	}
+	sprintf(simmgr_shm->commentList[commentNext].comment, "%s", str );
+	simmgr_shm->commentListNext = commentNext;
+	sprintf(buf, "Comment: %d %s", commentNext, str );
+	log_message("", str );
 }

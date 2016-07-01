@@ -348,19 +348,8 @@ initializeParameterStruct(struct instructor *initParams )
 void
 processInit(struct instructor *initParams  )
 {
-	int trycount = 0;
-	int sts;
-	
-	// Take Instructor lock
-	while ( ( sts = sem_trywait(&simmgr_shm->instructor.sema) ) != 0 )
-	{
-		if ( trycount++ > 50 )
-		{
-			fprintf(stderr, "%s", "processInit fails to take Instructor lock" );
-			exit ( -1 );
-		}
-		usleep(1000 );
-	}	
+	takeInstructorLock();
+		
 	// Copy initParams to shared instructor interface (not the sema or scenario sections)
 
 	memcpy(&simmgr_shm->instructor.cardiac, &initParams->cardiac, sizeof(struct cardiac) );
@@ -369,8 +358,8 @@ processInit(struct instructor *initParams  )
 	memcpy(&simmgr_shm->instructor.vocals, &initParams->vocals, sizeof(struct vocals) );
 	memcpy(&simmgr_shm->instructor.media, &initParams->media, sizeof(struct media) );
 	
-	// Release the lock
-	sem_post(&simmgr_shm->instructor.sema);
+	releaseInstructorLock();
+	
 	// Delay to allow simmgr to pick up the changes
 	usleep(500000 );
 	
