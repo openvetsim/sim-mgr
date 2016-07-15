@@ -424,6 +424,7 @@ scanForDuplicateScene(int sceneId )
 		scene = (struct scenario_scene *)snode;
 		if ( scene->id == sceneId )
 		{
+			printf("sfds: %d %d\n", scene->id, sceneId );
 			match++;
 		}
 		snode = get_next_llist(snode );
@@ -438,7 +439,7 @@ scanForDuplicateScene(int sceneId )
 		printf("ERROR: duplicate check, Scene ID %d found %d times\n", sceneId, match );
 		errCount++;
 	}
-	return ( errCount );
+	return ( match );
 }
 /**
  *  scanForDuplicateEvent
@@ -459,7 +460,7 @@ scanForDuplicateEvent(char *eventId )
 	while ( snode )
 	{
 		event = (struct scenario_event *)snode;
-		if ( strcmp(event->event_id, eventId ) != 0 )
+		if ( strcmp(event->event_id, eventId ) == 0 )
 		{
 			match++;
 		}
@@ -475,7 +476,7 @@ scanForDuplicateEvent(char *eventId )
 		printf("ERROR: duplicate check, Event ID %s found %d times\n", eventId, match );
 		errCount++;
 	}
-	return ( errCount );
+	return ( match );
 }
 /**
  *  showScenes
@@ -492,7 +493,7 @@ showScenes()
 	struct snode *t_snode;
 	struct snode *e_snode;
 	int duplicates;
-	int tcount = 0;
+	int tcount;
 	int timeout = 0;
 	
 	snode = scenario->scene_list.next;
@@ -514,6 +515,8 @@ showScenes()
 				scene->id, duplicates );
 			errCount++;
 		}
+		tcount = 0;
+		timeout = 0;
 		if ( scene->timeout > 0 )
 		{
 			printf("\tTimeout: %d Scene %d\n", scene->timeout, scene->timeout_scene );
@@ -955,7 +958,7 @@ saveData(const xmlChar *xmlName, const xmlChar *xmlValue )
 						{
 							new_trigger->scene = atoi(value );
 						}
-						else if ( strcmp(xmlLevels[4].name, "event" ) == 0 )
+						else if ( strcmp(xmlLevels[4].name, "event_id" ) == 0 )
 						{
 							sprintf(new_trigger->param_element, "%s", value );
 							new_trigger->test = TRIGGER_TEST_EVENT;
