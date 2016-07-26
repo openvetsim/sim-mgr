@@ -897,35 +897,35 @@ scan_commands(void )
 	sem_post(&simmgr_shm->instructor.sema);
 	iiLockTaken = 0;
 	
-	if ( scenario_state == Running )
+	// Process the trends
+	// We do this even if no scenario is running, to allow an instructor simple, manual control
+	simmgr_shm->status.cardiac.rate = trendProcess(&cardiacTrend );
+	simmgr_shm->status.cardiac.bps_sys = trendProcess(&sysTrend );
+	simmgr_shm->status.cardiac.bps_dia = trendProcess(&diaTrend );
+	oldRate = simmgr_shm->status.respiration.rate;
+	newRate = trendProcess(&respirationTrend );
+	
+	if ( oldRate != newRate )
 	{
-		// Process the trends
-		simmgr_shm->status.cardiac.rate = trendProcess(&cardiacTrend );
-		simmgr_shm->status.cardiac.bps_sys = trendProcess(&sysTrend );
-		simmgr_shm->status.cardiac.bps_dia = trendProcess(&diaTrend );
-		oldRate = simmgr_shm->status.respiration.rate;
-		newRate = trendProcess(&respirationTrend );
-		if ( oldRate != newRate )
+		if ( newRate > 0 )
 		{
-			if ( newRate > 0 )
-			{
-				simmgr_shm->status.respiration.rate = newRate;
-				period = (1000*60)/newRate;	// Period in msec from rate per minute
-				simmgr_shm->status.respiration.inhalation_duration = period / 2;
-				simmgr_shm->status.respiration.exhalation_duration = period - simmgr_shm->status.respiration.inhalation_duration;
-			}
-			else
-			{
-				simmgr_shm->status.respiration.rate = 0;
-				simmgr_shm->status.respiration.inhalation_duration = 0;
-				simmgr_shm->status.respiration.exhalation_duration = 0;
-			}
+			simmgr_shm->status.respiration.rate = newRate;
+			period = (1000*60)/newRate;	// Period in msec from rate per minute
+			simmgr_shm->status.respiration.inhalation_duration = period / 2;
+			simmgr_shm->status.respiration.exhalation_duration = period - simmgr_shm->status.respiration.inhalation_duration;
 		}
-		simmgr_shm->status.respiration.spo2 = trendProcess( &spo2Trend );
-		simmgr_shm->status.respiration.etco2 = trendProcess( &etco2Trend );
-		simmgr_shm->status.general.temperature = trendProcess(&tempTrend );
+		else
+		{
+			simmgr_shm->status.respiration.rate = 0;
+			simmgr_shm->status.respiration.inhalation_duration = 0;
+			simmgr_shm->status.respiration.exhalation_duration = 0;
+		}
 	}
-	else if ( scenario_state == Terminate )
+	simmgr_shm->status.respiration.spo2 = trendProcess( &spo2Trend );
+	simmgr_shm->status.respiration.etco2 = trendProcess( &etco2Trend );
+	simmgr_shm->status.general.temperature = trendProcess(&tempTrend );
+
+	if ( scenario_state == Terminate )
 	{
 		if ( simmgr_shm->logfile.active == 0 )
 		{
