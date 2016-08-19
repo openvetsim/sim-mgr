@@ -860,7 +860,9 @@ saveData(const xmlChar *xmlName, const xmlChar *xmlValue )
 					}
 					break;
 				case PARSE_INIT_STATE_SCENE:
-					if ( ( xml_current_level == 2 ) && ( strcmp(xmlLevels[xml_current_level].name, "scene" ) == 0 ) )
+					if ( ( xml_current_level == 2 ) && 
+						( ( strcmp(xmlLevels[xml_current_level].name, "scene" ) == 0 ) ||
+						  ( strcmp(xmlLevels[xml_current_level].name, "initial_scene" ) == 0 ) ) )
 					{
 						simmgr_shm->status.scenario.scene_id = atoi(value );
 						current_scene_id = simmgr_shm->status.scenario.scene_id;
