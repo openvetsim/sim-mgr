@@ -260,6 +260,7 @@ main(int argc, char **argv)
 	if ( ! current_scene )
 	{
 		sprintf(msgbuf, "Starting scene not found" );
+		current_scene_id = -1;
 		if ( !checkOnly )
 		{
 			log_message("", msgbuf );
@@ -268,15 +269,27 @@ main(int argc, char **argv)
 		{
 			fprintf(stderr, "%s\n", msgbuf );
 		}
-		sprintf(simmgr_shm->status.scenario.state, "%s", "Stopped" );
-		exit ( -2);
+		if ( ! checkOnly )
+		{
+			sprintf(simmgr_shm->status.scenario.scene_name, "%s", "No Start Scene" );
+			takeInstructorLock();
+			sprintf(simmgr_shm->instructor.scenario.state, "%s", "terminate" );
+			releaseInstructorLock();
+		}
+		errCount++;
 	}
+	else
+	{
+		if ( ! checkOnly )
+		{
+			sprintf(simmgr_shm->status.scenario.scene_name, "%s", current_scene->name );
+		}
+	}
+	
 	if ( checkOnly )
 	{
 		return ( errCount );
 	}
-	
-	sprintf(simmgr_shm->status.scenario.scene_name, "%s", current_scene->name );
 	
 	if ( verbose )
 	{
@@ -288,16 +301,17 @@ main(int argc, char **argv)
 	// Apply initialization parameters
 	processInit(&scenario->initParams );
 	
-	if ( verbose )
+	if ( current_scene_id >= 0 ) 
 	{
-		printf("Calling processInit for Scene %d, %s \n", current_scene->id, current_scene->name );
+		if ( verbose )
+		{
+			printf("Calling processInit for Scene %d, %s \n", current_scene->id, current_scene->name );
+		}
+		startScene(current_scene_id );
 	}
-	
+
 	// Set our internal state to running
 	scenario_state = Running;
-	
-	startScene(current_scene_id );
-	
 	
 	if ( verbose )
 	{
