@@ -77,9 +77,21 @@ cardiac_parse(const char *elem,  const char *value, struct cardiac *card )
 	{
 		card->nibp_rate = atoi(value );
 	}
+	else if ( strcmp(elem, "nibp_read" ) == 0 )
+	{
+		card->nibp_read = atoi(value );
+	}
+	else if ( strcmp(elem, "nibp_freq" ) == 0 )
+	{
+		card->nibp_freq = atoi(value );
+	}
 	else if ( strcmp(elem, ("ecg_indicator" ) ) == 0 )
 	{
 		card->ecg_indicator = atoi(value );
+	}
+	else if ( strcmp(elem, ("bp_cuff" ) ) == 0 )
+	{
+		card->bp_cuff = atoi(value );
 	}
 	else if ( strcmp(elem, ("heart_sound" ) ) == 0 )
 	{
@@ -93,23 +105,92 @@ cardiac_parse(const char *elem,  const char *value, struct cardiac *card )
 	{
 		card->heart_sound_mute = atoi(value );
 	}
-	else if ( strcmp(elem, ("pulse_strength" ) ) == 0 )
+	else if ( strcmp(elem, ("right_dorsal_pulse_strength" ) ) == 0 )
 	{
 		if ( (strcmp(value, "none" ) ) == 0 )
 		{
-			card->pulse_strength = 0;
+			card->right_dorsal_pulse_strength = 0;
 		}
 		else if ( (strcmp(value, "weak" ) ) == 0 )
 		{
-			card->pulse_strength = 1;
+			card->right_dorsal_pulse_strength = 1;
 		}
 		else if ( (strcmp(value, "medium" ) ) == 0 )
 		{
-			card->pulse_strength = 2;
+			card->right_dorsal_pulse_strength = 2;
 		}
 		else if ( (strcmp(value, "strong" ) ) == 0 )
 		{
-			card->pulse_strength = 3;
+			card->right_dorsal_pulse_strength = 3;
+		}
+		else
+		{
+			sts = 3;
+		}
+	}
+	else if ( strcmp(elem, ("left_dorsal_pulse_strength" ) ) == 0 )
+	{
+		if ( (strcmp(value, "none" ) ) == 0 )
+		{
+			card->left_dorsal_pulse_strength = 0;
+		}
+		else if ( (strcmp(value, "weak" ) ) == 0 )
+		{
+			card->left_dorsal_pulse_strength = 1;
+		}
+		else if ( (strcmp(value, "medium" ) ) == 0 )
+		{
+			card->left_dorsal_pulse_strength = 2;
+		}
+		else if ( (strcmp(value, "strong" ) ) == 0 )
+		{
+			card->left_dorsal_pulse_strength = 3;
+		}
+		else
+		{
+			sts = 3;
+		}
+	}
+	else if ( strcmp(elem, ("right_femoral_pulse_strength" ) ) == 0 )
+	{
+		if ( (strcmp(value, "none" ) ) == 0 )
+		{
+			card->right_femoral_pulse_strength = 0;
+		}
+		else if ( (strcmp(value, "weak" ) ) == 0 )
+		{
+			card->right_femoral_pulse_strength = 1;
+		}
+		else if ( (strcmp(value, "medium" ) ) == 0 )
+		{
+			card->right_femoral_pulse_strength = 2;
+		}
+		else if ( (strcmp(value, "strong" ) ) == 0 )
+		{
+			card->right_femoral_pulse_strength = 3;
+		}
+		else
+		{
+			sts = 3;
+		}
+	}
+	else if ( strcmp(elem, ("left_femoral_pulse_strength" ) ) == 0 )
+	{
+		if ( (strcmp(value, "none" ) ) == 0 )
+		{
+			card->left_femoral_pulse_strength = 0;
+		}
+		else if ( (strcmp(value, "weak" ) ) == 0 )
+		{
+			card->left_femoral_pulse_strength = 1;
+		}
+		else if ( (strcmp(value, "medium" ) ) == 0 )
+		{
+			card->left_femoral_pulse_strength = 2;
+		}
+		else if ( (strcmp(value, "strong" ) ) == 0 )
+		{
+			card->left_femoral_pulse_strength = 3;
 		}
 		else
 		{
@@ -301,14 +382,20 @@ initializeParameterStruct(struct instructor *initParams )
 	initParams->cardiac.pea = -1;
 	initParams->cardiac.rate = -1;
 	initParams->cardiac.nibp_rate = -1;
+	initParams->cardiac.nibp_read = -1;
+	initParams->cardiac.nibp_freq = -1;
 	initParams->cardiac.pr_interval = -1;
 	initParams->cardiac.qrs_interval = -1;
 	initParams->cardiac.bps_sys = -1;
 	initParams->cardiac.bps_dia = -1;
-	initParams->cardiac.pulse_strength = -1;
+	initParams->cardiac.right_dorsal_pulse_strength = -1;
+	initParams->cardiac.right_femoral_pulse_strength = -1;
+	initParams->cardiac.left_dorsal_pulse_strength = -1;
+	initParams->cardiac.left_femoral_pulse_strength = -1;
 	initParams->cardiac.heart_sound_volume = -1;
 	initParams->cardiac.heart_sound_mute = -1;
 	initParams->cardiac.ecg_indicator = -1;
+	initParams->cardiac.bp_cuff = -1;
 	initParams->cardiac.transfer_time = -1;
 	
 	initParams->respiration.inhalation_duration = -1;
@@ -379,6 +466,10 @@ getValueFromName(char *param_class, char *param_element )
 			rval = simmgr_shm->status.cardiac.rate;
 		else if ( strcmp(param_element, "nibp_rate" ) == 0 )
 			rval = simmgr_shm->status.cardiac.nibp_rate;
+		else if ( strcmp(param_element, "nibp_read" ) == 0 )
+			rval = simmgr_shm->status.cardiac.nibp_read;
+		else if ( strcmp(param_element, "nibp_freq" ) == 0 )
+			rval = simmgr_shm->status.cardiac.nibp_freq;
 		else if ( strcmp(param_element, "pr_interval" ) == 0 )
 			rval = simmgr_shm->status.cardiac.pr_interval;
 		else if ( strcmp(param_element, "qrs_interval" ) == 0 )
@@ -389,6 +480,8 @@ getValueFromName(char *param_class, char *param_element )
 			rval = simmgr_shm->status.cardiac.bps_dia;
 		else if ( strcmp(param_element, "ecg_indicator" ) == 0 )
 			rval = simmgr_shm->status.cardiac.ecg_indicator;
+		else if ( strcmp(param_element, "bp_cuff" ) == 0 )
+			rval = simmgr_shm->status.cardiac.bp_cuff;
 	}
 	else if ( strcmp(param_class, "respiration" ) == 0 )
 	{

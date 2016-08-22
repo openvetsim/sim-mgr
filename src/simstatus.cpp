@@ -405,6 +405,10 @@ sendStatus(void )
 	cout << ",\n";
 	makejson(cout, "nibp_rate", itoa(simmgr_shm->status.cardiac.nibp_rate, buffer, 10 ) );
 	cout << ",\n";
+	makejson(cout, "nibp_read", itoa(simmgr_shm->status.cardiac.nibp_read, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "nibp_freq", itoa(simmgr_shm->status.cardiac.nibp_freq, buffer, 10 ) );
+	cout << ",\n";
 	makejson(cout, "pulseCount", itoa(simmgr_shm->status.cardiac.pulseCount, buffer, 10 ) );
 	cout << ",\n";
 	makejson(cout, "pwave", simmgr_shm->status.cardiac.pwave );
@@ -417,22 +421,79 @@ sendStatus(void )
 	cout << ",\n";
 	makejson(cout, "bps_dia", itoa(simmgr_shm->status.cardiac.bps_dia, buffer, 10 ) );
 	cout << ",\n";
-	switch ( simmgr_shm->status.cardiac.pulse_strength )
+	switch ( simmgr_shm->status.cardiac.right_dorsal_pulse_strength )
 	{
 		case 0:
-			makejson(cout, "pulse_strength", "none" );
+			makejson(cout, "right_dorsal_pulse_strength", "none" );
 			break;
 		case 1:
-			makejson(cout, "pulse_strength", "weak" );
+			makejson(cout, "right_dorsal_pulse_strength", "weak" );
 			break;
 		case 2:
-			makejson(cout, "pulse_strength", "medium" );
+			makejson(cout, "right_dorsal_pulse_strength", "medium" );
 			break;
 		case 3:
-			makejson(cout, "pulse_strength", "strong" );
+			makejson(cout, "right_dorsal_pulse_strength", "strong" );
 			break;
 		default:	// Should never happen
-			makejson(cout, "pulse_strength", itoa(simmgr_shm->status.cardiac.pulse_strength, buffer, 10) );
+			makejson(cout, "right_dorsal_pulse_strength", itoa(simmgr_shm->status.cardiac.right_dorsal_pulse_strength, buffer, 10) );
+			break;
+	}
+	cout << ",\n";
+	switch ( simmgr_shm->status.cardiac.left_dorsal_pulse_strength )
+	{
+		case 0:
+			makejson(cout, "left_dorsal_pulse_strength", "none" );
+			break;
+		case 1:
+			makejson(cout, "left_dorsal_pulse_strength", "weak" );
+			break;
+		case 2:
+			makejson(cout, "left_dorsal_pulse_strength", "medium" );
+			break;
+		case 3:
+			makejson(cout, "left_dorsal_pulse_strength", "strong" );
+			break;
+		default:	// Should never happen
+			makejson(cout, "left_dorsal_pulse_strength", itoa(simmgr_shm->status.cardiac.left_dorsal_pulse_strength, buffer, 10) );
+			break;
+	}
+	cout << ",\n";
+	switch ( simmgr_shm->status.cardiac.right_femoral_pulse_strength )
+	{
+		case 0:
+			makejson(cout, "right_femoral_pulse_strength", "none" );
+			break;
+		case 1:
+			makejson(cout, "right_femoral_pulse_strength", "weak" );
+			break;
+		case 2:
+			makejson(cout, "right_femoral_pulse_strength", "medium" );
+			break;
+		case 3:
+			makejson(cout, "right_femoral_pulse_strength", "strong" );
+			break;
+		default:	// Should never happen
+			makejson(cout, "right_femoral_pulse_strength", itoa(simmgr_shm->status.cardiac.right_femoral_pulse_strength, buffer, 10) );
+			break;
+	}
+	cout << ",\n";
+	switch ( simmgr_shm->status.cardiac.left_femoral_pulse_strength )
+	{
+		case 0:
+			makejson(cout, "left_femoral_pulse_strength", "none" );
+			break;
+		case 1:
+			makejson(cout, "left_femoral_pulse_strength", "weak" );
+			break;
+		case 2:
+			makejson(cout, "left_femoral_pulse_strength", "medium" );
+			break;
+		case 3:
+			makejson(cout, "left_femoral_pulse_strength", "strong" );
+			break;
+		default:	// Should never happen
+			makejson(cout, "left_femoral_pulse_strength", itoa(simmgr_shm->status.cardiac.left_femoral_pulse_strength, buffer, 10) );
 			break;
 	}
 	cout << ",\n";
@@ -443,6 +504,8 @@ sendStatus(void )
 	makejson(cout, "heart_sound", simmgr_shm->status.cardiac.heart_sound );
 	cout << ",\n";
 	makejson(cout, "ecg_indicator", itoa(simmgr_shm->status.cardiac.ecg_indicator, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "bp_cuff", itoa(simmgr_shm->status.cardiac.bp_cuff, buffer, 10 ) );
 	cout << "\n},\n";
 	
 	cout << " \"respiration\" : {\n";

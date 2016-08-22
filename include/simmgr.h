@@ -26,13 +26,23 @@
 #define	OPEN_WITH_CREATE	1
 #define OPEN_ACCESS			0
 
+
 enum ScenarioState
 { 
-	Stopped, 
-	Running, 
-	Paused, 
-	Terminate
+	ScenarioStopped, 
+	ScenarioRunning, 
+	ScenarioPaused, 
+	ScenarioTerminate
 };
+
+enum NibpState
+{
+	NibpIdle,
+	NibpWaiting,
+	NibpRunning
+};
+#define NIBP_RUN_TIME	(15)	// Delay time in seconds
+
 
 // Data Structures
 //
@@ -45,18 +55,24 @@ struct cardiac
 	int pea;			// Pulseless Electrical Activity
 	int rate;			// Heart Rate in Beats per Minute
 	int nibp_rate;		// Non-Invasive Rate - Only reports when cuff is on
+	int nibp_read;		// Set to 1 to start reading, set to 0 when reading is complete.
+	int nibp_freq;		// Number of minutes for NIBP timer. 0 is manual.
 	int transfer_time;	// Trend length for change in rate;
 	char pwave[STR_SIZE];
 	int pr_interval;	// PR interval in msec
 	int qrs_interval;		// QRS in msec
 	int bps_sys;	// Systolic
 	int bps_dia;	// Diastolic
-	int pulse_strength;	// 0 - None, 3 - strong
+	int right_dorsal_pulse_strength; 	// 0 - None, 3 - strong
+	int right_femoral_pulse_strength;
+	int left_dorsal_pulse_strength;
+	int left_femoral_pulse_strength;
 	unsigned int pulseCount;
 	char heart_sound[STR_SIZE];
 	int heart_sound_volume;
 	int heart_sound_mute;
 	int ecg_indicator;
+	int bp_cuff;
 };
 
 struct scenario

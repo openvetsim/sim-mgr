@@ -311,7 +311,7 @@ main(int argc, char **argv)
 	}
 
 	// Set our internal state to running
-	scenario_state = Running;
+	scenario_state = ScenarioRunning;
 	
 	if ( verbose )
 	{
@@ -332,7 +332,7 @@ main(int argc, char **argv)
 		
 		if ( strcmp(simmgr_shm->status.scenario.state, "Terminate" ) == 0 )	// Check for termination
 		{
-			if ( scenario_state != Terminate )
+			if ( scenario_state != ScenarioTerminate )
 			{
 				// If the scenario needs to do any cleanup, this is the place.
 				
@@ -344,29 +344,29 @@ main(int argc, char **argv)
 				{					
 					sprintf(simmgr_shm->instructor.scenario.state, "Stopped" );
 					releaseInstructorLock();
-					scenario_state = Terminate;
+					scenario_state = ScenarioTerminate;
 				}
 			}
 		}
 		else if ( strcmp(simmgr_shm->status.scenario.state, "Stopped" ) == 0 )
 		{
-			if ( scenario_state != Stopped )
+			if ( scenario_state != ScenarioStopped )
 			{
 				sprintf(msgbuf, "scenario: Stopped" );
 				log_message("", msgbuf );
-				scenario_state = Stopped;
+				scenario_state = ScenarioStopped;
 			}
 		}
 		else if ( strcmp(simmgr_shm->status.scenario.state, "Running" ) == 0 )
 		{
 			// Do periodic scenario check
 			scene_check();
-			scenario_state = Running;
+			scenario_state = ScenarioRunning;
 		}
 		else if ( strcmp(simmgr_shm->status.scenario.state, "Paused" ) == 0 )
 		{
 			// Nothing
-			scenario_state = Paused;
+			scenario_state = ScenarioPaused;
 		}
 		if ( loopCount++ == 100 )
 		{
@@ -861,8 +861,7 @@ saveData(const xmlChar *xmlName, const xmlChar *xmlValue )
 					break;
 				case PARSE_INIT_STATE_SCENE:
 					if ( ( xml_current_level == 2 ) && 
-						( ( strcmp(xmlLevels[xml_current_level].name, "scene" ) == 0 ) ||
-						  ( strcmp(xmlLevels[xml_current_level].name, "initial_scene" ) == 0 ) ) )
+						( strcmp(xmlLevels[xml_current_level].name, "initial_scene" ) == 0 ) )
 					{
 						simmgr_shm->status.scenario.scene_id = atoi(value );
 						current_scene_id = simmgr_shm->status.scenario.scene_id;
@@ -870,7 +869,20 @@ saveData(const xmlChar *xmlName, const xmlChar *xmlValue )
 						{
 							printf("Set Initial Scene to ID %d\n", current_scene_id );
 						}
+						sts = 0;
 					}
+					else if ( ( xml_current_level == 2 ) && 
+						( strcmp(xmlLevels[xml_current_level].name, "scene" ) == 0 ) )
+					{
+						simmgr_shm->status.scenario.scene_id = atoi(value );
+						current_scene_id = simmgr_shm->status.scenario.scene_id;
+						if ( verbose )
+						{
+							printf("Set Initial Scene to ID %d\n", current_scene_id );
+						}
+						sts = 0;
+					}
+					break;
 				default:
 					sts = 0;
 					break;
@@ -1145,7 +1157,7 @@ startParseState(int lvl, char *name )
 			{
 				parse_state = PARSE_STATE_INIT;
 			}
-			else if ( strcmp(name, "scene" ) == 0 )
+			else if ( ( strcmp(name, "scene" ) == 0 ) || ( strcmp(name, "initial_scene" ) == 0 ) )
 			{
 				// Allocate a scene
 				new_scene =  (struct scenario_scene *)calloc(1, sizeof(struct scenario_scene ) );
@@ -1190,6 +1202,10 @@ startParseState(int lvl, char *name )
 						parse_init_state = PARSE_INIT_STATE_MEDIA;
 					}
 					else if ( strcmp(name, "scene" ) == 0 )
+					{
+						parse_init_state = PARSE_INIT_STATE_SCENE;
+					}
+					else if ( strcmp(name, "initial_scene" ) == 0 )
 					{
 						parse_init_state = PARSE_INIT_STATE_SCENE;
 					}

@@ -63,7 +63,10 @@ std::time_t now;
 std::time_t scenario_run_time;
 
 
-ScenarioState scenario_state = Stopped;
+ScenarioState scenario_state = ScenarioStopped;
+NibpState nibp_state = NibpIdle;
+std::time_t nibp_next_time;
+std::time_t nibp_run_complete_time;
 
 /* str_thdata
 	structure to hold data to be passed to a thread
@@ -75,8 +78,9 @@ typedef struct str_thdata
 } thdata;
 
 
-/* prototype for thread routine */
+/* prototype for thread routines */
 void heart_thread ( void *ptr );
+void nibp_thread ( void *ptr );
 
 void
 strToLower(char *buf )
@@ -87,6 +91,7 @@ strToLower(char *buf )
 		buf[i] = (char)tolower(buf[i] );
 	}
 }
+
 void
 killScenario(int arg1, void *arg2 )
 {
@@ -135,16 +140,22 @@ main(int argc, char *argv[] )
 	simmgr_shm->status.cardiac.pea = 0;
 	simmgr_shm->status.cardiac.rate = 80;
 	simmgr_shm->status.cardiac.nibp_rate = 80;
+	simmgr_shm->status.cardiac.nibp_read = -1;
+	simmgr_shm->status.cardiac.nibp_freq = 0;
 	sprintf(simmgr_shm->status.cardiac.pwave, "%s", "none" );
 	simmgr_shm->status.cardiac.pr_interval = 140; // Good definition at http://lifeinthefastlane.com/ecg-library/basics/pr-interval/
 	simmgr_shm->status.cardiac.qrs_interval = 85;
 	simmgr_shm->status.cardiac.bps_sys = 105;
 	simmgr_shm->status.cardiac.bps_dia = 70;
-	simmgr_shm->status.cardiac.pulse_strength = 2;
+	simmgr_shm->status.cardiac.right_dorsal_pulse_strength = 2;
+	simmgr_shm->status.cardiac.right_femoral_pulse_strength = 2;
+	simmgr_shm->status.cardiac.left_dorsal_pulse_strength = 2;
+	simmgr_shm->status.cardiac.left_femoral_pulse_strength = 2;
 	sprintf(simmgr_shm->status.cardiac.heart_sound, "%s", "none" );
 	simmgr_shm->status.cardiac.heart_sound_volume = 10;
 	simmgr_shm->status.cardiac.heart_sound_mute = 0;
 	simmgr_shm->status.cardiac.ecg_indicator = 0;
+	simmgr_shm->status.cardiac.bp_cuff = 0;
 	
 	// status/respiration
 	sprintf(simmgr_shm->status.respiration.left_lung_sound, "%s", "normal" );
@@ -212,6 +223,8 @@ main(int argc, char *argv[] )
 	sprintf(simmgr_shm->instructor.cardiac.rhythm, "%s", "" );
 	simmgr_shm->instructor.cardiac.rate = -1;
 	simmgr_shm->instructor.cardiac.nibp_rate = -1;
+	simmgr_shm->instructor.cardiac.nibp_read = -1;
+	simmgr_shm->instructor.cardiac.nibp_freq = -1;
 	sprintf(simmgr_shm->instructor.cardiac.pwave, "%s", "" );
 	simmgr_shm->instructor.cardiac.pr_interval = -1;
 	simmgr_shm->instructor.cardiac.qrs_interval = -1;
@@ -221,11 +234,15 @@ main(int argc, char *argv[] )
 	simmgr_shm->instructor.cardiac.vpc_freq = -1;
 	sprintf(simmgr_shm->instructor.cardiac.vpc, "%s", "" );
 	sprintf(simmgr_shm->instructor.cardiac.vfib_amplitude, "%s", "" );
-	simmgr_shm->instructor.cardiac.pulse_strength = -1;
+	simmgr_shm->instructor.cardiac.right_dorsal_pulse_strength = -1;
+	simmgr_shm->instructor.cardiac.right_femoral_pulse_strength = -1;
+	simmgr_shm->instructor.cardiac.left_dorsal_pulse_strength = -1;
+	simmgr_shm->instructor.cardiac.left_femoral_pulse_strength = -1;
 	sprintf(simmgr_shm->instructor.cardiac.heart_sound, "%s", "" );
 	simmgr_shm->instructor.cardiac.heart_sound_volume = -1;
 	simmgr_shm->instructor.cardiac.heart_sound_mute = -1;
 	simmgr_shm->instructor.cardiac.ecg_indicator = -1;
+	simmgr_shm->instructor.cardiac.bp_cuff = -1;
 	
 	// instructor/scenario
 	sprintf(simmgr_shm->instructor.scenario.active, "%s", "" );
@@ -317,11 +334,11 @@ updateScenarioState(ScenarioState new_state)
 	
 	if ( new_state != scenario_state )
 	{
-		if ( ( new_state == Terminate ) && ( ( scenario_state != Running ) && ( scenario_state != Paused )) )
+		if ( ( new_state == ScenarioTerminate ) && ( ( scenario_state != ScenarioRunning ) && ( scenario_state != ScenarioPaused )) )
 		{
 			rval = false;
 		}
-		else if ( ( new_state == Paused ) && ( ( scenario_state != Running ) && ( scenario_state != Paused )) )
+		else if ( ( new_state == ScenarioPaused ) && ( ( scenario_state != ScenarioRunning ) && ( scenario_state != ScenarioPaused )) )
 		{
 			rval = false;
 		}
@@ -331,17 +348,17 @@ updateScenarioState(ScenarioState new_state)
 			
 			switch ( scenario_state )
 			{
-				case Stopped:
+				case ScenarioStopped:
 					sprintf(simmgr_shm->status.scenario.state, "Stopped" );
 					(void)simlog_end();
 					break;
-				case Running:
+				case ScenarioRunning:
 					sprintf(simmgr_shm->status.scenario.state, "Running" );
 					break;
-				case Paused:
+				case ScenarioPaused:
 					sprintf(simmgr_shm->status.scenario.state, "Paused" );
 					break;
-				case Terminate:
+				case ScenarioTerminate:
 					sprintf(simmgr_shm->status.scenario.state, "Terminate" );
 					(void)simlog_end();
 					break;
@@ -378,7 +395,7 @@ time_update(void )
 	sprintf(simmgr_shm->server.server_time, "%s", buf );
 	simmgr_shm->server.msec_time = (((tm.tm_hour*60*60)+(tm.tm_min*60)+tm.tm_sec)*1000)+ timeb.millitm;
 	
-	if ( scenario_state == Running )
+	if ( scenario_state == ScenarioRunning )
 	{
 		now = std::time(nullptr );
 		sec = (int)difftime(now, scenario_start_time );
@@ -390,7 +407,7 @@ time_update(void )
 		if ( ( sec == 0 ) && ( last_time_sec != 0 ) )
 		{
 			// Do periodic Stats update every minute
-			sprintf(buf, "VS: Temp: %0.1f; awRR: %d; HR: %d; BP: %d/%d; SPO2: %d; etCO2: %d mmHg; Probes: ECG: %s; SPO2: %s; ETCO2: %s",
+			sprintf(buf, "VS: Temp: %0.1f; awRR: %d; HR: %d; BP: %d/%d; SPO2: %d; etCO2: %d mmHg; Probes: ECG: %s; BP: %s; SPO2: %s; ETCO2: %s",
 				((double)simmgr_shm->status.general.temperature) / 10,
 				simmgr_shm->status.respiration.rate,
 				simmgr_shm->status.cardiac.rate,
@@ -399,6 +416,7 @@ time_update(void )
 				simmgr_shm->status.respiration.spo2,
 				simmgr_shm->status.respiration.etco2,
 				(simmgr_shm->status.cardiac.ecg_indicator == 1 ? "on" : "off"  ),
+				(simmgr_shm->status.cardiac.bp_cuff == 1 ? "on" : "off"  ),
 				(simmgr_shm->status.respiration.spo2_indicator == 1 ? "on" : "off"  ),
 				(simmgr_shm->status.respiration.etco2_indicator == 1 ? "on" : "off"  )
 			);
@@ -406,7 +424,7 @@ time_update(void )
 		}
 		last_time_sec = sec;
 	}
-	else if ( scenario_state == Stopped )
+	else if ( scenario_state == ScenarioStopped )
 	{
 		last_time_sec = -1;
 	}
@@ -567,34 +585,34 @@ scan_commands(void )
 		
 		if ( strcmp(simmgr_shm->instructor.scenario.state, "paused" ) == 0 )
 		{
-			if ( scenario_state == Running )
+			if ( scenario_state == ScenarioRunning )
 			{
-				updateScenarioState(Paused );
+				updateScenarioState(ScenarioPaused );
 			}
 		}
 		else if ( strcmp(simmgr_shm->instructor.scenario.state, "running" ) == 0 )
 		{
-			if ( scenario_state == Paused )
+			if ( scenario_state == ScenarioPaused )
 			{
-				updateScenarioState(Running );
+				updateScenarioState(ScenarioRunning );
 			}
-			else if ( scenario_state == Stopped )
+			else if ( scenario_state == ScenarioStopped )
 			{
 				sts = start_scenario(simmgr_shm->status.scenario.active );
 			}
 		}
 		else if ( strcmp(simmgr_shm->instructor.scenario.state, "terminate" ) == 0 )
 		{
-			if ( scenario_state != Terminate )
+			if ( scenario_state != ScenarioTerminate )
 			{
-				updateScenarioState(Terminate );
+				updateScenarioState(ScenarioTerminate );
 			}
 		}
 		else if ( strcmp(simmgr_shm->instructor.scenario.state, "stopped" ) == 0 )
 		{
-			if ( scenario_state != Stopped )
+			if ( scenario_state != ScenarioStopped )
 			{
-				updateScenarioState(Stopped );
+				updateScenarioState(ScenarioStopped );
 			}
 		}
 		sprintf(simmgr_shm->instructor.scenario.state, "%s", "" );
@@ -605,14 +623,14 @@ scan_commands(void )
 		log_message("", msgbuf ); 
 		switch ( scenario_state )
 		{
-			case Terminate:
+			case ScenarioTerminate:
 			default:
 				break;
-			case Stopped:
+			case ScenarioStopped:
 				sprintf(simmgr_shm->status.scenario.active, "%s", simmgr_shm->instructor.scenario.active );
-				sprintf(simmgr_shm->instructor.scenario.active, "%s", "" );
 				break;
 		}
+		sprintf(simmgr_shm->instructor.scenario.active, "%s", "" );
 	}
 	
 	// Cardiac
@@ -656,6 +674,26 @@ scan_commands(void )
 		}
 		simmgr_shm->instructor.cardiac.nibp_rate = -1;
 	}
+	if ( simmgr_shm->instructor.cardiac.nibp_read >= 0 )
+	{
+		if ( simmgr_shm->status.cardiac.nibp_read != simmgr_shm->instructor.cardiac.nibp_read )
+		{
+			simmgr_shm->status.cardiac.nibp_read = simmgr_shm->instructor.cardiac.nibp_read;
+		}
+		simmgr_shm->instructor.cardiac.nibp_read = -1;
+	}
+	if ( simmgr_shm->instructor.cardiac.nibp_freq >= 0 )
+	{
+		if ( simmgr_shm->status.cardiac.nibp_freq != simmgr_shm->instructor.cardiac.nibp_freq )
+		{
+			simmgr_shm->status.cardiac.nibp_freq = simmgr_shm->instructor.cardiac.nibp_freq;
+			if ( nibp_state == NibpWaiting ) // Cancel current wait and allow reset to new rate
+			{
+				nibp_state = NibpIdle;
+			}
+		}
+		simmgr_shm->instructor.cardiac.nibp_freq = -1;
+	}
 	if ( strlen(simmgr_shm->instructor.cardiac.pwave ) > 0 )
 	{
 		sprintf(simmgr_shm->status.cardiac.pwave, "%s", simmgr_shm->instructor.cardiac.pwave );
@@ -697,11 +735,26 @@ scan_commands(void )
 		simmgr_shm->status.cardiac.pea = simmgr_shm->instructor.cardiac.pea;
 		simmgr_shm->instructor.cardiac.pea = -1;
 	}	
-	if ( simmgr_shm->instructor.cardiac.pulse_strength >= 0 )
+	if ( simmgr_shm->instructor.cardiac.right_dorsal_pulse_strength >= 0 )
 	{
-		simmgr_shm->status.cardiac.pulse_strength = simmgr_shm->instructor.cardiac.pulse_strength;
-		simmgr_shm->instructor.cardiac.pulse_strength = -1;
-	}	
+		simmgr_shm->status.cardiac.right_dorsal_pulse_strength = simmgr_shm->instructor.cardiac.right_dorsal_pulse_strength;
+		simmgr_shm->instructor.cardiac.right_dorsal_pulse_strength = -1;
+	}
+	if ( simmgr_shm->instructor.cardiac.right_femoral_pulse_strength >= 0 )
+	{
+		simmgr_shm->status.cardiac.right_femoral_pulse_strength = simmgr_shm->instructor.cardiac.right_femoral_pulse_strength;
+		simmgr_shm->instructor.cardiac.right_femoral_pulse_strength = -1;
+	}
+	if ( simmgr_shm->instructor.cardiac.left_dorsal_pulse_strength >= 0 )
+	{
+		simmgr_shm->status.cardiac.left_dorsal_pulse_strength = simmgr_shm->instructor.cardiac.left_dorsal_pulse_strength;
+		simmgr_shm->instructor.cardiac.left_dorsal_pulse_strength = -1;
+	}
+	if ( simmgr_shm->instructor.cardiac.left_femoral_pulse_strength >= 0 )
+	{
+		simmgr_shm->status.cardiac.left_femoral_pulse_strength = simmgr_shm->instructor.cardiac.left_femoral_pulse_strength;
+		simmgr_shm->instructor.cardiac.left_femoral_pulse_strength = -1;
+	}
 	if ( simmgr_shm->instructor.cardiac.vpc_freq >= 0 )
 	{
 		simmgr_shm->status.cardiac.vpc_freq = simmgr_shm->instructor.cardiac.vpc_freq;
@@ -742,6 +795,16 @@ scan_commands(void )
 			simlog_entry(buf );
 		}
 		simmgr_shm->instructor.cardiac.ecg_indicator = -1;
+	}
+	if ( simmgr_shm->instructor.cardiac.bp_cuff >= 0 )
+	{
+		if ( simmgr_shm->status.cardiac.bp_cuff != simmgr_shm->instructor.cardiac.bp_cuff )
+		{
+			simmgr_shm->status.cardiac.bp_cuff = simmgr_shm->instructor.cardiac.bp_cuff;
+			sprintf(buf, "%s %s", "BP Cuff", (simmgr_shm->status.cardiac.bp_cuff == 1 ? "Attached": "Removed") );
+			simlog_entry(buf );
+		}
+		simmgr_shm->instructor.cardiac.bp_cuff = -1;
 	}
 	simmgr_shm->instructor.cardiac.transfer_time = -1;
 	
@@ -925,18 +988,102 @@ scan_commands(void )
 	simmgr_shm->status.respiration.etco2 = trendProcess( &etco2Trend );
 	simmgr_shm->status.general.temperature = trendProcess(&tempTrend );
 
-	if ( scenario_state == Terminate )
+	// NIBP processing
+	now = std::time(nullptr );
+	switch ( nibp_state )
+	{
+		case NibpIdle:	// Not started or BP Cuff detached
+			if ( simmgr_shm->status.cardiac.bp_cuff > 0 )
+			{
+				if ( simmgr_shm->status.cardiac.nibp_read == 1 )
+				{
+					// Manual Start - Go to Running for the run delay time
+					nibp_run_complete_time = now + NIBP_RUN_TIME;
+					nibp_state = NibpRunning;
+					sprintf(msgbuf, "NibpState Change: Idle to Running (%ld to %ld)", now, nibp_run_complete_time );
+					log_message("", msgbuf ); 
+				}
+				else if ( simmgr_shm->status.cardiac.nibp_freq != 0 )
+				{
+					// Frequency set
+					nibp_next_time = now + (simmgr_shm->status.cardiac.nibp_freq * 60);
+					nibp_state = NibpWaiting;
+					
+					sprintf(msgbuf, "NibpState Change: Idle to Waiting" );
+					log_message("", msgbuf ); 
+				}
+			}
+			break;
+		case NibpWaiting:
+			if ( simmgr_shm->status.cardiac.bp_cuff == 0 ) // Cuff removed
+			{
+				nibp_state = NibpIdle;
+			}
+			else 
+			{
+				if ( simmgr_shm->status.cardiac.nibp_read == 1 )
+				{
+					// Manual Override
+					nibp_next_time = now;
+				}
+				if ( nibp_next_time <= now )
+				{
+					nibp_run_complete_time = now + NIBP_RUN_TIME;
+					nibp_state = NibpRunning;
+					
+					sprintf(msgbuf, "NibpState Change: Waiting to Running" );
+					log_message("", msgbuf ); 
+					simmgr_shm->status.cardiac.nibp_read = 1;
+				}
+			}
+			break;
+		case NibpRunning:
+			if ( simmgr_shm->status.cardiac.bp_cuff == 0 ) // Cuff removed
+			{
+				nibp_state = NibpIdle;
+				
+				sprintf(msgbuf, "NibpState Change: Running to Idle (cuff removed)" );
+				log_message("", msgbuf ); 
+			}
+			else 
+			{
+				if ( nibp_run_complete_time <= now )
+				{
+					simmgr_shm->status.cardiac.nibp_read = 0;
+					if ( simmgr_shm->status.cardiac.nibp_freq != 0 )
+					{
+						// Frequency set
+						nibp_next_time = now + (simmgr_shm->status.cardiac.nibp_freq * 60);
+						nibp_state = NibpWaiting;
+						
+						sprintf(msgbuf, "NibpState Change: Running to Waiting" );
+						log_message("", msgbuf ); 
+					}
+					else
+					{
+						nibp_state = NibpIdle;
+						sprintf(msgbuf, "NibpState Change: Running to Idle" );
+						log_message("", msgbuf ); 
+					}
+				}
+			}
+			break;
+	}
+	/*
+		if the BP Cuff is attachedand we see nibp_read set, then 
+	*/
+	if ( scenario_state == ScenarioTerminate )
 	{
 		if ( simmgr_shm->logfile.active == 0 )
 		{
-			updateScenarioState(Terminate );
+			updateScenarioState(ScenarioTerminate );
 		}
 	}
-	else if ( scenario_state == Stopped )
+	else if ( scenario_state == ScenarioStopped )
 	{
 		if ( simmgr_shm->logfile.active == 0 )
 		{
-			updateScenarioState(Stopped );
+			updateScenarioState(ScenarioStopped );
 		}
 		if ( scenarioPid )
 		{
@@ -1044,7 +1191,7 @@ start_scenario(const char *name )
 		//sprintf(simmgr_shm->status.scenario.scene_name, "%s", "init" );
 		//simmgr_shm->status.scenario.scene_id = 0;
 		
-		updateScenarioState(Running );
+		updateScenarioState(ScenarioRunning );
 		(void)simlog_create();
 	}
 	else
