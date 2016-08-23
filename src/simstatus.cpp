@@ -210,7 +210,7 @@ main( int argc, const char* argv[] )
 			{
 				get_date(buffer );
 				makejson(cout, "date", buffer );
-			}
+				}
 			else if ( key.compare("ip" ) == 0 )
 			{
 				makejson(cout, "ip_addr", simmgr_shm->server.ip_addr );
@@ -307,6 +307,18 @@ main( int argc, const char* argv[] )
 						{
 							sts = 4;
 						}
+					}
+					else
+					{
+						sts = 2;
+					}
+				}
+				else if ( v[1].compare("cpr" ) == 0 )
+				{
+					if ( v[2].compare("compression" ) == 0 )
+					{
+						simmgr_shm->instructor.cpr.compression = atoi(value.c_str() );
+						sts = 0;
 					}
 					else
 					{

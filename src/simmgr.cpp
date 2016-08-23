@@ -280,6 +280,7 @@ main(int argc, char *argv[] )
 	// instructor/general
 	simmgr_shm->instructor.general.temperature = -1;
 
+	// instructor/vocals
 	sprintf(simmgr_shm->instructor.vocals.filename, "%s", "" );
 	simmgr_shm->instructor.vocals.repeat = -1;
 	simmgr_shm->instructor.vocals.volume = -1;
@@ -299,6 +300,9 @@ main(int argc, char *argv[] )
 	// Comment List
 	simmgr_shm->commentListNext = 0;
 	lastCommentLogged = 0;
+	
+	// instructor/cpr
+	simmgr_shm->instructor.cpr.compression = -1;
 	
 	scenarioCount = 0;
 	while ( 1 )
@@ -954,6 +958,13 @@ scan_commands(void )
 	{
 		simmgr_shm->status.media.play = simmgr_shm->instructor.media.play;
 		simmgr_shm->instructor.media.play = -1;
+	}
+	
+	// CPR
+	if ( simmgr_shm->instructor.cpr.compression >= 0 )
+	{
+		simmgr_shm->status.cpr.compression = simmgr_shm->instructor.cpr.compression;
+		simmgr_shm->instructor.cpr.compression = -1;
 	}
 	
 	// Release the MUTEX

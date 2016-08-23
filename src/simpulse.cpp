@@ -374,6 +374,7 @@ process_child(void *ptr )
 	int count;
 	unsigned int last_pulse = simmgr_shm->status.cardiac.pulseCount;
 	unsigned int last_breath = simmgr_shm->status.respiration.breathCount;
+	int checkCount = 0;
 	
 	while ( 1 )
 	{
@@ -436,27 +437,29 @@ process_child(void *ptr )
 			}
 #endif
 		}
-		
-		// If the pulse rate has changed, then reset the timer
-		if ( currentPulseRate != simmgr_shm->status.cardiac.rate )
+		if ( checkCount++ >= 100 )	// 100 is an interval of 500 ms.
 		{
-			set_pulse_rate(simmgr_shm->status.cardiac.rate );
-			currentPulseRate = simmgr_shm->status.cardiac.rate;
-#ifdef DEBUG
-			sprintf(msgbuf, "Set Pulse to %d", currentPulseRate );
- 			log_message("", msgbuf );
-#endif
-		}
-		
-		// If the breath rate has changed, then reset the timer
-		if ( currentBreathRate != simmgr_shm->status.respiration.rate )
-		{
-			set_breath_rate(simmgr_shm->status.respiration.rate );
-			currentBreathRate = simmgr_shm->status.respiration.rate;
-#ifdef DEBUG
-			sprintf(msgbuf, "Set Breath to %d", currentBreathRate );
-			log_message("", msgbuf );
-#endif
+			// If the pulse rate has changed, then reset the timer
+			if ( currentPulseRate != simmgr_shm->status.cardiac.rate )
+			{
+				set_pulse_rate(simmgr_shm->status.cardiac.rate );
+				currentPulseRate = simmgr_shm->status.cardiac.rate;
+	#ifdef DEBUG
+				sprintf(msgbuf, "Set Pulse to %d", currentPulseRate );
+				log_message("", msgbuf );
+	#endif
+			}
+			
+			// If the breath rate has changed, then reset the timer
+			if ( currentBreathRate != simmgr_shm->status.respiration.rate )
+			{
+				set_breath_rate(simmgr_shm->status.respiration.rate );
+				currentBreathRate = simmgr_shm->status.respiration.rate;
+	#ifdef DEBUG
+				sprintf(msgbuf, "Set Breath to %d", currentBreathRate );
+				log_message("", msgbuf );
+	#endif
+			}
 		}
 	}
 

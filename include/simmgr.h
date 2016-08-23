@@ -210,6 +210,7 @@ struct instructor
 	struct general		general;
 	struct vocals		vocals;
 	struct media		media;
+	struct cpr			cpr;
 	char	eventName[STR_SIZE];
 };
 
