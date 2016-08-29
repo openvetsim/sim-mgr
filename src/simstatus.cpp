@@ -42,6 +42,7 @@ using namespace std;
 using namespace cgicc;
 
 void sendStatus(void );
+void sendSimctrData(void );
 
 struct paramCmds
 {
@@ -228,6 +229,11 @@ main( int argc, const char* argv[] )
 				// The meat of the task - Return the content of the SHM
 				sendStatus();
 			}
+			else if ( key.compare("simctrldata" ) == 0 )
+			{
+				// Return abbreviated status for sim controller
+				sendSimctrData();
+			}
 			else if ( key.compare(0, 4, "set:" ) == 0 )
 			{
 				set_count++;
@@ -372,35 +378,11 @@ main( int argc, const char* argv[] )
 	releaseLock( iiLockTaken );
 	return ( 0 );
 }
-
 void
-sendStatus(void )
+sendSimctrData(void )
 {
     char buffer[256];
 	
-	cout << " \"scenario\" : {\n";
-	makejson(cout, "active", simmgr_shm->status.scenario.active );
-	cout << ",\n";
-	makejson(cout, "start", simmgr_shm->status.scenario.start );
-	cout << ",\n";
-	makejson(cout, "runtime", simmgr_shm->status.scenario.runtime );
-	cout << ",\n";
-	makejson(cout, "scene_name", simmgr_shm->status.scenario.scene_name );
-	cout << ",\n";
-	makejson(cout, "scene_id", itoa(simmgr_shm->status.scenario.scene_id, buffer, 10 ) );
-	cout << ",\n";
-	makejson(cout, "record", itoa(simmgr_shm->status.scenario.record, buffer, 10 ) );
-	cout << ",\n";
-	makejson(cout, "state", simmgr_shm->status.scenario.state );
-	cout << "\n},\n";
-	
-	cout << " \"logfile\" : {\n";
-	makejson(cout, "active", itoa(simmgr_shm->logfile.active, buffer, 10 ) );
-	cout << ",\n";
-	makejson(cout, "filename", simmgr_shm->logfile.filename );
-	cout << ",\n";
-	makejson(cout, "lines_written", itoa(simmgr_shm->logfile.lines_written, buffer, 10 ) );
-	cout << "\n},\n";
 	
 	cout << " \"cardiac\" : {\n";
 	makejson(cout, "rhythm", simmgr_shm->status.cardiac.rhythm	);
@@ -410,8 +392,6 @@ sendStatus(void )
 	makejson(cout, "pea", itoa(simmgr_shm->status.cardiac.pea, buffer, 10 )	);
 	cout << ",\n";
 	makejson(cout, "vpc_freq", itoa(simmgr_shm->status.cardiac.vpc_freq, buffer, 10 ) );
-	cout << ",\n";
-	makejson(cout, "vfib_amplitude", simmgr_shm->status.cardiac.vfib_amplitude	);
 	cout << ",\n";
 	makejson(cout, "rate", itoa(simmgr_shm->status.cardiac.rate, buffer, 10 ) );
 	cout << ",\n";
@@ -514,6 +494,174 @@ sendStatus(void )
 	makejson(cout, "heart_sound_mute", itoa(simmgr_shm->status.cardiac.heart_sound_mute, buffer, 10 ) );
 	cout << ",\n";
 	makejson(cout, "heart_sound", simmgr_shm->status.cardiac.heart_sound );
+	cout << "\n},\n";
+	
+	cout << " \"respiration\" : {\n";
+	makejson(cout, "left_lung_sound", simmgr_shm->status.respiration.left_lung_sound );
+	cout << ",\n";
+	makejson(cout, "left_lung_sound_volume", itoa(simmgr_shm->status.respiration.left_lung_sound_volume, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "left_lung_sound_mute", itoa(simmgr_shm->status.respiration.left_lung_sound_mute, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "right_lung_sound", simmgr_shm->status.respiration.right_lung_sound );
+	cout << ",\n";
+	makejson(cout, "right_lung_sound_volume", itoa(simmgr_shm->status.respiration.right_lung_sound_volume, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "right_lung_sound_mute", itoa(simmgr_shm->status.respiration.right_lung_sound_mute, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "inhalation_duration", itoa(simmgr_shm->status.respiration.inhalation_duration, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "exhalation_duration", itoa(simmgr_shm->status.respiration.exhalation_duration, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "rate", itoa(simmgr_shm->status.respiration.rate, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "awRR", itoa(simmgr_shm->status.respiration.awRR, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "chest_movement", itoa(simmgr_shm->status.respiration.chest_movement, buffer, 10 ) );
+	cout << "\n},\n";
+
+}
+void
+sendStatus(void )
+{
+    char buffer[256];
+	
+	cout << " \"scenario\" : {\n";
+	makejson(cout, "active", simmgr_shm->status.scenario.active );
+	cout << ",\n";
+	makejson(cout, "start", simmgr_shm->status.scenario.start );
+	cout << ",\n";
+	makejson(cout, "runtime", simmgr_shm->status.scenario.runtime );
+	cout << ",\n";
+	makejson(cout, "scene_name", simmgr_shm->status.scenario.scene_name );
+	cout << ",\n";
+	makejson(cout, "scene_id", itoa(simmgr_shm->status.scenario.scene_id, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "record", itoa(simmgr_shm->status.scenario.record, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "state", simmgr_shm->status.scenario.state );
+	cout << "\n},\n";
+	
+	cout << " \"logfile\" : {\n";
+	makejson(cout, "active", itoa(simmgr_shm->logfile.active, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "filename", simmgr_shm->logfile.filename );
+	cout << ",\n";
+	makejson(cout, "lines_written", itoa(simmgr_shm->logfile.lines_written, buffer, 10 ) );
+	cout << "\n},\n";
+	
+	cout << " \"cardiac\" : {\n";
+	makejson(cout, "rhythm", simmgr_shm->status.cardiac.rhythm	);
+	cout << ",\n";
+	makejson(cout, "vpc", simmgr_shm->status.cardiac.vpc	);
+	cout << ",\n";
+	makejson(cout, "pea", itoa(simmgr_shm->status.cardiac.pea, buffer, 10 )	);
+	cout << ",\n";
+	makejson(cout, "vpc_freq", itoa(simmgr_shm->status.cardiac.vpc_freq, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "vfib_amplitude", simmgr_shm->status.cardiac.vfib_amplitude	);
+	cout << ",\n";
+	makejson(cout, "rate", itoa(simmgr_shm->status.cardiac.rate, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "nibp_rate", itoa(simmgr_shm->status.cardiac.nibp_rate, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "nibp_read", itoa(simmgr_shm->status.cardiac.nibp_read, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "nibp_freq", itoa(simmgr_shm->status.cardiac.nibp_freq, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "pulseCount", itoa(simmgr_shm->status.cardiac.pulseCount, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "pwave", simmgr_shm->status.cardiac.pwave );
+	cout << ",\n";
+	makejson(cout, "pr_interval", itoa(simmgr_shm->status.cardiac.pr_interval, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "qrs_interval", itoa(simmgr_shm->status.cardiac.qrs_interval, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "bps_sys", itoa(simmgr_shm->status.cardiac.bps_sys, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "bps_dia", itoa(simmgr_shm->status.cardiac.bps_dia, buffer, 10 ) );
+	cout << ",\n";
+	switch ( simmgr_shm->status.cardiac.right_dorsal_pulse_strength )
+	{
+		case 0:
+			makejson(cout, "right_dorsal_pulse_strength", "none" );
+			break;
+		case 1:
+			makejson(cout, "right_dorsal_pulse_strength", "weak" );
+			break;
+		case 2:
+			makejson(cout, "right_dorsal_pulse_strength", "medium" );
+			break;
+		case 3:
+			makejson(cout, "right_dorsal_pulse_strength", "strong" );
+			break;
+		default:	// Should never happen
+			makejson(cout, "right_dorsal_pulse_strength", itoa(simmgr_shm->status.cardiac.right_dorsal_pulse_strength, buffer, 10) );
+			break;
+	}
+	cout << ",\n";
+	switch ( simmgr_shm->status.cardiac.left_dorsal_pulse_strength )
+	{
+		case 0:
+			makejson(cout, "left_dorsal_pulse_strength", "none" );
+			break;
+		case 1:
+			makejson(cout, "left_dorsal_pulse_strength", "weak" );
+			break;
+		case 2:
+			makejson(cout, "left_dorsal_pulse_strength", "medium" );
+			break;
+		case 3:
+			makejson(cout, "left_dorsal_pulse_strength", "strong" );
+			break;
+		default:	// Should never happen
+			makejson(cout, "left_dorsal_pulse_strength", itoa(simmgr_shm->status.cardiac.left_dorsal_pulse_strength, buffer, 10) );
+			break;
+			}
+	cout << ",\n";
+	switch ( simmgr_shm->status.cardiac.right_femoral_pulse_strength )
+	{
+		case 0:
+			makejson(cout, "right_femoral_pulse_strength", "none" );
+			break;
+		case 1:
+			makejson(cout, "right_femoral_pulse_strength", "weak" );
+			break;
+		case 2:
+			makejson(cout, "right_femoral_pulse_strength", "medium" );
+			break;
+		case 3:
+			makejson(cout, "right_femoral_pulse_strength", "strong" );
+			break;
+		default:	// Should never happen
+			makejson(cout, "right_femoral_pulse_strength", itoa(simmgr_shm->status.cardiac.right_femoral_pulse_strength, buffer, 10) );
+			break;
+	}
+	cout << ",\n";
+	switch ( simmgr_shm->status.cardiac.left_femoral_pulse_strength )
+	{
+		case 0:
+			makejson(cout, "left_femoral_pulse_strength", "none" );
+			break;
+		case 1:
+			makejson(cout, "left_femoral_pulse_strength", "weak" );
+			break;
+		case 2:
+			makejson(cout, "left_femoral_pulse_strength", "medium" );
+			break;
+		case 3:
+			makejson(cout, "left_femoral_pulse_strength", "strong" );
+			break;
+		default:	// Should never happen
+			makejson(cout, "left_femoral_pulse_strength", itoa(simmgr_shm->status.cardiac.left_femoral_pulse_strength, buffer, 10) );
+			break;
+	}
+	cout << ",\n";
+	makejson(cout, "heart_sound_volume", itoa(simmgr_shm->status.cardiac.heart_sound_volume, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "heart_sound_mute", itoa(simmgr_shm->status.cardiac.heart_sound_mute, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "heart_sound", simmgr_shm->status.cardiac.heart_sound );
 	cout << ",\n";
 	makejson(cout, "ecg_indicator", itoa(simmgr_shm->status.cardiac.ecg_indicator, buffer, 10 ) );
 	cout << ",\n";
@@ -544,6 +692,8 @@ sendStatus(void )
 	makejson(cout, "etco2", itoa(simmgr_shm->status.respiration.etco2, buffer, 10 ) );
 	cout << ",\n";
 	makejson(cout, "rate", itoa(simmgr_shm->status.respiration.rate, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "awRR", itoa(simmgr_shm->status.respiration.awRR, buffer, 10 ) );
 	cout << ",\n";
 	makejson(cout, "etco2_indicator", itoa(simmgr_shm->status.respiration.etco2_indicator, buffer, 10 ) );
 	cout << ",\n";

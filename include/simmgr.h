@@ -54,6 +54,7 @@ struct cardiac
 	char vfib_amplitude[STR_SIZE];	// low, med, high
 	int pea;			// Pulseless Electrical Activity
 	int rate;			// Heart Rate in Beats per Minute
+	int avg_rate;		// Calculated heart rate
 	int nibp_rate;		// Non-Invasive Rate - Only reports when cuff is on
 	int nibp_read;		// Set to 1 to start reading, set to 0 when reading is complete.
 	int nibp_freq;		// Number of minutes for NIBP timer. 0 is manual.
@@ -112,6 +113,7 @@ struct respiration
 	
 	int spo2;					// 0-100%
 	int rate;					// Breaths per minute
+	int awRR;					// Calculated rate
 	int etco2;					// End Tidal CO2
 	int transfer_time;			// Trend length for change in rate;
 	int etco2_indicator;
@@ -224,8 +226,12 @@ struct comment_inj
 {
 	char 	comment[COMMENT_SIZE];
 };
-#define EVENT_LIST_SIZE		128
-#define COMMENT_LIST_SIZE	4
+#define EVENT_LIST_SIZE			128
+#define COMMENT_LIST_SIZE		4
+#define RESP_HISTORY_DEPTH		10
+#define CARDIAC_HISTORY_DEPTH	10
+#define DECAY_SECONDS			20
+#define MS_PER_MIN				(60*1000)
 
 // Data Structure of Shared memory file
 struct simmgr_shm
@@ -254,6 +260,12 @@ struct simmgr_shm
 	// Must only be written when instructor.sema is held
 	int commentListNext;	// Index to the last comment written ( 0 to COMMENT_LIST_SIZE-1 )
 	struct comment_inj	commentList[COMMENT_LIST_SIZE];
+	
+	int respTimeList[RESP_HISTORY_DEPTH];	// ms per beat
+	int respTimeNextWrite;
+	
+	int cardiacTimeList[CARDIAC_HISTORY_DEPTH];	// ms per beat
+	int cardiacTimeNextWrite;
 };
 
 // For generic trend processor

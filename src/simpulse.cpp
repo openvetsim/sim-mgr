@@ -39,6 +39,7 @@
 #include <math.h>       /* modf */
 #include <netinet/in.h>
 #include <netinet/ip.h> 
+// #define DEBUG
 
 #include "../include/simmgr.h" 
 
@@ -81,18 +82,139 @@ char breathWord[] = "breath\n";
 static void
 beat_handler(int sig, siginfo_t *si, void *uc)
 {
+	int i;
+	int tot;
+	int samples;
+	int msec;
+	int index;
+	int avg;
+	
 	if ( sig == PULSE_TIMER_SIG )
 	{
 		if ( simmgr_shm->status.cardiac.rate > 0 )
 		{
 			simmgr_shm->status.cardiac.pulseCount++;
+			msec = MS_PER_MIN / simmgr_shm->status.cardiac.rate;
 		}
+		else
+		{
+			msec = 0;
+		}
+#if 0
+		// avg_rate Calculation
+		simmgr_shm->cardiacTimeList[simmgr_shm->cardiacTimeNextWrite] = msec;
+		index = simmgr_shm->cardiacTimeNextWrite;
+		if ( ( index + 1 ) == CARDIAC_HISTORY_DEPTH )
+		{
+			simmgr_shm->cardiacTimeNextWrite = 0;
+		}
+		else
+		{
+			simmgr_shm->cardiacTimeNextWrite = index + 1;
+		}
+		tot = 0;
+		samples = 0;
+		for ( i = 0 ; i < CARDIAC_HISTORY_DEPTH ; i++ )
+		{
+			msec = simmgr_shm->cardiacTimeList[index];
+			if ( msec )
+			{
+				tot += msec;
+				samples++;
+			}
+			else
+			{
+				if ( tot == 0 )	// Null reading. Count as samples if this is after valid samples
+				{
+					samples++;
+				}
+				else
+				{
+					break;	// If before valid samples, then stop counting
+				}
+			}
+			index--;
+			if ( index < 0 )
+			{
+				index = CARDIAC_HISTORY_DEPTH - 1;
+			}
+		}
+		if ( ! samples )
+		{
+			simmgr_shm->status.cardiac.avg_rate = 0;
+		}
+		else
+		{
+			avg = tot / samples;
+			simmgr_shm->status.cardiac.avg_rate = MS_PER_MIN / avg;
+		}
+#endif
 	}
 	else if ( sig == BREATH_TIMER_SIG )
 	{
 		if ( simmgr_shm->status.respiration.rate > 0 )
 		{
 			simmgr_shm->status.respiration.breathCount++;
+			msec =  MS_PER_MIN / simmgr_shm->status.respiration.rate;
+		}
+		else
+		{
+			msec = 0;
+		}
+		// awRR Calculation
+		index = simmgr_shm->respTimeNextWrite;
+		simmgr_shm->respTimeList[index] = msec;
+		
+		if ( ( index + 1 ) >= RESP_HISTORY_DEPTH )
+		{
+			simmgr_shm->respTimeNextWrite = 0;
+		}
+		else
+		{
+			simmgr_shm->respTimeNextWrite = index + 1;
+		}
+		tot = 0;
+		samples = 0;
+		for ( i = 0 ; i < RESP_HISTORY_DEPTH ; i++ )
+		{
+			msec = simmgr_shm->respTimeList[index];
+			if ( msec )
+			{
+				tot += msec;
+				samples++;
+			}
+			else
+			{
+				if ( tot == 0 )	// Null reading. Count as samples if this is after valid samples
+				{
+					samples++;
+				}
+				else
+				{
+					break;	// If before valid samples, then stop counting
+				}
+			}
+			index--;
+			if ( index < 0 )
+			{
+				index = RESP_HISTORY_DEPTH - 1;
+			}
+		}
+		if ( ! samples )
+		{
+			simmgr_shm->status.respiration.awRR = 0;
+		}
+		else
+		{
+			avg = tot / samples;
+			if ( avg == 0 )
+			{
+				simmgr_shm->status.respiration.awRR = 0;
+			}
+			else
+			{
+				simmgr_shm->status.respiration.awRR = MS_PER_MIN / avg;
+			}
 		}
 	}	
 }
@@ -113,7 +235,7 @@ set_pulse_rate(int bpm )
 	
 	if ( bpm == 0 )
 	{
-		bpm = 999;
+		bpm = 60 / (DECAY_SECONDS/RESP_HISTORY_DEPTH);
 	}
 	
 	tempo = (float)bpm;
@@ -439,6 +561,7 @@ process_child(void *ptr )
 		}
 		if ( checkCount++ >= 100 )	// 100 is an interval of 500 ms.
 		{
+			checkCount = 0;
 			// If the pulse rate has changed, then reset the timer
 			if ( currentPulseRate != simmgr_shm->status.cardiac.rate )
 			{
