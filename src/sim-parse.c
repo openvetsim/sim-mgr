@@ -445,6 +445,12 @@ initializeParameterStruct(struct instructor *initParams )
 	initParams->media.play = -1;
 	
 	initParams->scenario.record = -1;
+	
+	initParams->cpr.compression = -1;
+	initParams->cpr.duration = -1;
+	initParams->cpr.release = -1;
+	initParams->cpr.last = -1;
+	
 }
 
 /**

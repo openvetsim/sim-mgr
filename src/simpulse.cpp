@@ -114,9 +114,7 @@ set_pulse_rate(int bpm )
 	
 	if ( bpm == 0 )
 	{
-		bpm = 60 / (DECAY_SECONDS/CARDIAC_HISTORY_DEPTH);
-		sprintf(msgbuf, "set_pulse_rate: Decay BPM  %d", bpm );
-		log_message("", msgbuf );
+		bpm = 60;
 	}
 	
 	tempo = (float)bpm;
@@ -152,9 +150,7 @@ set_breath_rate(int bpm )
 	
 	if ( bpm == 0 )
 	{
-		bpm = 60 / (DECAY_SECONDS/RESP_HISTORY_DEPTH);
-		sprintf(msgbuf, "set_breath_rate: Decay RR  %d", bpm );
-		log_message("", msgbuf );
+		bpm = 60;
 	}
 	
 	tempo = (float)bpm;
@@ -446,9 +442,9 @@ process_child(void *ptr )
 			}
 #endif
 		}
-		if ( checkCount++ >= 100 )	// 100 is an interval of 500 ms.
+		checkCount++;
+		if ( checkCount == 5 )	// 100 is an interval of 500 ms.
 		{
-			checkCount = 0;
 			// If the pulse rate has changed, then reset the timer
 			if ( currentPulseRate != simmgr_shm->status.cardiac.rate )
 			{
@@ -459,7 +455,9 @@ process_child(void *ptr )
 				log_message("", msgbuf );
 	#endif
 			}
-			
+		}
+		else if ( checkCount == 10 )
+		{
 			// If the breath rate has changed, then reset the timer
 			if ( currentBreathRate != simmgr_shm->status.respiration.rate )
 			{
@@ -472,6 +470,7 @@ process_child(void *ptr )
 				log_message("", msgbuf );
 	#endif
 			}
+			checkCount = 0;
 		}
 	}
 
