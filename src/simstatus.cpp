@@ -405,6 +405,8 @@ sendSimctrData(void )
 	cout << ",\n";
 	makejson(cout, "pulseCount", itoa(simmgr_shm->status.cardiac.pulseCount, buffer, 10 ) );
 	cout << ",\n";
+	makejson(cout, "pulseCountVpc", itoa(simmgr_shm->status.cardiac.pulseCountVpc, buffer, 10 ) );
+	cout << ",\n";
 	makejson(cout, "pwave", simmgr_shm->status.cardiac.pwave );
 	cout << ",\n";
 	makejson(cout, "pr_interval", itoa(simmgr_shm->status.cardiac.pr_interval, buffer, 10 ) );
@@ -574,6 +576,8 @@ sendStatus(void )
 	makejson(cout, "nibp_freq", itoa(simmgr_shm->status.cardiac.nibp_freq, buffer, 10 ) );
 	cout << ",\n";
 	makejson(cout, "pulseCount", itoa(simmgr_shm->status.cardiac.pulseCount, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "pulseCountVpc", itoa(simmgr_shm->status.cardiac.pulseCountVpc, buffer, 10 ) );
 	cout << ",\n";
 	makejson(cout, "pwave", simmgr_shm->status.cardiac.pwave );
 	cout << ",\n";
