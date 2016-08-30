@@ -228,9 +228,9 @@ struct comment_inj
 };
 #define EVENT_LIST_SIZE			128
 #define COMMENT_LIST_SIZE		4
-#define RESP_HISTORY_DEPTH		10
+#define RESP_HISTORY_DEPTH		5
 #define CARDIAC_HISTORY_DEPTH	10
-#define DECAY_SECONDS			20
+#define DECAY_SECONDS			10
 #define MS_PER_MIN				(60*1000)
 
 // Data Structure of Shared memory file
@@ -319,6 +319,7 @@ int respiration_parse(const char *elem,  const char *value, struct respiration *
 int general_parse(const char *elem,  const char *value, struct general *gen );
 int vocals_parse(const char *elem,  const char *value, struct vocals *voc );
 int media_parse(const char *elem,  const char *value, struct media *med );
+int cpr_parse(const char *elem,  const char *value, struct cpr *cpr );
 void initializeParameterStruct(struct instructor *initParams );
 void processInit(struct instructor *initParams  );
 int getValueFromName(char *param_class, char *param_element );

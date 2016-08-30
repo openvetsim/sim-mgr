@@ -364,7 +364,29 @@ media_parse(const char *elem,  const char *value, struct media *med )
 	}
 	return ( sts );
 }
-
+int
+cpr_parse(const char *elem,  const char *value, struct cpr *cpr )
+{
+	int sts = 0;
+	
+	if ( ( ! elem ) || ( ! value) || ( ! cpr ) )
+	{
+		return ( -15 );
+	}
+	if ( strcmp(elem, "duration" ) == 0 )
+	{
+		cpr->duration = atoi(value );
+	}
+	else if ( strcmp(elem, "compression" ) == 0 )
+	{
+		cpr->compression = atoi(value );
+	}
+	else
+	{
+		sts = 1;
+	}
+	return ( sts );
+}
 /**
 * initializeParameterStruct
 * @initParams: Pointer to a "struct instructor"
@@ -444,6 +466,7 @@ processInit(struct instructor *initParams  )
 	memcpy(&simmgr_shm->instructor.general, &initParams->general, sizeof(struct general) );
 	memcpy(&simmgr_shm->instructor.vocals, &initParams->vocals, sizeof(struct vocals) );
 	memcpy(&simmgr_shm->instructor.media, &initParams->media, sizeof(struct media) );
+	memcpy(&simmgr_shm->instructor.cpr, &initParams->cpr, sizeof(struct cpr) );
 	
 	releaseInstructorLock();
 	
@@ -482,6 +505,8 @@ getValueFromName(char *param_class, char *param_element )
 			rval = simmgr_shm->status.cardiac.ecg_indicator;
 		else if ( strcmp(param_element, "bp_cuff" ) == 0 )
 			rval = simmgr_shm->status.cardiac.bp_cuff;
+		else if ( strcmp(param_element, "cpr_time" ) == 0 )
+			rval = simmgr_shm->status.cardiac.bp_cuff;
 	}
 	else if ( strcmp(param_class, "respiration" ) == 0 )
 	{
@@ -502,6 +527,11 @@ getValueFromName(char *param_class, char *param_element )
 	{
 		if ( strcmp(param_element, "temperature" ) == 0 )
 			rval = simmgr_shm->status.general.temperature;
+	}
+	else if ( strcmp(param_class, "cpr" ) == 0 )
+	{
+		if ( strcmp(param_element, "duration" ) == 0 )
+			rval = simmgr_shm->status.cpr.duration;
 	}
 	return ( rval );
 }

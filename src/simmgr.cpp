@@ -198,6 +198,7 @@ main(int argc, char *argv[] )
 	simmgr_shm->status.cpr.last = 0;
 	simmgr_shm->status.cpr.compression = 0;
 	simmgr_shm->status.cpr.release = 0;
+	simmgr_shm->status.cpr.duration = 0;
 	
 	// status/defibrillation
 	simmgr_shm->status.defibrillation.last = 0;
@@ -303,6 +304,9 @@ main(int argc, char *argv[] )
 	
 	// instructor/cpr
 	simmgr_shm->instructor.cpr.compression = -1;
+	simmgr_shm->instructor.cpr.last = -1;
+	simmgr_shm->instructor.cpr.release = -1;
+	simmgr_shm->instructor.cpr.duration = -1;
 	
 	scenarioCount = 0;
 	while ( 1 )

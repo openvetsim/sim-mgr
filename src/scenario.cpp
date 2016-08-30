@@ -104,6 +104,9 @@ struct timespec loopStop;
 int elapsed_msec;
 int eventLast;	// Index of last processed event_callback
 
+struct timespec cprStart; // Time of first CPR detected
+int cprActive;				// Flag to indicate CPR is active
+
 const char *parse_states[] =
 {
 	"PARSE_STATE_NONE", "PARSE_STATE_INIT", "PARSE_STATE_SCENE"
@@ -297,6 +300,8 @@ main(int argc, char **argv)
 	}
 	sprintf(msgbuf, "scenario: Calling processInit for scenario" );
 	log_message("", msgbuf );
+	simmgr_shm->status.cpr.compression = 0;
+	simmgr_shm->status.cpr.duration = 0;
 	
 	// Apply initialization parameters
 	processInit(&scenario->initParams );
@@ -320,6 +325,8 @@ main(int argc, char **argv)
 
 	clock_gettime( CLOCK_REALTIME, &loopStart );
 	elapsed_msec = 0;
+	
+	cprActive = 0;
 	
 	// Continue scenario execution
 	loopCount = 0;
@@ -668,6 +675,26 @@ scene_check(void )
 		}
 	}
 	
+	if ( cprActive )
+	{
+		if ( simmgr_shm->status.cpr.compression == 0 )
+		{
+			cprActive = 0;
+		}
+		else
+		{
+			clock_gettime( CLOCK_REALTIME, &loopStop );
+			simmgr_shm->status.cpr.duration = ( loopStop.tv_sec - cprStart.tv_sec );
+		}
+	}
+	else
+	{
+		if ( simmgr_shm->status.cpr.compression )
+		{
+			clock_gettime( CLOCK_REALTIME, &cprStart );
+			cprActive = 1;
+		}
+	}
 	// Trigger Checks
 	snode = current_scene->trigger_list.next;
 	while ( snode )
@@ -859,6 +886,12 @@ saveData(const xmlChar *xmlName, const xmlChar *xmlValue )
 						sts = media_parse(xmlLevels[xml_current_level].name, value, &scenario->initParams.media );
 					}
 					break;
+				case PARSE_INIT_STATE_CPR:
+					if ( xml_current_level == 3 )
+					{
+						sts = cpr_parse(xmlLevels[xml_current_level].name, value, &scenario->initParams.cpr );
+					}
+					break;
 				case PARSE_INIT_STATE_SCENE:
 					if ( ( xml_current_level == 2 ) && 
 						( strcmp(xmlLevels[xml_current_level].name, "initial_scene" ) == 0 ) )
@@ -964,6 +997,12 @@ saveData(const xmlChar *xmlName, const xmlChar *xmlValue )
 					if ( xml_current_level == 4 )
 					{
 						sts = media_parse(xmlLevels[4].name, value, &new_scene->initParams.media );
+					}
+					break;
+				case PARSE_SCENE_STATE_INIT_CPR:
+					if ( xml_current_level == 4 )
+					{
+						sts = cpr_parse(xmlLevels[4].name, value, &new_scene->initParams.cpr );
 					}
 					break;
 				case PARSE_SCENE_STATE_TRIGS:
@@ -1201,6 +1240,10 @@ startParseState(int lvl, char *name )
 					{
 						parse_init_state = PARSE_INIT_STATE_MEDIA;
 					}
+					else if ( strcmp(name, "cpr" ) == 0 )
+					{
+						parse_init_state = PARSE_INIT_STATE_CPR;
+					}
 					else if ( strcmp(name, "scene" ) == 0 )
 					{
 						parse_init_state = PARSE_INIT_STATE_SCENE;
@@ -1262,6 +1305,10 @@ startParseState(int lvl, char *name )
 					else if ( strcmp(name, "media" ) == 0 )
 					{
 						parse_scene_state = PARSE_SCENE_STATE_INIT_MEDIA;
+					}
+					else if ( strcmp(name, "cpr" ) == 0 )
+					{
+						parse_scene_state = PARSE_SCENE_STATE_INIT_CPR;
 					}
 					if ( ( parse_scene_state == PARSE_SCENE_STATE_TRIGS ) &&
 						 ( strcmp(name, "trigger" ) == 0 ) )

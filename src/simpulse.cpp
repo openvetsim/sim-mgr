@@ -82,139 +82,18 @@ char breathWord[] = "breath\n";
 static void
 beat_handler(int sig, siginfo_t *si, void *uc)
 {
-	int i;
-	int tot;
-	int samples;
-	int msec;
-	int index;
-	int avg;
-	
 	if ( sig == PULSE_TIMER_SIG )
 	{
 		if ( simmgr_shm->status.cardiac.rate > 0 )
 		{
 			simmgr_shm->status.cardiac.pulseCount++;
-			msec = MS_PER_MIN / simmgr_shm->status.cardiac.rate;
 		}
-		else
-		{
-			msec = 0;
-		}
-#if 0
-		// avg_rate Calculation
-		simmgr_shm->cardiacTimeList[simmgr_shm->cardiacTimeNextWrite] = msec;
-		index = simmgr_shm->cardiacTimeNextWrite;
-		if ( ( index + 1 ) == CARDIAC_HISTORY_DEPTH )
-		{
-			simmgr_shm->cardiacTimeNextWrite = 0;
-		}
-		else
-		{
-			simmgr_shm->cardiacTimeNextWrite = index + 1;
-		}
-		tot = 0;
-		samples = 0;
-		for ( i = 0 ; i < CARDIAC_HISTORY_DEPTH ; i++ )
-		{
-			msec = simmgr_shm->cardiacTimeList[index];
-			if ( msec )
-			{
-				tot += msec;
-				samples++;
-			}
-			else
-			{
-				if ( tot == 0 )	// Null reading. Count as samples if this is after valid samples
-				{
-					samples++;
-				}
-				else
-				{
-					break;	// If before valid samples, then stop counting
-				}
-			}
-			index--;
-			if ( index < 0 )
-			{
-				index = CARDIAC_HISTORY_DEPTH - 1;
-			}
-		}
-		if ( ! samples )
-		{
-			simmgr_shm->status.cardiac.avg_rate = 0;
-		}
-		else
-		{
-			avg = tot / samples;
-			simmgr_shm->status.cardiac.avg_rate = MS_PER_MIN / avg;
-		}
-#endif
 	}
 	else if ( sig == BREATH_TIMER_SIG )
 	{
 		if ( simmgr_shm->status.respiration.rate > 0 )
 		{
 			simmgr_shm->status.respiration.breathCount++;
-			msec =  MS_PER_MIN / simmgr_shm->status.respiration.rate;
-		}
-		else
-		{
-			msec = 0;
-		}
-		// awRR Calculation
-		index = simmgr_shm->respTimeNextWrite;
-		simmgr_shm->respTimeList[index] = msec;
-		
-		if ( ( index + 1 ) >= RESP_HISTORY_DEPTH )
-		{
-			simmgr_shm->respTimeNextWrite = 0;
-		}
-		else
-		{
-			simmgr_shm->respTimeNextWrite = index + 1;
-		}
-		tot = 0;
-		samples = 0;
-		for ( i = 0 ; i < RESP_HISTORY_DEPTH ; i++ )
-		{
-			msec = simmgr_shm->respTimeList[index];
-			if ( msec )
-			{
-				tot += msec;
-				samples++;
-			}
-			else
-			{
-				if ( tot == 0 )	// Null reading. Count as samples if this is after valid samples
-				{
-					samples++;
-				}
-				else
-				{
-					break;	// If before valid samples, then stop counting
-				}
-			}
-			index--;
-			if ( index < 0 )
-			{
-				index = RESP_HISTORY_DEPTH - 1;
-			}
-		}
-		if ( ! samples )
-		{
-			simmgr_shm->status.respiration.awRR = 0;
-		}
-		else
-		{
-			avg = tot / samples;
-			if ( avg == 0 )
-			{
-				simmgr_shm->status.respiration.awRR = 0;
-			}
-			else
-			{
-				simmgr_shm->status.respiration.awRR = MS_PER_MIN / avg;
-			}
 		}
 	}	
 }
@@ -235,7 +114,9 @@ set_pulse_rate(int bpm )
 	
 	if ( bpm == 0 )
 	{
-		bpm = 60 / (DECAY_SECONDS/RESP_HISTORY_DEPTH);
+		bpm = 60 / (DECAY_SECONDS/CARDIAC_HISTORY_DEPTH);
+		sprintf(msgbuf, "set_pulse_rate: Decay BPM  %d", bpm );
+		log_message("", msgbuf );
 	}
 	
 	tempo = (float)bpm;
@@ -257,7 +138,6 @@ set_pulse_rate(int bpm )
 		log_message("", msgbuf );
 		exit ( -1 );
 	}
-
 }
 
 void
@@ -272,8 +152,11 @@ set_breath_rate(int bpm )
 	
 	if ( bpm == 0 )
 	{
-		bpm = 999;
+		bpm = 60 / (DECAY_SECONDS/RESP_HISTORY_DEPTH);
+		sprintf(msgbuf, "set_breath_rate: Decay RR  %d", bpm );
+		log_message("", msgbuf );
 	}
+	
 	tempo = (float)bpm;
 	beat_per_sec = tempo / 60;
 	fractpart = modf( ( 1/beat_per_sec ), &intpart );
@@ -292,6 +175,11 @@ set_breath_rate(int bpm )
 		sprintf(msgbuf, "set_breath_rate(%d): timer_settime %s", bpm, strerror(errno)  );
 		log_message("", msgbuf );
 		exit ( -1 );
+	}
+	else
+	{
+		sprintf(msgbuf, "set_breath_rate: RR %d Sec %f nsec %f", bpm, intpart, wait_time_nsec );
+		log_message("", msgbuf );
 	}
 }
 
@@ -439,6 +327,13 @@ main(int argc, char *argv[] )
 		exit (-1);
 	}
 	
+    if (sigprocmask(SIG_UNBLOCK, &mask, NULL) == -1)
+    {
+		perror("sigprocmask");
+		sprintf(msgbuf, "sigprocmask() fails for Breath Timer %s", strerror(errno) );
+		log_message("", msgbuf );
+		exit ( -1 );
+	}	
 	
 	currentPulseRate = simmgr_shm->status.cardiac.rate; 
 	set_pulse_rate(currentPulseRate );
@@ -447,14 +342,6 @@ main(int argc, char *argv[] )
 	currentBreathRate = simmgr_shm->status.respiration.rate;
 	set_breath_rate(currentBreathRate );
 	simmgr_shm->status.respiration.breathCount = 0;
-	
-    if (sigprocmask(SIG_UNBLOCK, &mask, NULL) == -1)
-    {
-		perror("sigprocmask");
-		sprintf(msgbuf, "sigprocmask() fails for Breath Timer %s", strerror(errno) );
-		log_message("", msgbuf );
-		exit ( -1 );
-	}	
 	
 	pthread_create (&threadInfo, NULL, &process_child,(void *) NULL );
 	
@@ -578,6 +465,8 @@ process_child(void *ptr )
 			{
 				set_breath_rate(simmgr_shm->status.respiration.rate );
 				currentBreathRate = simmgr_shm->status.respiration.rate;
+				// awRR Calculation - TBD - Need real calculations
+				simmgr_shm->status.respiration.awRR = simmgr_shm->status.respiration.rate;
 	#ifdef DEBUG
 				sprintf(msgbuf, "Set Breath to %d", currentBreathRate );
 				log_message("", msgbuf );
