@@ -51,6 +51,7 @@ struct cardiac
 	char rhythm[STR_SIZE];
 	char vpc[STR_SIZE];
 	int vpc_freq;		// 0-100% - Frequencey of VPC insertions (when vpc is not set to "none")
+	int vpc_delay;
 	char vfib_amplitude[STR_SIZE];	// low, med, high
 	int pea;			// Pulseless Electrical Activity
 	int rate;			// Heart Rate in Beats per Minute
@@ -69,6 +70,8 @@ struct cardiac
 	int left_dorsal_pulse_strength;
 	int left_femoral_pulse_strength;
 	unsigned int pulseCount;
+	unsigned int pulseCountVpc;
+	
 	char heart_sound[STR_SIZE];
 	int heart_sound_volume;
 	int heart_sound_mute;

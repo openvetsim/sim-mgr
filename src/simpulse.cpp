@@ -50,11 +50,13 @@ timer_t pulse_timer;
 timer_t breath_timer;
 struct sigevent pulse_sev;
 struct sigevent breath_sev;
-int currentPulseRate;
-int currentBreathRate;
+int currentPulseRate = 0;
+int currentVpcDelay = 0;
+int currentVpcFreq = 0;
+int currentBreathRate = 0;
 
 void set_beat_time(int bpm );
-
+void set_pulse_rate(int bpm, int delay );
 
 /* struct to hold data to be passed to a thread
    this shows how multiple data items can be passed to a thread */
@@ -79,15 +81,35 @@ void *process_child(void *ptr );
 char pulseWord[] = "pulse\n";
 char breathWord[] = "breath\n";
 
+#define VPC_ARRAY_LEN	100
+int vpcFrequencyArray[VPC_ARRAY_LEN];
+int vpcFrequencyIndex;
+
 static void
 beat_handler(int sig, siginfo_t *si, void *uc)
 {
+	int newCount;
+	
 	if ( sig == PULSE_TIMER_SIG )
 	{
 		if ( simmgr_shm->status.cardiac.rate > 0 )
 		{
-			simmgr_shm->status.cardiac.pulseCount++;
+			newCount = simmgr_shm->status.cardiac.pulseCount + 1;
+			if ( simmgr_shm->status.cardiac.vpc_freq )
+			{
+				if ( vpcFrequencyArray[vpcFrequencyIndex] )
+				{
+					set_pulse_rate(currentPulseRate, simmgr_shm->status.cardiac.vpc_delay );
+					simmgr_shm->status.cardiac.pulseCountVpc = newCount;
+					if ( vpcFrequencyIndex++ >= VPC_ARRAY_LEN )
+					{
+						vpcFrequencyIndex = 0;
+					}
+				}
+			}
+			simmgr_shm->status.cardiac.pulseCount = newCount;
 		}
+		
 	}
 	else if ( sig == BREATH_TIMER_SIG )
 	{
@@ -98,15 +120,52 @@ beat_handler(int sig, siginfo_t *si, void *uc)
 	}	
 }
 
+void
+calculateVPCFreq(void )
+{
+	int count = 0;
+	int i;
+	int val;
+	
+	if ( simmgr_shm->status.cardiac.vpc_freq == 0 )
+	{
+		currentVpcFreq = simmgr_shm->status.cardiac.vpc_freq;
+	}
+	else
+	{
+		// get 100 samples for 100 cycles of sinus rhythm between 10 and 90
+		for ( i = 0 ; i < VPC_ARRAY_LEN ; i++ )
+		{
+			val = rand() % 100;
+			if ( val > currentVpcFreq )
+			{
+				vpcFrequencyArray[i] = 0;
+			}
+			else
+			{
+				vpcFrequencyArray[i] = 1;
+				count++;
+			}
+		}
+		sprintf(msgbuf, "calculateVPCFreq: request %d: result %d", currentVpcFreq, count );
+		log_message("", msgbuf );
+		vpcFrequencyIndex = 0;
+	}
+}
+
 /*
  * Calculate and set the wait time in usec for the beats.
+ * 
+ * bpm is beats per minute
+ * delay is msec delay for injected VPC
 */
 
 void
-set_pulse_rate(int bpm )
+set_pulse_rate(int bpm, int delay )
 {
 	float tempo;
 	float beat_per_sec;
+	float sec_per_beat;
 	double intpart;
 	float fractpart;
 	float wait_time_nsec;
@@ -119,15 +178,24 @@ set_pulse_rate(int bpm )
 	
 	tempo = (float)bpm;
 	beat_per_sec = tempo / 60;
-	fractpart = modf( ( 1/beat_per_sec ), &intpart );
-	wait_time_nsec = ( fractpart * 1000 * 1000 * 1000 );
 	
-	// Reset the interval timer with the new value
+	// Set the interval as the standard interval
+	sec_per_beat = ( 1 / beat_per_sec );
+	fractpart = modf( sec_per_beat, &intpart );
+	wait_time_nsec = ( fractpart * 1000 * 1000 * 1000 );
+	its.it_interval.tv_sec = intpart;
+	its.it_interval.tv_nsec = wait_time_nsec;
+	
+	
+	// Set First expiration as the interval plus the delay
+	if ( delay > 0 )
+	{
+		sec_per_beat += ((float)delay / 1000 );
+		fractpart = modf( sec_per_beat, &intpart );
+		wait_time_nsec = ( fractpart * 1000 * 1000 * 1000 );
+	}
 	its.it_value.tv_sec = intpart;
 	its.it_value.tv_nsec = wait_time_nsec;
-	
-	its.it_interval.tv_sec = its.it_value.tv_sec;
-	its.it_interval.tv_nsec = its.it_value.tv_nsec;
 	
 	if (timer_settime(pulse_timer, 0, &its, NULL) == -1)
 	{
@@ -208,6 +276,9 @@ main(int argc, char *argv[] )
 	daemonize();
 #endif
 
+	// Seed rand, needed for vpc array generation
+	srand(time(NULL) );
+	
 	// Wait for Shared Memory to become available
 	while ( initSHM(OPEN_ACCESS ) != 0 )
 	{
@@ -332,8 +403,9 @@ main(int argc, char *argv[] )
 	}	
 	
 	currentPulseRate = simmgr_shm->status.cardiac.rate; 
-	set_pulse_rate(currentPulseRate );
+	set_pulse_rate(currentPulseRate, 0 );
 	simmgr_shm->status.cardiac.pulseCount = 0;
+	simmgr_shm->status.cardiac.pulseCountVpc = 0;
 	
 	currentBreathRate = simmgr_shm->status.respiration.rate;
 	set_breath_rate(currentBreathRate );
@@ -448,12 +520,21 @@ process_child(void *ptr )
 			// If the pulse rate has changed, then reset the timer
 			if ( currentPulseRate != simmgr_shm->status.cardiac.rate )
 			{
-				set_pulse_rate(simmgr_shm->status.cardiac.rate );
 				currentPulseRate = simmgr_shm->status.cardiac.rate;
+				set_pulse_rate(currentPulseRate, 0 );
 	#ifdef DEBUG
 				sprintf(msgbuf, "Set Pulse to %d", currentPulseRate );
 				log_message("", msgbuf );
 	#endif
+			}
+			if ( currentVpcDelay != simmgr_shm->status.cardiac.vpc_delay )
+			{
+				currentVpcDelay = simmgr_shm->status.cardiac.vpc_delay;
+			}
+			if ( currentVpcFreq != simmgr_shm->status.cardiac.vpc_freq )
+			{
+				currentVpcFreq = simmgr_shm->status.cardiac.vpc_freq;
+				calculateVPCFreq();
 			}
 		}
 		else if ( checkCount == 10 )
