@@ -84,7 +84,7 @@ char breathWord[] = "breath\n";
 
 #define VPC_ARRAY_LEN	200
 int vpcFrequencyArray[VPC_ARRAY_LEN];
-int vpcFrequencyIndex;
+int vpcFrequencyIndex = 0;
 
 static void
 beat_handler(int sig, siginfo_t *si, void *uc)

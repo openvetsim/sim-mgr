@@ -105,7 +105,8 @@ int elapsed_msec;
 int eventLast;	// Index of last processed event_callback
 
 struct timespec cprStart; // Time of first CPR detected
-int cprActive;				// Flag to indicate CPR is active
+int cprActive = 0;				// Flag to indicate CPR is active
+int cprCumulative = 0;		// Cummulative time for CPR active in this scene
 
 const char *parse_states[] =
 {
@@ -327,6 +328,7 @@ main(int argc, char **argv)
 	elapsed_msec = 0;
 	
 	cprActive = 0;
+	cprCumulative = 0;
 	
 	// Continue scenario execution
 	loopCount = 0;
@@ -684,7 +686,9 @@ scene_check(void )
 		else
 		{
 			clock_gettime( CLOCK_REALTIME, &loopStop );
-			simmgr_shm->status.cpr.duration = ( loopStop.tv_sec - cprStart.tv_sec );
+			cprCumulative += ( loopStop.tv_sec - cprStart.tv_sec );
+			clock_gettime( CLOCK_REALTIME, &cprStart );
+			simmgr_shm->status.cpr.duration = cprCumulative;
 		}
 	}
 	else
@@ -792,6 +796,7 @@ startScene(int sceneId )
 	}
 	current_scene = new_scene;
 	elapsed_msec = 0;
+	cprCumulative = 0;
 	sprintf(simmgr_shm->status.scenario.scene_name, "%s", current_scene->name );
 	simmgr_shm->status.scenario.scene_id = sceneId;
 	
