@@ -41,6 +41,10 @@ cardiac_parse(const char *elem,  const char *value, struct cardiac *card )
 	{
 		card->vpc_freq = atoi(value );
 	}
+	else if ( strcmp(elem, ("vpc_delay" ) ) == 0 )
+	{
+		card->vpc_delay = atoi(value );
+	}
 	else if ( strcmp(elem, ("vfib_amplitude" ) ) == 0 )
 	{
 		sprintf(card->vfib_amplitude, "%s", value );
@@ -401,6 +405,7 @@ initializeParameterStruct(struct instructor *initParams )
 	memset(initParams, 0, sizeof(struct instructor) );
 	
 	initParams->cardiac.vpc_freq = -1;
+	initParams->cardiac.vpc_delay = -1;
 	initParams->cardiac.pea = -1;
 	initParams->cardiac.rate = -1;
 	initParams->cardiac.nibp_rate = -1;
@@ -489,6 +494,8 @@ getValueFromName(char *param_class, char *param_element )
 	{
 		if ( strcmp(param_element, "vpc_freq" ) == 0 )
 			rval = simmgr_shm->status.cardiac.vpc_freq;
+		else if ( strcmp(param_element, "vpc_delay" ) == 0 )
+			rval = simmgr_shm->status.cardiac.vpc_delay;
 		else if ( strcmp(param_element, "pea" ) == 0 )
 			rval = simmgr_shm->status.cardiac.pea;
 		else if ( strcmp(param_element, "rate" ) == 0 )

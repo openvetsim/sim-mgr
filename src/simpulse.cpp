@@ -93,14 +93,14 @@ beat_handler(int sig, siginfo_t *si, void *uc)
 	
 	if ( sig == PULSE_TIMER_SIG )
 	{
-		if ( simmgr_shm->status.cardiac.rate > 0 )
+		if ( currentPulseRate > 0 )
 		{
 			newCount = simmgr_shm->status.cardiac.pulseCount + 1;
-			if ( simmgr_shm->status.cardiac.vpc_freq )
+			if ( currentVpcFreq > 0 )
 			{
-				if ( vpcFrequencyArray[vpcFrequencyIndex] )
+				if ( vpcFrequencyArray[vpcFrequencyIndex] > 0 )
 				{
-					set_pulse_rate(currentPulseRate, simmgr_shm->status.cardiac.vpc_delay );
+					set_pulse_rate(currentPulseRate, currentVpcDelay );
 					simmgr_shm->status.cardiac.pulseCountVpc = newCount;
 					if ( vpcFrequencyIndex++ >= VPC_ARRAY_LEN )
 					{
@@ -148,10 +148,10 @@ calculateVPCFreq(void )
 				count++;
 			}
 		}
-#ifdef DEBUG
+//#ifdef DEBUG
 		sprintf(msgbuf, "calculateVPCFreq: request %d: result %d", currentVpcFreq, count );
 		log_message("", msgbuf );
-#endif
+//#endif
 		vpcFrequencyIndex = 0;
 	}
 }
