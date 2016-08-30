@@ -137,6 +137,7 @@ main(int argc, char *argv[] )
 	sprintf(simmgr_shm->status.cardiac.vpc, "%s", "none" );
 	sprintf(simmgr_shm->status.cardiac.vfib_amplitude, "%s", "high" );
 	simmgr_shm->status.cardiac.vpc_freq = 10;
+	simmgr_shm->status.cardiac.vpc_delay = 0;
 	simmgr_shm->status.cardiac.pea = 0;
 	simmgr_shm->status.cardiac.rate = 80;
 	simmgr_shm->status.cardiac.nibp_rate = 80;
@@ -233,6 +234,7 @@ main(int argc, char *argv[] )
 	simmgr_shm->instructor.cardiac.bps_dia = -1;
 	simmgr_shm->instructor.cardiac.pea = -1;
 	simmgr_shm->instructor.cardiac.vpc_freq = -1;
+	simmgr_shm->instructor.cardiac.vpc_delay = -1;
 	sprintf(simmgr_shm->instructor.cardiac.vpc, "%s", "" );
 	sprintf(simmgr_shm->instructor.cardiac.vfib_amplitude, "%s", "" );
 	simmgr_shm->instructor.cardiac.right_dorsal_pulse_strength = -1;
@@ -767,6 +769,11 @@ scan_commands(void )
 	{
 		simmgr_shm->status.cardiac.vpc_freq = simmgr_shm->instructor.cardiac.vpc_freq;
 		simmgr_shm->instructor.cardiac.vpc_freq = -1;
+	}
+	if ( simmgr_shm->instructor.cardiac.vpc_delay >= 0 )
+	{
+		simmgr_shm->status.cardiac.vpc_delay = simmgr_shm->instructor.cardiac.vpc_delay;
+		simmgr_shm->instructor.cardiac.vpc_delay = -1;
 	}
 	if ( strlen(simmgr_shm->instructor.cardiac.vpc) > 0 )
 	{

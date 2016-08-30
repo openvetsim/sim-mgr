@@ -79,9 +79,10 @@ void *process_child(void *ptr );
 #define BREATH_TIMER_SIG	(SIGRTMIN+1)
 
 char pulseWord[] = "pulse\n";
+char pulseWordVPC[] = "pulseVPC\n";
 char breathWord[] = "breath\n";
 
-#define VPC_ARRAY_LEN	100
+#define VPC_ARRAY_LEN	200
 int vpcFrequencyArray[VPC_ARRAY_LEN];
 int vpcFrequencyIndex;
 
@@ -147,8 +148,10 @@ calculateVPCFreq(void )
 				count++;
 			}
 		}
+#ifdef DEBUG
 		sprintf(msgbuf, "calculateVPCFreq: request %d: result %d", currentVpcFreq, count );
 		log_message("", msgbuf );
+#endif
 		vpcFrequencyIndex = 0;
 	}
 }
@@ -240,11 +243,13 @@ set_breath_rate(int bpm )
 		log_message("", msgbuf );
 		exit ( -1 );
 	}
+#ifdef DEBUG
 	else
 	{
 		sprintf(msgbuf, "set_breath_rate: RR %d Sec %f nsec %f", bpm, intpart, wait_time_nsec );
 		log_message("", msgbuf );
 	}
+#endif
 }
 
 void
@@ -452,6 +457,7 @@ process_child(void *ptr )
 	unsigned int last_pulse = simmgr_shm->status.cardiac.pulseCount;
 	unsigned int last_breath = simmgr_shm->status.respiration.breathCount;
 	int checkCount = 0;
+	char *word;
 	
 	while ( 1 )
 	{
@@ -464,8 +470,15 @@ process_child(void *ptr )
 				if ( listeners[i].allocated == 1 )
 				{
 					fd = listeners[i].cfd;
-					
-					len = write(fd, pulseWord, strlen(pulseWord) );
+					if ( simmgr_shm->status.cardiac.pulseCount == simmgr_shm->status.cardiac.pulseCountVpc )
+					{
+						word = pulseWordVPC;
+					}
+					else
+					{
+						word = pulseWord;
+					}
+					len = write(fd, word, strlen(word) );
 					if ( len < 0) // This detects closed or disconnected listeners.
 					{
 						close(fd );

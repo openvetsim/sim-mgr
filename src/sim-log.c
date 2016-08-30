@@ -33,7 +33,8 @@
  * RETURNS:
  *		On success, returns 0. On fail, returns -1.
  */
-char simlog_file[SIMLOG_NAME_LENGTH];
+char simlog_file[SIMLOG_NAME_LENGTH] = { 0, };
+int simlog_initialized = 0;
 FILE *simlog_fd;
 int simlog_line;	// Last line written
 int lock_held = 0;
@@ -79,7 +80,7 @@ simlog_entry(char *msg )
 	}
 	else
 	{
-		if ( ( strlen(simlog_file ) > 0 ) && simmgr_shm->logfile.active );
+		if ( ( strlen(simlog_file ) > 0 ) && ( simmgr_shm->logfile.active  ) );
 		{
 			sts = simlog_open(SIMLOG_MODE_WRITE );
 			if ( sts ==0 )
