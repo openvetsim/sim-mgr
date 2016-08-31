@@ -77,6 +77,7 @@ struct cardiac
 	int heart_sound_mute;
 	int ecg_indicator;
 	int bp_cuff;
+	int arrest;
 };
 
 struct scenario
@@ -132,10 +133,25 @@ struct auscultation
 	int row;	// Row 0 is closest to spine
 	int col;	// Col 0 is closets to head
 };
+
+#define PULSE_NOT_ACTIVE					0
+#define PULSE_RIGHT_DORSAL					1
+#define PULSE_RIGHT_FEMORAL					2
+#define PULSE_LEFT_DORSAL					3
+#define PULSE_LEFT_FEMORAL					4
+
+#define PULSE_TOUCH_NONE					0
+#define PULSE_TOUCH_LIGHT					1
+#define PULSE_TOUCH_NORMAL					2
+#define PULSE_TOUCH_HEAVY					3
+#define PULSE_TOUCH_EXCESSIVE				4
+
 struct pulse
 {
 	int position;	// Position code of active pulse check
+	int pressure;	// Touch Pressure
 };
+
 struct cpr
 {
 	int last;			// msec time of last compression

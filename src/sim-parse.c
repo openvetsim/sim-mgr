@@ -201,6 +201,10 @@ cardiac_parse(const char *elem,  const char *value, struct cardiac *card )
 			sts = 3;
 		}
 	}
+	else if ( strcmp(elem, ("arrest" ) ) == 0 )
+	{
+		card->arrest = atoi(value );
+	}
 	else
 	{
 		sts = 1;
@@ -424,6 +428,7 @@ initializeParameterStruct(struct instructor *initParams )
 	initParams->cardiac.ecg_indicator = -1;
 	initParams->cardiac.bp_cuff = -1;
 	initParams->cardiac.transfer_time = -1;
+	initParams->cardiac.arrest = -1;
 	
 	initParams->respiration.inhalation_duration = -1;
 	initParams->respiration.exhalation_duration = -1;
@@ -520,6 +525,8 @@ getValueFromName(char *param_class, char *param_element )
 			rval = simmgr_shm->status.cardiac.bp_cuff;
 		else if ( strcmp(param_element, "cpr_time" ) == 0 )
 			rval = simmgr_shm->status.cardiac.bp_cuff;
+		else if ( strcmp(param_element, "arrest" ) == 0 )
+			rval = simmgr_shm->status.cardiac.arrest;
 	}
 	else if ( strcmp(param_class, "respiration" ) == 0 )
 	{

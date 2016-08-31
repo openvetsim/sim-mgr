@@ -157,6 +157,7 @@ main(int argc, char *argv[] )
 	simmgr_shm->status.cardiac.heart_sound_mute = 0;
 	simmgr_shm->status.cardiac.ecg_indicator = 0;
 	simmgr_shm->status.cardiac.bp_cuff = 0;
+	simmgr_shm->status.cardiac.arrest = 0;
 	
 	// status/respiration
 	sprintf(simmgr_shm->status.respiration.left_lung_sound, "%s", "normal" );
@@ -246,6 +247,7 @@ main(int argc, char *argv[] )
 	simmgr_shm->instructor.cardiac.heart_sound_mute = -1;
 	simmgr_shm->instructor.cardiac.ecg_indicator = -1;
 	simmgr_shm->instructor.cardiac.bp_cuff = -1;
+	simmgr_shm->instructor.cardiac.arrest = -1;
 	
 	// instructor/scenario
 	sprintf(simmgr_shm->instructor.scenario.active, "%s", "" );
@@ -417,10 +419,11 @@ time_update(void )
 		if ( ( sec == 0 ) && ( last_time_sec != 0 ) )
 		{
 			// Do periodic Stats update every minute
-			sprintf(buf, "VS: Temp: %0.1f; awRR: %d; HR: %d; BP: %d/%d; SPO2: %d; etCO2: %d mmHg; Probes: ECG: %s; BP: %s; SPO2: %s; ETCO2: %s",
+			sprintf(buf, "VS: Temp: %0.1f; awRR: %d; HR: %d; %s; BP: %d/%d; SPO2: %d; etCO2: %d mmHg; Probes: ECG: %s; BP: %s; SPO2: %s; ETCO2: %s",
 				((double)simmgr_shm->status.general.temperature) / 10,
 				simmgr_shm->status.respiration.rate,
 				simmgr_shm->status.cardiac.rate,
+				(simmgr_shm->status.cardiac.arrest == 1 ? "Arrest" : "Normal"  ),
 				simmgr_shm->status.cardiac.bps_sys,
 				simmgr_shm->status.cardiac.bps_dia,
 				simmgr_shm->status.respiration.spo2,
@@ -820,6 +823,16 @@ scan_commands(void )
 			simlog_entry(buf );
 		}
 		simmgr_shm->instructor.cardiac.bp_cuff = -1;
+	}
+	if ( simmgr_shm->instructor.cardiac.arrest >= 0 )
+	{
+		if ( simmgr_shm->status.cardiac.bp_cuff != simmgr_shm->instructor.cardiac.arrest )
+		{
+			simmgr_shm->status.cardiac.arrest = simmgr_shm->instructor.cardiac.arrest;
+			sprintf(buf, "%s %s", "Arrest", (simmgr_shm->status.cardiac.arrest == 1 ? "Start": "Stop") );
+			simlog_entry(buf );
+		}
+		simmgr_shm->instructor.cardiac.arrest = -1;
 	}
 	simmgr_shm->instructor.cardiac.transfer_time = -1;
 	

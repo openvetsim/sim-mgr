@@ -331,6 +331,44 @@ main( int argc, const char* argv[] )
 						sts = 2;
 					}
 				}
+				else if ( v[1].compare("pulse" ) == 0 )
+				{
+					if ( v[2].compare("position" ) == 0 )
+					{
+						simmgr_shm->status.pulse.position = atoi(value.c_str() );
+						sts = 0;
+					}
+					else if ( v[2].compare("pressure" ) == 0 )
+					{
+						simmgr_shm->status.pulse.pressure = atoi(value.c_str() );
+						sts = 0;
+					}else
+					{
+						sts = 2;
+					}
+				}
+				else if ( v[1].compare("auscultation" ) == 0 )
+				{
+					if ( v[2].compare("side" ) == 0 )
+					{
+						simmgr_shm->status.auscultation.side = atoi(value.c_str() );
+						sts = 0;
+					}
+					else if ( v[2].compare("row" ) == 0 )
+					{
+						simmgr_shm->status.auscultation.row = atoi(value.c_str() );
+						sts = 0;
+					}
+					else if ( v[2].compare("col" ) == 0 )
+					{
+						simmgr_shm->status.auscultation.col = atoi(value.c_str() );
+						sts = 0;
+					}
+					else
+					{
+						sts = 2;
+					}
+				}
 				else
 				{
 					sts = 2;
@@ -416,6 +454,8 @@ sendSimctrData(void )
 	makejson(cout, "bps_sys", itoa(simmgr_shm->status.cardiac.bps_sys, buffer, 10 ) );
 	cout << ",\n";
 	makejson(cout, "bps_dia", itoa(simmgr_shm->status.cardiac.bps_dia, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "arrest", itoa(simmgr_shm->status.cardiac.arrest, buffer, 10 ) );
 	cout << ",\n";
 	switch ( simmgr_shm->status.cardiac.right_dorsal_pulse_strength )
 	{
@@ -674,6 +714,8 @@ sendStatus(void )
 	makejson(cout, "ecg_indicator", itoa(simmgr_shm->status.cardiac.ecg_indicator, buffer, 10 ) );
 	cout << ",\n";
 	makejson(cout, "bp_cuff", itoa(simmgr_shm->status.cardiac.bp_cuff, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "arrest", itoa(simmgr_shm->status.cardiac.arrest, buffer, 10 ) );
 	cout << "\n},\n";
 	
 	cout << " \"respiration\" : {\n";
@@ -736,6 +778,8 @@ sendStatus(void )
 	
 	cout << " \"pulse\" : {\n";
 	makejson(cout, "position", itoa(simmgr_shm->status.pulse.position, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "pressure", itoa(simmgr_shm->status.pulse.pressure, buffer, 10 ) );
 	cout << "\n},\n";
 
 	cout << " \"media\" : {\n";
