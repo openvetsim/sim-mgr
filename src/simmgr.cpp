@@ -45,6 +45,7 @@ using namespace std;
 int start_scenario(const char *name );
 void recordStartStop(int record );
 void checkEvents(void );
+void clearAllTrends(void );
 
 int scenarioPid = -1;
 int lastEventLogged = 0;
@@ -314,6 +315,8 @@ main(int argc, char *argv[] )
 	simmgr_shm->instructor.cpr.release = -1;
 	simmgr_shm->instructor.cpr.duration = -1;
 	
+	clearAllTrends();
+	
 	scenarioCount = 0;
 	while ( 1 )
 	{
@@ -476,6 +479,19 @@ clearTrend(struct trend *trend, int current )
 	trend->current = current;
 	
 	return ( trend->current );
+}
+
+void
+clearAllTrends(void )
+{
+	// Clear running trends
+	(void)clearTrend(&cardiacTrend, simmgr_shm->status.cardiac.rate );
+	(void)clearTrend(&sysTrend, simmgr_shm->status.cardiac.bps_sys  );
+	(void)clearTrend(&diaTrend, simmgr_shm->status.cardiac.bps_dia  );
+	(void)clearTrend(&respirationTrend, simmgr_shm->status.respiration.rate );
+	(void)clearTrend(&spo2Trend, simmgr_shm->status.respiration.spo2 );
+	(void)clearTrend(&etco2Trend, simmgr_shm->status.respiration.etco2 );
+	(void)clearTrend(&tempTrend, simmgr_shm->status.general.temperature );
 }
 
 /*
@@ -828,7 +844,7 @@ scan_commands(void )
 	}
 	if ( simmgr_shm->instructor.cardiac.arrest >= 0 )
 	{
-		if ( simmgr_shm->status.cardiac.bp_cuff != simmgr_shm->instructor.cardiac.arrest )
+		if ( simmgr_shm->status.cardiac.arrest != simmgr_shm->instructor.cardiac.arrest )
 		{
 			simmgr_shm->status.cardiac.arrest = simmgr_shm->instructor.cardiac.arrest;
 			sprintf(buf, "%s %s", "Arrest", (simmgr_shm->status.cardiac.arrest == 1 ? "Start": "Stop") );
@@ -1198,14 +1214,7 @@ start_scenario(const char *name )
 	scenario_start_time = std::time(nullptr );
 	std::strftime(timeBuf, 60, "%c", std::localtime(&scenario_start_time ));
 	
-	// Clear running trends
-	(void)clearTrend(&cardiacTrend, simmgr_shm->status.cardiac.rate );
-	(void)clearTrend(&sysTrend, simmgr_shm->status.cardiac.bps_sys  );
-	(void)clearTrend(&diaTrend, simmgr_shm->status.cardiac.bps_dia  );
-	(void)clearTrend(&respirationTrend, simmgr_shm->status.respiration.rate );
-	(void)clearTrend(&spo2Trend, simmgr_shm->status.respiration.spo2 );
-	(void)clearTrend(&etco2Trend, simmgr_shm->status.respiration.etco2 );
-	(void)clearTrend(&tempTrend, simmgr_shm->status.general.temperature );
+	clearAllTrends();
 	
 	// exec the new scenario
 	scenarioPid = fork();
