@@ -285,6 +285,10 @@ respiration_parse(const char *elem,  const char *value, struct respiration *resp
 	{
 		resp->chest_movement = atoi(value );
 	}
+	else if ( strcmp(elem, "manual" ) == 0 )
+	{
+		resp->manual_count = atoi(value );
+	}
 	else
 	{
 		sts = 1;
@@ -542,6 +546,8 @@ getValueFromName(char *param_class, char *param_element )
 			rval = simmgr_shm->status.respiration.spo2_indicator;
 		else if ( strcmp(param_element, "chest_movement" ) == 0 )
 			rval = simmgr_shm->status.respiration.chest_movement;
+		else if ( strcmp(param_element, "manual_count" ) == 0 )
+			rval = simmgr_shm->status.respiration.manual_count;
 	}
 	else if ( strcmp(param_class, "general" ) == 0 )
 	{

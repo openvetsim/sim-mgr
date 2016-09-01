@@ -124,6 +124,8 @@ struct respiration
 	int spo2_indicator;
 	int chest_movement;
 	
+	int manual_count;			// Total of Manual Breaths injected (From II or detected bagging)
+	
 	unsigned int breathCount;
 };
 

@@ -799,6 +799,7 @@ startScene(int sceneId )
 	cprCumulative = 0;
 	sprintf(simmgr_shm->status.scenario.scene_name, "%s", current_scene->name );
 	simmgr_shm->status.scenario.scene_id = sceneId;
+	simmgr_shm->status.respiration.manual_count = 0;
 	
 	if ( current_scene->id <= 0 )
 	{
