@@ -287,7 +287,7 @@ respiration_parse(const char *elem,  const char *value, struct respiration *resp
 	}
 	else if ( strcmp(elem, "manual" ) == 0 )
 	{
-		resp->manual_count = atoi(value );
+		resp->manual_breath = atoi(value );
 	}
 	else
 	{

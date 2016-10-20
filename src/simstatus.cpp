@@ -752,6 +752,8 @@ sendStatus(void )
 	makejson(cout, "spo2_indicator", itoa(simmgr_shm->status.respiration.spo2_indicator, buffer, 10 ) );
 	cout << ",\n";
 	makejson(cout, "chest_movement", itoa(simmgr_shm->status.respiration.chest_movement, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "manual_count", itoa(simmgr_shm->status.respiration.manual_count, buffer, 10 ) );
 	cout << "\n},\n";
 	
 	cout << " \"auscultation\" : {\n";

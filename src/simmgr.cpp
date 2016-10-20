@@ -181,6 +181,7 @@ main(int argc, char *argv[] )
 	simmgr_shm->status.respiration.etco2_indicator = 0;
 	simmgr_shm->status.respiration.spo2_indicator = 0;
 	simmgr_shm->status.respiration.chest_movement = 0;
+	simmgr_shm->status.respiration.manual_breath = 0;
 	simmgr_shm->status.respiration.manual_count = 0;
 	
 	// status/vocals
@@ -279,6 +280,7 @@ main(int argc, char *argv[] )
 	simmgr_shm->instructor.respiration.etco2_indicator = -1;
 	simmgr_shm->instructor.respiration.spo2_indicator = -1;
 	simmgr_shm->instructor.respiration.chest_movement = -1;
+	simmgr_shm->instructor.respiration.manual_breath = -1;
 	simmgr_shm->instructor.respiration.manual_count = -1;
 	
 	// instructor/media
@@ -950,10 +952,10 @@ scan_commands(void )
 		}
 		simmgr_shm->instructor.respiration.chest_movement = -1;
 	}
-	if ( simmgr_shm->instructor.respiration.manual_count >= 0 )
+	if ( simmgr_shm->instructor.respiration.manual_breath >= 0 )
 	{
-		simmgr_shm->status.respiration.manual_count += simmgr_shm->instructor.respiration.manual_count;
-		simmgr_shm->instructor.respiration.manual_count = -1;
+		simmgr_shm->status.respiration.manual_count++;
+		simmgr_shm->instructor.respiration.manual_breath = -1;
 	}
 	simmgr_shm->instructor.respiration.transfer_time = -1;
 	
