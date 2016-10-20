@@ -285,8 +285,15 @@ respiration_parse(const char *elem,  const char *value, struct respiration *resp
 	{
 		resp->chest_movement = atoi(value );
 	}
-	else if ( strcmp(elem, "manual" ) == 0 )
+	else if ( strcmp(elem, "manual_count" ) == 0 )
 	{
+		resp->manual_count = atoi(value );
+	}
+	else if ( strcmp(elem, "manual_breath" ) == 0 )
+	{
+		char buf[512];
+		sprintf(buf, "%s %s %s", "manual_breath", elem, value );
+		log_message("", buf );
 		resp->manual_breath = atoi(value );
 	}
 	else
@@ -447,6 +454,8 @@ initializeParameterStruct(struct instructor *initParams )
 	initParams->respiration.spo2_indicator = -1;
 	initParams->respiration.chest_movement = -1;
 	initParams->respiration.transfer_time = -1;
+	initParams->respiration.manual_breath = -1;
+	initParams->respiration.manual_count = -1;
 	
 	initParams->general.temperature = -1;
 	initParams->general.transfer_time = -1;
