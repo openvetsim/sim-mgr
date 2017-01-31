@@ -16,12 +16,41 @@
 #include <errno.h>
 #include <sys/mman.h>
 #include "../include/simmgr.h"
+#include <sys/types.h>
+#include <pwd.h>
+#include <grp.h>
 
 #define SIMLOG_DIR		"/var/www/html/simlogs"
 #define SIMLOG_NAME_LENGTH 128
 #define MAX_TIME_STR	24
 #define MAX_LINE_LEN	512
 
+int do_chown (const char *file_path,
+               const char *user_name,
+               const char *group_name) 
+{
+  uid_t          uid;
+  gid_t          gid;
+  struct passwd *pwd;
+  struct group  *grp;
+
+  pwd = getpwnam(user_name);
+  if (pwd == NULL) {
+      return ( -1 );
+  }
+  uid = pwd->pw_uid;
+
+  grp = getgrnam(group_name);
+  if (grp == NULL) {
+      return ( -2 );
+  }
+  gid = grp->gr_gid;
+
+  if (chown(file_path, uid, gid) == -1) {
+      return ( -3 );
+  }
+  return ( 0 );
+}
 
 /*
  * FUNCTION:
@@ -139,6 +168,15 @@ simlog_open(int rw )
 			log_message("", buffer  );
 			sem_post(&simmgr_shm->logfile.sema);
 			lock_held = 0;
+		}
+		else
+		{
+			sts = do_chown (simlog_file, "www-data", "www-data" );
+			if ( sts )
+			{
+			sprintf(buffer, "simlog_open dp_chown returns: %d", sts );
+			log_message("", buffer  );
+			}
 		}
 	}
 	else
