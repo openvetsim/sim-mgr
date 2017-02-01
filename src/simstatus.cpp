@@ -3,7 +3,7 @@
  *
  * Open the SHM segment and provide status/control operations.
  *
- * Copyright 2015 Terence Kelleher. All rights reserved.
+ * Copyright 2015-2017 Terence Kelleher. All rights reserved.
  *
  */
 
@@ -342,7 +342,8 @@ main( int argc, const char* argv[] )
 					{
 						simmgr_shm->status.pulse.pressure = atoi(value.c_str() );
 						sts = 0;
-					}else
+					}
+					else
 					{
 						sts = 2;
 					}
