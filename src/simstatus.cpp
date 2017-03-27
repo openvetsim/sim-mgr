@@ -326,6 +326,11 @@ main( int argc, const char* argv[] )
 						simmgr_shm->instructor.cpr.compression = atoi(value.c_str() );
 						sts = 0;
 					}
+					else if ( v[2].compare("release" ) == 0 )
+					{
+						simmgr_shm->instructor.cpr.release = atoi(value.c_str() );
+						sts = 0;
+					}
 					else
 					{
 						sts = 2;
