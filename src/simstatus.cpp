@@ -772,6 +772,8 @@ sendStatus(void )
 	
 	cout << " \"general\" : {\n";
 	makejson(cout, "temperature", itoa(simmgr_shm->status.general.temperature, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "temperature_enable", itoa(simmgr_shm->status.general.temperature_enable, buffer, 10 ) );
 	cout << "\n},\n";
 	
 	cout << " \"vocals\" : {\n";

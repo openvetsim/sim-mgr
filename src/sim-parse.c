@@ -318,6 +318,10 @@ general_parse(const char *elem,  const char *value, struct general *gen )
 	{
 		gen->transfer_time = atoi(value );
 	}
+	else if ( strcmp(elem, "temperature_enable" ) == 0 )
+	{
+		gen->temperature_enable = atoi(value );
+	}
 	else
 	{
 		sts = 1;

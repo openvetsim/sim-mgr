@@ -183,6 +183,7 @@ struct general
 {
 	int temperature;			// degrees * 10, (eg 96.8 is 968)
 	int transfer_time;			// Trend length
+	int temperature_enable;		// 0 : No Probe, 1 : Probe Attached
 };
 struct media
 {
