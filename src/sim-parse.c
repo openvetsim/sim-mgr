@@ -85,6 +85,10 @@ cardiac_parse(const char *elem,  const char *value, struct cardiac *card )
 	{
 		card->nibp_read = atoi(value );
 	}
+	else if ( strcmp(elem, "nibp_linked_hr" ) == 0 )
+	{
+		card->nibp_linked_hr = atoi(value );
+	}
 	else if ( strcmp(elem, "nibp_freq" ) == 0 )
 	{
 		card->nibp_freq = atoi(value );
@@ -318,6 +322,10 @@ general_parse(const char *elem,  const char *value, struct general *gen )
 	{
 		gen->transfer_time = atoi(value );
 	}
+	else if ( strcmp(elem, "temperature_enable" ) == 0 )
+	{
+		gen->temperature_enable = atoi(value );
+	}
 	else
 	{
 		sts = 1;
@@ -425,6 +433,7 @@ initializeParameterStruct(struct instructor *initParams )
 	initParams->cardiac.rate = -1;
 	initParams->cardiac.nibp_rate = -1;
 	initParams->cardiac.nibp_read = -1;
+	initParams->cardiac.nibp_linked_hr = -1;
 	initParams->cardiac.nibp_freq = -1;
 	initParams->cardiac.pr_interval = -1;
 	initParams->cardiac.qrs_interval = -1;
@@ -522,6 +531,8 @@ getValueFromName(char *param_class, char *param_element )
 			rval = simmgr_shm->status.cardiac.nibp_rate;
 		else if ( strcmp(param_element, "nibp_read" ) == 0 )
 			rval = simmgr_shm->status.cardiac.nibp_read;
+		else if ( strcmp(param_element, "nibp_linked_hr" ) == 0 )
+			rval = simmgr_shm->status.cardiac.nibp_linked_hr;
 		else if ( strcmp(param_element, "nibp_freq" ) == 0 )
 			rval = simmgr_shm->status.cardiac.nibp_freq;
 		else if ( strcmp(param_element, "pr_interval" ) == 0 )

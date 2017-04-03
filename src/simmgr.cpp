@@ -143,6 +143,7 @@ main(int argc, char *argv[] )
 	simmgr_shm->status.cardiac.rate = 80;
 	simmgr_shm->status.cardiac.nibp_rate = 80;
 	simmgr_shm->status.cardiac.nibp_read = -1;
+	simmgr_shm->status.cardiac.nibp_linked_hr = 1;
 	simmgr_shm->status.cardiac.nibp_freq = 0;
 	sprintf(simmgr_shm->status.cardiac.pwave, "%s", "none" );
 	simmgr_shm->status.cardiac.pr_interval = 140; // Good definition at http://lifeinthefastlane.com/ecg-library/basics/pr-interval/
@@ -211,6 +212,7 @@ main(int argc, char *argv[] )
 	
 	// status/general
 	simmgr_shm->status.general.temperature = 1017;
+	simmgr_shm->status.general.temperature_enable = 0;
 	
 	// status/media
 	sprintf(simmgr_shm->status.media.filename, "%s", "" );
@@ -230,6 +232,7 @@ main(int argc, char *argv[] )
 	simmgr_shm->instructor.cardiac.rate = -1;
 	simmgr_shm->instructor.cardiac.nibp_rate = -1;
 	simmgr_shm->instructor.cardiac.nibp_read = -1;
+	simmgr_shm->instructor.cardiac.nibp_linked_hr = -1;
 	simmgr_shm->instructor.cardiac.nibp_freq = -1;
 	sprintf(simmgr_shm->instructor.cardiac.pwave, "%s", "" );
 	simmgr_shm->instructor.cardiac.pr_interval = -1;
@@ -289,6 +292,7 @@ main(int argc, char *argv[] )
 	
 	// instructor/general
 	simmgr_shm->instructor.general.temperature = -1;
+	simmgr_shm->instructor.general.temperature_enable = -1;
 
 	// instructor/vocals
 	sprintf(simmgr_shm->instructor.vocals.filename, "%s", "" );
@@ -426,7 +430,7 @@ time_update(void )
 		if ( ( sec == 0 ) && ( last_time_sec != 0 ) )
 		{
 			// Do periodic Stats update every minute
-			sprintf(buf, "VS: Temp: %0.1f; awRR: %d; HR: %d; %s; BP: %d/%d; SPO2: %d; etCO2: %d mmHg; Probes: ECG: %s; BP: %s; SPO2: %s; ETCO2: %s",
+			sprintf(buf, "VS: Temp: %0.1f; awRR: %d; HR: %d; %s; BP: %d/%d; SPO2: %d; etCO2: %d mmHg; Probes: ECG: %s; BP: %s; SPO2: %s; ETCO2: %s; Temp %s",
 				((double)simmgr_shm->status.general.temperature) / 10,
 				simmgr_shm->status.respiration.rate,
 				simmgr_shm->status.cardiac.rate,
@@ -438,7 +442,8 @@ time_update(void )
 				(simmgr_shm->status.cardiac.ecg_indicator == 1 ? "on" : "off"  ),
 				(simmgr_shm->status.cardiac.bp_cuff == 1 ? "on" : "off"  ),
 				(simmgr_shm->status.respiration.spo2_indicator == 1 ? "on" : "off"  ),
-				(simmgr_shm->status.respiration.etco2_indicator == 1 ? "on" : "off"  )
+				(simmgr_shm->status.respiration.etco2_indicator == 1 ? "on" : "off"  ),
+				(simmgr_shm->status.general.temperature_enable == 1 ? "on" : "off"  )
 			);
 			simlog_entry(buf );
 		}
@@ -715,6 +720,14 @@ scan_commands(void )
 		}
 		simmgr_shm->instructor.cardiac.nibp_read = -1;
 	}
+	if ( simmgr_shm->instructor.cardiac.nibp_linked_hr >= 0 )
+	{
+		if ( simmgr_shm->status.cardiac.nibp_linked_hr != simmgr_shm->instructor.cardiac.nibp_linked_hr )
+		{
+			simmgr_shm->status.cardiac.nibp_linked_hr = simmgr_shm->instructor.cardiac.nibp_linked_hr;
+		}
+		simmgr_shm->instructor.cardiac.nibp_linked_hr = -1;
+	}
 	if ( simmgr_shm->instructor.cardiac.nibp_freq >= 0 )
 	{
 		if ( simmgr_shm->status.cardiac.nibp_freq != simmgr_shm->instructor.cardiac.nibp_freq )
@@ -967,6 +980,16 @@ scan_commands(void )
 											simmgr_shm->status.general.temperature,
 											simmgr_shm->instructor.general.transfer_time );
 		simmgr_shm->instructor.general.temperature = -1;
+	}
+	if ( simmgr_shm->instructor.general.temperature_enable >= 0 )
+	{
+		if ( simmgr_shm->status.general.temperature_enable != simmgr_shm->instructor.general.temperature_enable )
+		{
+			simmgr_shm->status.general.temperature_enable = simmgr_shm->instructor.general.temperature_enable;
+			sprintf(buf, "%s %s", "Temp Probe", (simmgr_shm->status.general.temperature_enable == 1 ? "Attached": "Removed") );
+			simlog_entry(buf );
+		}
+		simmgr_shm->instructor.general.temperature_enable = -1;
 	}
 	simmgr_shm->instructor.general.transfer_time = -1;
 	
