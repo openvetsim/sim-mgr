@@ -266,7 +266,7 @@ main( int argc, const char* argv[] )
 					else if ( v[2].compare("record" ) == 0 )
 					{
 						simmgr_shm->instructor.scenario.record = atoi(value.c_str() );
-					}
+						}
 					else
 					{
 						sts = 1;
@@ -544,6 +544,8 @@ sendSimctrData(void )
 	makejson(cout, "heart_sound_mute", itoa(simmgr_shm->status.cardiac.heart_sound_mute, buffer, 10 ) );
 	cout << ",\n";
 	makejson(cout, "heart_sound", simmgr_shm->status.cardiac.heart_sound );
+	cout << ",\n";
+	makejson(cout, "rhythm", simmgr_shm->status.cardiac.rhythm );
 	cout << "\n},\n";
 	
 	cout << " \"respiration\" : {\n";
@@ -570,7 +572,7 @@ sendSimctrData(void )
 	makejson(cout, "chest_movement", itoa(simmgr_shm->status.respiration.chest_movement, buffer, 10 ) );
 	cout << ",\n";
 	makejson(cout, "manual_count", itoa(simmgr_shm->status.respiration.manual_count, buffer, 10 ) );
-	cout << "\n},\n";
+	cout << "\n}\n";
 
 }
 void
