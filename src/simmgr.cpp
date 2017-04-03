@@ -143,6 +143,7 @@ main(int argc, char *argv[] )
 	simmgr_shm->status.cardiac.rate = 80;
 	simmgr_shm->status.cardiac.nibp_rate = 80;
 	simmgr_shm->status.cardiac.nibp_read = -1;
+	simmgr_shm->status.cardiac.nibp_linked_hr = 1;
 	simmgr_shm->status.cardiac.nibp_freq = 0;
 	sprintf(simmgr_shm->status.cardiac.pwave, "%s", "none" );
 	simmgr_shm->status.cardiac.pr_interval = 140; // Good definition at http://lifeinthefastlane.com/ecg-library/basics/pr-interval/
@@ -231,6 +232,7 @@ main(int argc, char *argv[] )
 	simmgr_shm->instructor.cardiac.rate = -1;
 	simmgr_shm->instructor.cardiac.nibp_rate = -1;
 	simmgr_shm->instructor.cardiac.nibp_read = -1;
+	simmgr_shm->instructor.cardiac.nibp_linked_hr = -1;
 	simmgr_shm->instructor.cardiac.nibp_freq = -1;
 	sprintf(simmgr_shm->instructor.cardiac.pwave, "%s", "" );
 	simmgr_shm->instructor.cardiac.pr_interval = -1;
@@ -717,6 +719,14 @@ scan_commands(void )
 			simmgr_shm->status.cardiac.nibp_read = simmgr_shm->instructor.cardiac.nibp_read;
 		}
 		simmgr_shm->instructor.cardiac.nibp_read = -1;
+	}
+	if ( simmgr_shm->instructor.cardiac.nibp_linked_hr >= 0 )
+	{
+		if ( simmgr_shm->status.cardiac.nibp_linked_hr != simmgr_shm->instructor.cardiac.nibp_linked_hr )
+		{
+			simmgr_shm->status.cardiac.nibp_linked_hr = simmgr_shm->instructor.cardiac.nibp_linked_hr;
+		}
+		simmgr_shm->instructor.cardiac.nibp_linked_hr = -1;
 	}
 	if ( simmgr_shm->instructor.cardiac.nibp_freq >= 0 )
 	{

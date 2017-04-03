@@ -58,6 +58,7 @@ struct cardiac
 	int avg_rate;		// Calculated heart rate
 	int nibp_rate;		// Non-Invasive Rate - Only reports when cuff is on
 	int nibp_read;		// Set to 1 to start reading, set to 0 when reading is complete.
+	int nibp_linked_hr;		// Set to 1 to keep NIBP linked with Cardiac Rate, set to 0 to unlink.
 	int nibp_freq;		// Number of minutes for NIBP timer. 0 is manual.
 	int transfer_time;	// Trend length for change in rate;
 	char pwave[STR_SIZE];
