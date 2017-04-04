@@ -383,10 +383,20 @@ do_command_read(const char *cmd_str, char *buffer, int max_len )
 void
 get_date(char *buffer )
 {
+#if 0
 	time_t timer;
 	time(&timer);
 	sprintf(buffer, "%s", ctime(&timer) );
 	strtok(buffer, "\n");
+#else
+	time_t rawtime;
+	struct tm * timeinfo;
+
+	time(&rawtime);
+	timeinfo = localtime(&rawtime);
+
+	strftime (buffer,80,"%m%d%H%M%Y.%S",timeinfo);
+#endif
 }
 
 char eth0_ip[512] = { 0, };

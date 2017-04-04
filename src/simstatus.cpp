@@ -211,7 +211,7 @@ main( int argc, const char* argv[] )
 			{
 				get_date(buffer );
 				makejson(cout, "date", buffer );
-				}
+			}
 			else if ( key.compare("ip" ) == 0 )
 			{
 				makejson(cout, "ip_addr", simmgr_shm->server.ip_addr );
