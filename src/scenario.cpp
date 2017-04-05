@@ -310,6 +310,7 @@ main(int argc, char **argv)
 	simmgr_shm->status.respiration.chest_movement = 0;
 	simmgr_shm->status.respiration.manual_breath = 0;
 	simmgr_shm->status.respiration.manual_count = 0;
+	simmgr_shm->status.general.temperature_enable = 0;
 	
 	// Apply initialization parameters
 	processInit(&scenario->initParams );

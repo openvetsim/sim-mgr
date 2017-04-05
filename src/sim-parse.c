@@ -314,7 +314,11 @@ general_parse(const char *elem,  const char *value, struct general *gen )
 	{
 		return ( -13 );
 	}
-	if ( strcmp(elem, "temperature" ) == 0 )
+	if ( strcmp(elem, "temperature_enable" ) == 0 )
+	{
+		gen->temperature_enable = atoi(value );
+	}
+	else if ( strcmp(elem, "temperature" ) == 0 )
 	{
 		gen->temperature = atoi(value );
 	}
@@ -322,11 +326,7 @@ general_parse(const char *elem,  const char *value, struct general *gen )
 	{
 		gen->transfer_time = atoi(value );
 	}
-	else if ( strcmp(elem, "temperature_enable" ) == 0 )
-	{
-		gen->temperature_enable = atoi(value );
-	}
-	else
+	else 
 	{
 		sts = 1;
 	}
@@ -467,6 +467,7 @@ initializeParameterStruct(struct instructor *initParams )
 	initParams->respiration.manual_count = -1;
 	
 	initParams->general.temperature = -1;
+	initParams->general.temperature_enable = -1;
 	initParams->general.transfer_time = -1;
 	
 	initParams->vocals.repeat = -1;
@@ -558,8 +559,6 @@ getValueFromName(char *param_class, char *param_element )
 			rval = simmgr_shm->status.respiration.spo2;
 		else if ( strcmp(param_element, "rate" ) == 0 )
 			rval = simmgr_shm->status.respiration.rate;
-		else if ( strcmp(param_element, "etco2" ) == 0 )
-			rval = simmgr_shm->status.respiration.etco2;
 		else if ( strcmp(param_element, "etco2_indicator" ) == 0 )
 			rval = simmgr_shm->status.respiration.etco2_indicator;
 		else if ( strcmp(param_element, "spo2_indicator" ) == 0 )
@@ -568,9 +567,13 @@ getValueFromName(char *param_class, char *param_element )
 			rval = simmgr_shm->status.respiration.chest_movement;
 		else if ( strcmp(param_element, "manual_count" ) == 0 )
 			rval = simmgr_shm->status.respiration.manual_count;
+		else if ( strcmp(param_element, "etco2" ) == 0 )
+			rval = simmgr_shm->status.respiration.etco2;
 	}
 	else if ( strcmp(param_class, "general" ) == 0 )
 	{
+		if ( strcmp(param_element, "temperature_enable" ) == 0 )
+			rval = simmgr_shm->status.general.temperature_enable;
 		if ( strcmp(param_element, "temperature" ) == 0 )
 			rval = simmgr_shm->status.general.temperature;
 	}
