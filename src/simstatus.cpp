@@ -29,6 +29,7 @@
 #include <cstdlib>
 #include <sstream>
 #include <utility>
+#include <algorithm>
 
 #include "../include/simmgr.h" 
 
@@ -43,6 +44,7 @@ using namespace cgicc;
 
 void sendStatus(void );
 void sendSimctrData(void );
+int runningAsDemo = 0;
 
 struct paramCmds
 {
@@ -123,16 +125,19 @@ main( int argc, const char* argv[] )
 	int set_count = 0;
 	int sts;
 	char *cp;
-
+	char sesid[512] = { 0, };
+	int userid = -1;
+	
 	std::string key;
 	std::string value;
 	std::string command;
+	std::string theTime;
+	
 	std::vector<std::string> v;
 	
-	// Cgicc formData;
 	const_form_iterator iter;
-	Cgicc formData;
-
+	const_cookie_iterator c_iter;
+	
 	signal(SIGCHLD,SIG_IGN); /* ignore child */
 	signal(SIGTSTP,SIG_IGN); /* ignore tty signals */
 	signal(SIGTTOU,SIG_IGN);
@@ -143,10 +148,60 @@ main( int argc, const char* argv[] )
 	cout << "Content-Type: application/json\r\n\r\n";
 	cout << "{\n";
 
-	sts = initSHM(OPEN_ACCESS );
+	try 
+	{
+		Cgicc cgi;
+		const CgiEnvironment& env = cgi.getEnvironment();
+		for(c_iter = env.getCookieList().begin(); 
+			c_iter != env.getCookieList().end(); 
+			++c_iter ) 
+		{
+			key = c_iter->getName();
+			if ( key.compare("PHPSESSID" ) == 0 )
+			{
+				value = c_iter->getValue();
+				sprintf(sesid, "%s", value.c_str() );
+				makejson(cout, key, sesid );
+				cout << ",\n";
+			}
+			else if ( key.compare("simIIUserID" ) == 0 )
+			{
+				value = c_iter->getValue();
+				userid = atoi(value.c_str() );
+				makejson(cout, key, value );
+				cout << ",\n";
+			}
+			else if ( key.compare("userID" ) == 0 )
+			{
+				value = c_iter->getValue();
+				userid = atoi(value.c_str() );
+				makejson(cout, key, value );cout << ",\n";
+			}
+		}
+	}
+	catch(exception& ex) 
+	{
+		// Caught a standard library exception
+		makejson(cout, "status", "Fail");
+		cout << ",\n    ";
+		makejson(cout, "err", ex.what() );
+		cout << "\n}\n";
+		releaseLock( iiLockTaken );
+		return ( 0 );
+	}	
+	if ( userid != -1 )
+	{
+		runningAsDemo = 1;
+	}
+	else
+	{
+		sesid[0] = 0;
+	}
+	sts = initSHM(OPEN_ACCESS, sesid );
 	if ( sts < 0 )
 	{
-		makejson(cout, "error", "initSHM failed" );
+		sprintf(buffer, "%d: %s %s", sts, "initSHM failed", sesid );
+		makejson(cout, "error", buffer );
 		cout << "\n}\n";
 		return ( 0 );
 	}
@@ -175,12 +230,7 @@ main( int argc, const char* argv[] )
 				break;
 			}
 		}
-		iter = cgi.getElement("time" );
-		if ( iter != cgi.getElements().end())
-		{
-			makejson(cout, "time", simmgr_shm->server.server_time );
-			cout << ",\n";
-		}
+		
 		// Parse the submitted GET/POST elements
 		for( iter = cgi.getElements().begin(); iter != cgi.getElements().end(); ++iter )
 		{
@@ -222,7 +272,13 @@ main( int argc, const char* argv[] )
 			}
 			else if ( key.compare("time" ) == 0 )
 			{
-				makejson(cout, "time", simmgr_shm->server.server_time );
+				theTime = std::string(simmgr_shm->server.server_time );
+	
+				if (!theTime.empty() && theTime[theTime.length()-1] == '\n') 
+				{
+					theTime.erase(theTime.length()-1);
+				}
+				makejson(cout, "time", theTime.c_str() );
 			}
 			else if ( key.compare("status" ) == 0 )
 			{
@@ -429,8 +485,6 @@ sendSimctrData(void )
 	
 	
 	cout << " \"cardiac\" : {\n";
-	makejson(cout, "rhythm", simmgr_shm->status.cardiac.rhythm	);
-	cout << ",\n";
 	makejson(cout, "vpc", simmgr_shm->status.cardiac.vpc	);
 	cout << ",\n";
 	makejson(cout, "pea", itoa(simmgr_shm->status.cardiac.pea, buffer, 10 )	);

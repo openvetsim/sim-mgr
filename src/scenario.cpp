@@ -72,6 +72,7 @@ int line_number = 0;
 const char *xml_filename;
 int verbose = 0;
 int checkOnly = 0;
+int runningAsDemo = 0;
 int errCount = 0;
 
 // Internal state is tracked to compare to the overall state, for detecting changes
@@ -144,9 +145,9 @@ const char *trigger_tests_sym[] =
  *		Any other exit is failure.
  */
 
-char usage[] = "[-cv] xml-file-name";
+char usage[] = "[-cv] [-S sessionID] xml-file-name";
 char msgbuf[1024];
-char getArgList[] = "cv";
+char getArgList[] = "cvS:";
 
 int 
 main(int argc, char **argv)
@@ -154,6 +155,7 @@ main(int argc, char **argv)
 	int loopCount;
 	int c;
 	int sts;
+	char *sesid = NULL;
 	
 	opterr = 0;
 	while ((c = getopt(argc, argv, getArgList )) != -1 )
@@ -165,6 +167,10 @@ main(int argc, char **argv)
 				break;
 			case 'v':
 				verbose = 1;
+				break;
+			case 'S':
+				sesid = optarg;
+				runningAsDemo = 1;
 				break;
 			case '?':
 				if (isprint (optopt))
@@ -187,7 +193,7 @@ main(int argc, char **argv)
         return(1);
 	}
 	
-	sprintf(msgbuf, "scenario: Start %s", argv[optind] );
+	sprintf(msgbuf, "scenario: Start %s (%s )", argv[optind], sesid );
 	if ( !checkOnly )
 	{
 		log_message("", msgbuf );
@@ -205,7 +211,7 @@ main(int argc, char **argv)
 	else
 	{
 		// Wait for Shared Memory to become available
-		while ( initSHM(OPEN_ACCESS ) != 0 )
+		while ( initSHM(OPEN_ACCESS, sesid ) != 0 )
 		{
 			sprintf(msgbuf, "scenario: SHM Failed - waiting" );
 			log_message("", msgbuf );

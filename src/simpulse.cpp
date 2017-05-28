@@ -54,6 +54,7 @@ int currentPulseRate = 0;
 int currentVpcDelay = 0;
 int currentVpcFreq = 0;
 int currentBreathRate = 0;
+int runningAsDemo = 0;
 
 void set_beat_time(int bpm );
 void set_pulse_rate(int bpm, int delay );
@@ -271,6 +272,7 @@ main(int argc, char *argv[] )
 	struct sigaction new_action;
 	sigset_t mask;
 	int i;
+	char *sesid = NULL;
 	
 	for ( i = 0 ; i < MAX_LISTENERS ; i++ )
 	{
@@ -285,7 +287,7 @@ main(int argc, char *argv[] )
 	srand(time(NULL) );
 	
 	// Wait for Shared Memory to become available
-	while ( initSHM(OPEN_ACCESS ) != 0 )
+	while ( initSHM(OPEN_ACCESS, sesid ) != 0 )
 	{
 		sprintf(msgbuf, "pulse: SHM Failed - waiting" );
 		log_message("", msgbuf );

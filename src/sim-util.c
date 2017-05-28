@@ -56,6 +56,7 @@
 int simmgrSHM;					// The File for shared memory
 struct simmgr_shm *simmgr_shm;	// Data structure of the shared memory
 
+char shmFileName[1024];
 
 /*
  * FUNCTION: initSHM
@@ -68,27 +69,38 @@ struct simmgr_shm *simmgr_shm;	// Data structure of the shared memory
  */
 
 int
-initSHM(int create )
+initSHM(int create, char *sesid )
 {
 	void *space;
 	int mmapSize;
 	int permission;
 	
 	mmapSize = sizeof(struct simmgr_shm );
-	
-	if ( create == OPEN_WITH_CREATE )
+	if ( sesid != NULL )
 	{
-		permission = O_RDWR | O_CREAT | O_TRUNC;
+		sprintf(shmFileName, "%s_%s", SIMMGR_SHM_DEMO_NAME, sesid );
 	}
 	else
 	{
-		permission = O_RDWR;
+		sprintf(shmFileName, "%s", SIMMGR_SHM_NAME );
+	}
+	switch ( create )
+	{
+		case OPEN_WITH_CREATE:
+			permission = O_RDWR | O_CREAT | O_TRUNC;
+			break;
+			
+		case OPEN_ACCESS:
+		default:
+			permission = O_RDWR;			
+			break;
 	}
 	
 	// Open the Shared Memory space
-	simmgrSHM = shm_open(SIMMGR_SHM_NAME, permission , 0755 );
+	simmgrSHM = shm_open(shmFileName, permission , 0755 );
 	if ( simmgrSHM < 0 )
 	{
+		log_message("", shmFileName );
 		perror("shm_open" );
 		return ( -3 );
 	}
@@ -236,6 +248,7 @@ void daemonize()
 	int i,lfp;
 	char str[10];
 	char buffer[128];
+	extern int runningAsDemo;
 	
 	if ( getppid()==1 )
 	{
@@ -272,17 +285,21 @@ void daemonize()
 	chdir(RUNNING_DIR); /* change running directory */
 	
 	// Create a Lock File to prevent multiple daemons
-	sprintf(buffer, "%s%s.pid", LOCK_FILE_DIR, program_invocation_short_name );
-	lfp = open(buffer, O_RDWR|O_CREAT, 0640 );
-	if ( lfp < 0 )
+	// Skip lock for Demo runs
+	if ( runningAsDemo == 0 )
 	{
-		syslog(LOG_DAEMON | LOG_ERR, "open(%s) failed: %s", buffer, strerror(errno));
-		exit(1); /* can not open */
-	}
-	if ( lockf(lfp,F_TLOCK,0) < 0 )
-	{
-		syslog(LOG_DAEMON | LOG_WARNING, "Cannot take lock");
-		exit(0); /* can not lock */
+		sprintf(buffer, "%s%s.pid", LOCK_FILE_DIR, program_invocation_short_name );
+		lfp = open(buffer, O_RDWR|O_CREAT, 0640 );
+		if ( lfp < 0 )
+		{
+			syslog(LOG_DAEMON | LOG_ERR, "open(%s) failed: %s", buffer, strerror(errno));
+			exit(1); /* can not open */
+		}
+		if ( lockf(lfp,F_TLOCK,0) < 0 )
+		{
+			syslog(LOG_DAEMON | LOG_WARNING, "Cannot take lock");
+			exit(0); /* can not lock */
+		}
 	}
 	/* first instance continues */
 	sprintf(str, "%d\n", getpid());

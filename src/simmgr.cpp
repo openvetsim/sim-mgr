@@ -50,6 +50,7 @@ void clearAllTrends(void );
 int scenarioPid = -1;
 int lastEventLogged = 0;
 int lastCommentLogged = 0;
+int runningAsDemo = 0;
 
 int scan_commands(void );
 void comm_check(void );
@@ -110,10 +111,11 @@ main(int argc, char *argv[] )
 	char *ptr;
 	int scenarioCount;
 	daemonize();
+	char sesid[512] = { 0, };
 	
 	sts = on_exit(killScenario, (void *)0 );
 	
-	sts = initSHM(OPEN_WITH_CREATE );
+	sts = initSHM(OPEN_WITH_CREATE, sesid );
 	if ( sts < 0 )
 	{
 		perror("initSHM" );
@@ -430,9 +432,10 @@ time_update(void )
 		if ( ( sec == 0 ) && ( last_time_sec != 0 ) )
 		{
 			// Do periodic Stats update every minute
-			sprintf(buf, "VS: Temp: %0.1f; awRR: %d; HR: %d; %s; BP: %d/%d; SPO2: %d; etCO2: %d mmHg; Probes: ECG: %s; BP: %s; SPO2: %s; ETCO2: %s; Temp %s",
+			sprintf(buf, "VS: Temp: %0.1f; RR: %d; awRR: %d; HR: %d; %s; BP: %d/%d; SPO2: %d; etCO2: %d mmHg; Probes: ECG: %s; BP: %s; SPO2: %s; ETCO2: %s; Temp %s",
 				((double)simmgr_shm->status.general.temperature) / 10,
 				simmgr_shm->status.respiration.rate,
+				simmgr_shm->status.respiration.awRR,
 				simmgr_shm->status.cardiac.rate,
 				(simmgr_shm->status.cardiac.arrest == 1 ? "Arrest" : "Normal"  ),
 				simmgr_shm->status.cardiac.bps_sys,
@@ -912,6 +915,8 @@ scan_commands(void )
 	}
 	if ( simmgr_shm->instructor.respiration.rate >= 0 )
 	{
+		sprintf(msgbuf, "Set Resp Rate = %d : %d", simmgr_shm->instructor.respiration.rate, simmgr_shm->instructor.respiration.transfer_time );
+		log_message("", msgbuf);
 		simmgr_shm->status.respiration.rate = setTrend(&respirationTrend, 
 											simmgr_shm->instructor.respiration.rate,
 											simmgr_shm->status.respiration.rate,
@@ -1067,6 +1072,7 @@ scan_commands(void )
 			simmgr_shm->status.respiration.exhalation_duration = 0;
 		}
 	}
+	simmgr_shm->status.respiration.awRR = simmgr_shm->status.respiration.rate;
 	simmgr_shm->status.respiration.spo2 = trendProcess( &spo2Trend );
 	simmgr_shm->status.respiration.etco2 = trendProcess( &etco2Trend );
 	simmgr_shm->status.general.temperature = trendProcess(&tempTrend );

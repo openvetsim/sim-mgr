@@ -1,4 +1,4 @@
-TARGETS= obj/simmgr obj/simpulse obj/simstatus.cgi obj/scenario
+TARGETS= obj/simmgr obj/simmgrDemo obj/simpulse obj/simstatus.cgi obj/scenario obj/cookie.cgi
 
 ## -pthread (Posix Threads) is required where shared memory and/or multiple threads are used
 CFLAGS=-pthread -Wall -g -ggdb -rdynamic
@@ -11,7 +11,12 @@ LDFLAGS=-lrt
 CGIBIN=/var/lib/cgi-bin
 BIN=/usr/local/bin
 
-default: obj/simstatus.cgi obj/simmgr obj/simpulse obj/scenario
+default: obj/simstatus.cgi obj/simmgr obj/simmgrDemo obj/simpulse obj/scenario obj/cookie.cgi
+
+demo: obj/simmgrDemo
+	sudo cp -u obj/simmgrDemo $(BIN)
+	sudo chown simmgr:simmgr $(BIN)/simmgrDemo
+	sudo chmod u+s $(BIN)/simmgrDemo
 
 obj/scenario: src/scenario.cpp obj/llist.o obj/sim-util.o obj/sim-parse.o obj/llist.o include/scenario.h include/simmgr.h
 	g++ $(CPPFLAGS)-I/usr/include/libxml2  $(CXXFLAGS) -o obj/scenario src/scenario.cpp obj/sim-util.o obj/sim-parse.o obj/llist.o $(LDFLAGS) -lxml2
@@ -34,8 +39,14 @@ obj/llist.o: src/llist.c include/llist.h
 obj/simstatus.cgi: src/simstatus.cpp obj/sim-util.o obj/sim-parse.o obj/sim-log.o include/simmgr.h
 	g++ $(CPPFLAGS) $(CXXFLAGS) -o obj/simstatus.cgi src/simstatus.cpp obj/sim-util.o obj/sim-parse.o obj/sim-log.o $(LDFLAGS) -lcgicc
 
+obj/cookie.cgi: src/cookie.cpp 
+	g++ $(CPPFLAGS) $(CXXFLAGS) -o obj/cookie.cgi src/cookie.cpp -lcgicc
+	
 obj/simmgr: src/simmgr.cpp obj/sim-log.o obj/sim-util.o include/simmgr.h
 	g++ $(CPPFLAGS) $(CXXFLAGS)  -lcgicc -o obj/simmgr src/simmgr.cpp  obj/sim-log.o obj/sim-util.o $(LDFLAGS)
+	
+obj/simmgrDemo: src/simmgrDemo.cpp obj/sim-log.o obj/sim-util.o include/simmgr.h
+	g++ $(CPPFLAGS) $(CXXFLAGS)  -lcgicc -o obj/simmgrDemo src/simmgrDemo.cpp  obj/sim-log.o obj/sim-util.o $(LDFLAGS)
 	
 obj/simpulse: src/simpulse.cpp obj/sim-util.o include/simmgr.h
 	g++ $(CPPFLAGS) $(CXXFLAGS)  -lcgicc -o obj/simpulse src/simpulse.cpp  obj/sim-util.o $(LDFLAGS)
@@ -47,6 +58,9 @@ install: check $(TARGETS) installDaemon
 	sudo cp -u obj/simmgr $(BIN)
 	sudo chown simmgr:simmgr $(BIN)/simmgr
 	sudo chmod u+s $(BIN)/simmgr
+	sudo cp -u obj/simmgrDemo $(BIN)
+	sudo chown simmgr:simmgr $(BIN)/simmgrDemo
+	sudo chmod u+s $(BIN)/simmgrDemo
 	sudo cp -u obj/simpulse $(BIN)
 	sudo chown simmgr:simmgr $(BIN)/simpulse
 	sudo chmod u+s $(BIN)/simpulse

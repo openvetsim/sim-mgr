@@ -18,13 +18,14 @@
 #define SIMMGR_VERSION		1
 #define STR_SIZE			64
 #define COMMENT_SIZE		1024
-#define SIMMGR_SHM_NAME		"simmgr"
+#define SIMMGR_SHM_NAME			"simmgr"
+#define SIMMGR_SHM_DEMO_NAME	"sm"	// Will have Session ID appended
 #define LOG_TO_FILE			0
 
 // When initSHM is called, only the simmgr daemon should set OPEN_WITH_CREATE
 // All other open with _OPEN_ACCESS
-#define	OPEN_WITH_CREATE	1
-#define OPEN_ACCESS			0
+#define	OPEN_WITH_CREATE		1
+#define OPEN_ACCESS				0
 
 
 enum ScenarioState
@@ -305,7 +306,7 @@ struct trend
 
 // Prototypes
 // 
-int	initSHM(int create );
+int	initSHM(int create, char *sesid );
 void log_message(const char *filename, const char* message);
 void daemonize(void );
 int kbhit(void);
