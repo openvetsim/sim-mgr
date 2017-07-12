@@ -3,7 +3,7 @@
  *
  * Scenario Processing
  *
- * Copyright (C) 2016 Terence Kelleher. All rights reserved.
+ * Copyright (C) 2016-2017 Terence Kelleher. All rights reserved.
  *
  * The Scenario runs as an independent process. It is execed from the simmgr and acts
  * using the shared memory space to monitor the system and inject Initiator commands
@@ -364,10 +364,10 @@ main(int argc, char **argv)
 				log_message("", msgbuf );
 				sts = takeInstructorLock();
 				if ( !sts )
-				{					
+				{
+					scenario_state = ScenarioTerminate;
 					sprintf(simmgr_shm->instructor.scenario.state, "Stopped" );
 					releaseInstructorLock();
-					scenario_state = ScenarioTerminate;
 				}
 			}
 		}

@@ -18,8 +18,8 @@
 #define SIMMGR_VERSION		1
 #define STR_SIZE			64
 #define COMMENT_SIZE		1024
-#define SIMMGR_SHM_NAME			"simmgr"
-#define SIMMGR_SHM_DEMO_NAME	"sm"	// Will have Session ID appended
+#define SIMMGR_SHM_NAME			"/simmgr_shm"
+#define SIMMGR_SHM_DEMO_NAME	"/simdemo_shm"	// Will have Session ID appended
 #define LOG_TO_FILE			0
 
 // When initSHM is called, only the simmgr daemon should set OPEN_WITH_CREATE

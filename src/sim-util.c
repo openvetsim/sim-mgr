@@ -57,6 +57,7 @@ int simmgrSHM;					// The File for shared memory
 struct simmgr_shm *simmgr_shm;	// Data structure of the shared memory
 
 char shmFileName[1024];
+char msg_buf[2048];
 
 /*
  * FUNCTION: initSHM
@@ -76,7 +77,7 @@ initSHM(int create, char *sesid )
 	int permission;
 	
 	mmapSize = sizeof(struct simmgr_shm );
-	if ( sesid != NULL )
+	if ( ( sesid != NULL ) && ( strlen(sesid) > 0 ) )
 	{
 		sprintf(shmFileName, "%s_%s", SIMMGR_SHM_DEMO_NAME, sesid );
 	}
@@ -100,7 +101,9 @@ initSHM(int create, char *sesid )
 	simmgrSHM = shm_open(shmFileName, permission , 0755 );
 	if ( simmgrSHM < 0 )
 	{
-		log_message("", shmFileName );
+		sprintf(msg_buf, "%s %s", shmFileName, strerror(errno) );
+
+		log_message("", msg_buf );
 		perror("shm_open" );
 		return ( -3 );
 	}

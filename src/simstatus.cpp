@@ -196,6 +196,7 @@ main( int argc, const char* argv[] )
 	else
 	{
 		sesid[0] = 0;
+		runningAsDemo = 0;
 	}
 	sts = initSHM(OPEN_ACCESS, sesid );
 	if ( sts < 0 )
