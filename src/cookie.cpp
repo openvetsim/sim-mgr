@@ -18,7 +18,7 @@
 #  include <sys/time.h>
 #endif
  
-#include "../../cgicc-3.2.16/demo/styles.h"
+#include "/usr/share/doc/libcgicc-doc/examples/demo/styles.h"
 
 using namespace std;
 using namespace cgicc;
