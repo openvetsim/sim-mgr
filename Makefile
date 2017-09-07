@@ -1,4 +1,5 @@
-TARGETS= obj/simmgr obj/simmgrDemo obj/simpulse obj/simstatus.cgi obj/scenario obj/cookie.cgi
+OBJDIR := obj
+TARGETS= $(OBJDIR) obj/simmgr obj/simmgrDemo obj/simpulse obj/simstatus.cgi obj/scenario obj/cookie.cgi
 
 ## -pthread (Posix Threads) is required where shared memory and/or multiple threads are used
 CFLAGS=-pthread -Wall -g -ggdb -rdynamic
@@ -11,8 +12,11 @@ LDFLAGS=-lrt
 CGIBIN=/var/lib/cgi-bin
 BIN=/usr/local/bin
 
-default: obj/simstatus.cgi obj/simmgr obj/simmgrDemo obj/simpulse obj/scenario obj/cookie.cgi
+default: $(OBJDIR) obj/simstatus.cgi obj/simmgr obj/simmgrDemo obj/simpulse obj/scenario obj/cookie.cgi
 
+$(OBJDIR):
+	mkdir -p $(OBJDIR)
+	
 demo: obj/simmgrDemo
 	sudo cp -u obj/simmgrDemo $(BIN)
 	sudo chown simmgr:simmgr $(BIN)/simmgrDemo
