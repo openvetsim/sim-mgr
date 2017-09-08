@@ -58,6 +58,8 @@ int runningAsDemo = 0;
 
 void set_beat_time(int bpm );
 void set_pulse_rate(int bpm, int delay );
+void set_breath_rate(int bpm );
+void calculateVPCFreq(void );
 
 /* struct to hold data to be passed to a thread
    this shows how multiple data items can be passed to a thread */
@@ -111,6 +113,25 @@ beat_handler(int sig, siginfo_t *si, void *uc)
 			}
 			simmgr_shm->status.cardiac.pulseCount = newCount;
 		}
+		// If the pulse rate has changed, then reset the timer
+		if ( currentPulseRate != simmgr_shm->status.cardiac.rate )
+		{
+			currentPulseRate = simmgr_shm->status.cardiac.rate;
+			set_pulse_rate(currentPulseRate, 0 );
+#ifdef DEBUG
+			sprintf(msgbuf, "Set Pulse to %d", currentPulseRate );
+			log_message("", msgbuf );
+#endif
+		}
+		if ( currentVpcDelay != simmgr_shm->status.cardiac.vpc_delay )
+		{
+			currentVpcDelay = simmgr_shm->status.cardiac.vpc_delay;
+		}
+		if ( currentVpcFreq != simmgr_shm->status.cardiac.vpc_freq )
+		{
+			currentVpcFreq = simmgr_shm->status.cardiac.vpc_freq;
+			calculateVPCFreq();
+		}
 		
 	}
 	else if ( sig == BREATH_TIMER_SIG )
@@ -118,6 +139,18 @@ beat_handler(int sig, siginfo_t *si, void *uc)
 		if ( simmgr_shm->status.respiration.rate > 0 )
 		{
 			simmgr_shm->status.respiration.breathCount++;
+		}
+		// If the breath rate has changed, then reset the timer
+		if ( currentBreathRate != simmgr_shm->status.respiration.rate )
+		{
+			set_breath_rate(simmgr_shm->status.respiration.rate );
+			currentBreathRate = simmgr_shm->status.respiration.rate;
+			// awRR Calculation - TBD - Need real calculations
+			simmgr_shm->status.respiration.awRR = simmgr_shm->status.respiration.rate;
+#ifdef DEBUG
+			sprintf(msgbuf, "Set Breath to %d", currentBreathRate );
+			log_message("", msgbuf );
+#endif
 		}
 	}	
 }
@@ -532,40 +565,11 @@ process_child(void *ptr )
 		checkCount++;
 		if ( checkCount == 5 )	// 100 is an interval of 500 ms.
 		{
-			// If the pulse rate has changed, then reset the timer
-			if ( currentPulseRate != simmgr_shm->status.cardiac.rate )
-			{
-				currentPulseRate = simmgr_shm->status.cardiac.rate;
-				set_pulse_rate(currentPulseRate, 0 );
-	#ifdef DEBUG
-				sprintf(msgbuf, "Set Pulse to %d", currentPulseRate );
-				log_message("", msgbuf );
-	#endif
-			}
-			if ( currentVpcDelay != simmgr_shm->status.cardiac.vpc_delay )
-			{
-				currentVpcDelay = simmgr_shm->status.cardiac.vpc_delay;
-			}
-			if ( currentVpcFreq != simmgr_shm->status.cardiac.vpc_freq )
-			{
-				currentVpcFreq = simmgr_shm->status.cardiac.vpc_freq;
-				calculateVPCFreq();
-			}
+			// The pulse rate change is moved to the beat_handler. It will be updated on the next beat.
 		}
 		else if ( checkCount == 10 )
 		{
-			// If the breath rate has changed, then reset the timer
-			if ( currentBreathRate != simmgr_shm->status.respiration.rate )
-			{
-				set_breath_rate(simmgr_shm->status.respiration.rate );
-				currentBreathRate = simmgr_shm->status.respiration.rate;
-				// awRR Calculation - TBD - Need real calculations
-				simmgr_shm->status.respiration.awRR = simmgr_shm->status.respiration.rate;
-	#ifdef DEBUG
-				sprintf(msgbuf, "Set Breath to %d", currentBreathRate );
-				log_message("", msgbuf );
-	#endif
-			}
+			// The breath rate change is moved to the beat_handler. It will be updated on the next breath.
 			checkCount = 0;
 		}
 	}
