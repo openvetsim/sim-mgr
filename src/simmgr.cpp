@@ -1159,7 +1159,7 @@ scan_commands(void )
 			break;
 	}
 	/*
-		if the BP Cuff is attachedand we see nibp_read set, then 
+		if the BP Cuff is attached and we see nibp_read set, then 
 	*/
 	if ( scenario_state == ScenarioTerminate )
 	{
