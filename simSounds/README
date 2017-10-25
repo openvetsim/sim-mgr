@@ -1,0 +1,24 @@
+This directory contains the files required for the "Tsunami Super WAV Trigger"
+used in the Simulator Controller. 
+
+For details on the Tsunami, see the Product Page at http://robertsonics.com/tsunami/ and
+the User Guide at http://robertsonics.com/tsunami-user-guide/.
+
+
+Files in ths directory:
+	*.wav - Sounds used for auscultation and vocalizations
+	tsunami.ini - Tsunami Configuration
+	tsunamix.hex - Tsunami Mono Firmware
+	
+The files of this directory should be copied to a FAT16 or FAT32 formatted MicroSD card 
+and installed in the Tsunami. The MicroSD card should be speed class 4 or 10, non-UHS.
+See http://robertsonics.com/microsd-cards-for-audio/ for details.
+
+The Tsunami is used in Mono mode, but is initialy installed with Stereo firmware. To load the
+new firmware:
+
+	1. Put the card into Tsunami and make sure Tsunami is powered.
+	2. Press and hold the user button and then tap the reset button.
+	   Wait for Tsunami’s LED to go on solid.
+	3. Release the user button and tap the reset button, or power-cycle the Tsunami.
+	You should now be running the new firmware.
