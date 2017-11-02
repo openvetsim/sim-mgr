@@ -866,7 +866,7 @@ sendStatus(void )
 	cout << ",\n";
 	makejson(cout, "right_femoral", itoa(simmgr_shm->status.pulse.right_femoral, buffer, 10 ) );
 	cout << ",\n";
-	makejson(cout, "left_dorsal", itoa(simmgr_shm->status.pulse.left_dorsal, buffer, 10 ) );
+	makejson(cout, "left_femoral", itoa(simmgr_shm->status.pulse.left_femoral, buffer, 10 ) );
 	cout << "\n},\n";
 
 	cout << " \"media\" : {\n";
