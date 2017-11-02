@@ -152,8 +152,10 @@ struct auscultation
 
 struct pulse
 {
-	int position;	// Position code of active pulse check
-	int pressure;	// Touch Pressure
+	int right_dorsal;	// Touch Pressure
+	int left_dorsal;	// Touch Pressure
+	int right_femoral;	// Touch Pressure
+	int left_femoral;	// Touch Pressure
 };
 
 struct cpr

@@ -200,7 +200,10 @@ main(int argc, char *argv[] )
 	simmgr_shm->status.auscultation.col = 0;
 	
 	// status/pulse
-	simmgr_shm->status.pulse.position = 0;
+	simmgr_shm->status.pulse.right_dorsal = 0;
+	simmgr_shm->status.pulse.left_dorsal = 0;
+	simmgr_shm->status.pulse.right_femoral = 0;
+	simmgr_shm->status.pulse.left_femoral = 0;
 	
 	// status/cpr
 	simmgr_shm->status.cpr.last = 0;

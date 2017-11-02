@@ -262,7 +262,7 @@ main( int argc, const char* argv[] )
 			{
 				get_date(buffer );
 				makejson(cout, "date", buffer );
-			}
+				}
 			else if ( key.compare("ip" ) == 0 )
 			{
 				makejson(cout, "ip_addr", simmgr_shm->server.ip_addr );
@@ -395,14 +395,24 @@ main( int argc, const char* argv[] )
 				}
 				else if ( v[1].compare("pulse" ) == 0 )
 				{
-					if ( v[2].compare("position" ) == 0 )
+					if ( v[2].compare("right_dorsal" ) == 0 )
 					{
-						simmgr_shm->status.pulse.position = atoi(value.c_str() );
+						simmgr_shm->status.pulse.right_dorsal = atoi(value.c_str() );
 						sts = 0;
 					}
-					else if ( v[2].compare("pressure" ) == 0 )
+					else if ( v[2].compare("left_dorsal" ) == 0 )
 					{
-						simmgr_shm->status.pulse.pressure = atoi(value.c_str() );
+						simmgr_shm->status.pulse.left_dorsal = atoi(value.c_str() );
+						sts = 0;
+					}
+					else if ( v[2].compare("right_femoral" ) == 0 )
+					{
+						simmgr_shm->status.pulse.right_femoral = atoi(value.c_str() );
+						sts = 0;
+					}
+					else if ( v[2].compare("left_femoral" ) == 0 )
+					{
+						simmgr_shm->status.pulse.left_femoral = atoi(value.c_str() );
 						sts = 0;
 					}
 					else
@@ -850,9 +860,13 @@ sendStatus(void )
 	cout << "\n},\n";
 	
 	cout << " \"pulse\" : {\n";
-	makejson(cout, "position", itoa(simmgr_shm->status.pulse.position, buffer, 10 ) );
+	makejson(cout, "right_dorsal", itoa(simmgr_shm->status.pulse.right_dorsal, buffer, 10 ) );
 	cout << ",\n";
-	makejson(cout, "pressure", itoa(simmgr_shm->status.pulse.pressure, buffer, 10 ) );
+	makejson(cout, "left_dorsal", itoa(simmgr_shm->status.pulse.left_dorsal, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "right_femoral", itoa(simmgr_shm->status.pulse.right_femoral, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "left_dorsal", itoa(simmgr_shm->status.pulse.left_dorsal, buffer, 10 ) );
 	cout << "\n},\n";
 
 	cout << " \"media\" : {\n";
