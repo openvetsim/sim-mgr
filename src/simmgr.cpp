@@ -576,7 +576,48 @@ trendProcess(struct trend *trend )
 	return ( rval );
 }
 
+int
+isRhythmPulsed(char *rhythm ) 
+{
+	if ( ( strcmp(rhythm, "asystole" ) == 0 ) ||
+		 ( strcmp(rhythm, "vfib" ) == 0 ) )
+	{
+		return ( false );
+	}
+	else
+	{
+		return ( true );
+	}
+}
 
+void
+setRespirationPeriods(int oldRate, int newRate )
+{
+	int period;
+	
+	if ( oldRate != newRate )
+	{
+		if ( newRate > 0 )
+		{
+			simmgr_shm->status.respiration.rate = newRate;
+			period = (1000*60)/newRate;	// Period in msec from rate per minute
+			if ( period > 10000 )
+			{
+				period = 10000;
+			}
+			period = (period * 7) / 10;	// Use 70% of the period for duration calculations
+			simmgr_shm->status.respiration.inhalation_duration = period / 2;
+			simmgr_shm->status.respiration.exhalation_duration = period - simmgr_shm->status.respiration.inhalation_duration;
+		}
+		else
+		{
+			simmgr_shm->status.respiration.rate = 0;
+			simmgr_shm->status.respiration.inhalation_duration = 0;
+			simmgr_shm->status.respiration.exhalation_duration = 0;
+		}
+	}
+}
+	
 /*
  * Scan commands from Initiator Interface
  *
@@ -592,9 +633,9 @@ scan_commands(void )
 	int trycount;
 	int oldRate;
 	int newRate;
-	int period;
 	int doRecord = -1;
-	
+	int currentIsPulsed;
+	int newIsPulsed;
 	// Lock the command interface before processing commands
 	trycount = 0;
 	while ( ( sts = sem_trywait(&simmgr_shm->instructor.sema) ) != 0 )
@@ -682,29 +723,70 @@ scan_commands(void )
 	{
 		if ( strcmp(simmgr_shm->status.cardiac.rhythm, simmgr_shm->instructor.cardiac.rhythm ) != 0 )
 		{
+			// When changing to pulseless rhythm, the rate will be set to zero.
+			newIsPulsed = isRhythmPulsed(simmgr_shm->instructor.cardiac.rhythm );
+			if ( newIsPulsed == false )
+			{
+				simmgr_shm->instructor.cardiac.rate = 0;
+				simmgr_shm->instructor.cardiac.transfer_time = 0;
+			}
+			else
+			{
+				// When changing from a pulseless rhythm to a pulse rhythm, the rate will be set to 100
+				// This can be overridden in the command by setting the rate explicitly
+				currentIsPulsed = isRhythmPulsed(simmgr_shm->status.cardiac.rhythm );
+				if ( ( currentIsPulsed == false ) && ( newIsPulsed == true ) )
+				{
+					if ( simmgr_shm->instructor.cardiac.rate < 0 )
+					{
+						simmgr_shm->instructor.cardiac.rate = 100;
+						simmgr_shm->instructor.cardiac.transfer_time = 0;
+					}
+				}
+			}
 			sprintf(simmgr_shm->status.cardiac.rhythm, "%s", simmgr_shm->instructor.cardiac.rhythm );
 			sprintf(buf, "%s: %s", "Cardiac Rhythm", simmgr_shm->instructor.cardiac.rhythm );
 			simlog_entry(buf );
 		}
 		sprintf(simmgr_shm->instructor.cardiac.rhythm, "%s", "" );
+		
 	}
 	if ( simmgr_shm->instructor.cardiac.rate >= 0 )
 	{
-		if ( simmgr_shm->instructor.cardiac.rate != simmgr_shm->status.cardiac.rate )
+		currentIsPulsed = isRhythmPulsed(simmgr_shm->status.cardiac.rhythm );
+		if ( currentIsPulsed == true )
 		{
-			simmgr_shm->status.cardiac.rate = setTrend(&cardiacTrend, 
-											simmgr_shm->instructor.cardiac.rate,
-											simmgr_shm->status.cardiac.rate,
-											simmgr_shm->instructor.cardiac.transfer_time );
-			if ( simmgr_shm->instructor.cardiac.transfer_time >= 0 )
+			if ( simmgr_shm->instructor.cardiac.rate != simmgr_shm->status.cardiac.rate )
 			{
-				sprintf(buf, "%s: %d time %d", "Cardiac Rate", simmgr_shm->instructor.cardiac.rate, simmgr_shm->instructor.cardiac.transfer_time );
+				simmgr_shm->status.cardiac.rate = setTrend(&cardiacTrend, 
+												simmgr_shm->instructor.cardiac.rate,
+												simmgr_shm->status.cardiac.rate,
+												simmgr_shm->instructor.cardiac.transfer_time );
+				if ( simmgr_shm->instructor.cardiac.transfer_time >= 0 )
+				{
+					sprintf(buf, "%s: %d time %d", "Cardiac Rate", simmgr_shm->instructor.cardiac.rate, simmgr_shm->instructor.cardiac.transfer_time );
+				}
+				else
+				{
+					sprintf(buf, "%s: %d", "Cardiac Rate", simmgr_shm->instructor.cardiac.rate );
+				}
+				simlog_entry(buf );
+			}
+		}
+		else 
+		{
+			if ( simmgr_shm->instructor.cardiac.rate > 0 )
+			{
+				sprintf(buf, "%s: %d", "Cardiac Rate cannot be set while in pulseless rhythm", simmgr_shm->instructor.cardiac.rate );
+				simlog_entry(buf );
 			}
 			else
 			{
-				sprintf(buf, "%s: %d", "Cardiac Rate", simmgr_shm->instructor.cardiac.rate );
+				simmgr_shm->status.cardiac.rate = setTrend(&cardiacTrend, 
+												0,
+												simmgr_shm->status.cardiac.rate,
+												0 );
 			}
-			simlog_entry(buf );
 		}
 		simmgr_shm->instructor.cardiac.rate = -1;
 	}
@@ -886,6 +968,7 @@ scan_commands(void )
 		sprintf(simmgr_shm->status.respiration.right_lung_sound, "%s", simmgr_shm->instructor.respiration.right_lung_sound );
 		sprintf(simmgr_shm->instructor.respiration.right_lung_sound, "%s", "" );
 	}
+	/*
 	if ( simmgr_shm->instructor.respiration.inhalation_duration >= 0 )
 	{
 		simmgr_shm->status.respiration.inhalation_duration = simmgr_shm->instructor.respiration.inhalation_duration;
@@ -896,6 +979,7 @@ scan_commands(void )
 		simmgr_shm->status.respiration.exhalation_duration = simmgr_shm->instructor.respiration.exhalation_duration;
 		simmgr_shm->instructor.respiration.exhalation_duration = -1;
 	}
+	*/
 	if ( simmgr_shm->instructor.respiration.left_lung_sound_volume >= 0 )
 	{
 		simmgr_shm->status.respiration.left_lung_sound_volume = simmgr_shm->instructor.respiration.left_lung_sound_volume;
@@ -920,6 +1004,11 @@ scan_commands(void )
 	{
 		sprintf(msgbuf, "Set Resp Rate = %d : %d", simmgr_shm->instructor.respiration.rate, simmgr_shm->instructor.respiration.transfer_time );
 		log_message("", msgbuf);
+		if ( simmgr_shm->instructor.respiration.transfer_time == 0 )
+		{
+			setRespirationPeriods(simmgr_shm->status.respiration.rate,
+								  simmgr_shm->instructor.respiration.rate );
+		}
 		simmgr_shm->status.respiration.rate = setTrend(&respirationTrend, 
 											simmgr_shm->instructor.respiration.rate,
 											simmgr_shm->status.respiration.rate,
@@ -1058,23 +1147,8 @@ scan_commands(void )
 	simmgr_shm->status.cardiac.bps_dia = trendProcess(&diaTrend );
 	oldRate = simmgr_shm->status.respiration.rate;
 	newRate = trendProcess(&respirationTrend );
-	
-	if ( oldRate != newRate )
-	{
-		if ( newRate > 0 )
-		{
-			simmgr_shm->status.respiration.rate = newRate;
-			period = (1000*60)/newRate;	// Period in msec from rate per minute
-			simmgr_shm->status.respiration.inhalation_duration = period / 2;
-			simmgr_shm->status.respiration.exhalation_duration = period - simmgr_shm->status.respiration.inhalation_duration;
-		}
-		else
-		{
-			simmgr_shm->status.respiration.rate = 0;
-			simmgr_shm->status.respiration.inhalation_duration = 0;
-			simmgr_shm->status.respiration.exhalation_duration = 0;
-		}
-	}
+	setRespirationPeriods(oldRate, newRate );
+
 	simmgr_shm->status.respiration.awRR = simmgr_shm->status.respiration.rate;
 	simmgr_shm->status.respiration.spo2 = trendProcess( &spo2Trend );
 	simmgr_shm->status.respiration.etco2 = trendProcess( &etco2Trend );
