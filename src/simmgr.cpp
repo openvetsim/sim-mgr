@@ -423,10 +423,21 @@ time_update(void )
 	sprintf(simmgr_shm->server.server_time, "%s", buf );
 	simmgr_shm->server.msec_time = (((tm.tm_hour*60*60)+(tm.tm_min*60)+tm.tm_sec)*1000)+ timeb.millitm;
 	
-	if ( scenario_state == ScenarioRunning )
+	now = std::time(nullptr );
+	sec = (int)difftime(now, scenario_start_time );
+	if ( ( sec > MAX_SCENARIO_RUNTIME ) &&
+		 ( ( scenario_state == ScenarioRunning ) || 
+		   ( scenario_state == ScenarioPaused ) ) )
 	{
-		now = std::time(nullptr );
-		sec = (int)difftime(now, scenario_start_time );
+		sprintf(buf, "MAX Scenario Runtime exceeded. Terminating." );
+		simlog_entry(buf );
+		
+		takeInstructorLock();
+		sprintf(simmgr_shm->instructor.scenario.state, "%s", "Terminate" );
+		releaseInstructorLock();
+	}
+	else if ( scenario_state == ScenarioRunning )
+	{
 		min = (sec / 60);
 		hour = min / 60;
 		sec = sec%60;

@@ -22,6 +22,10 @@
 #define SIMMGR_SHM_DEMO_NAME	"/simdemo_shm"	// Will have Session ID appended
 #define LOG_TO_FILE			0
 
+// Terminate a running scenario after the limit is reached
+#define MAX_SCENARIO_RUNTIME (4*60*60)	// 4 Hours, time in seconds
+//#define MAX_SCENARIO_RUNTIME (2*60)	// 2 minutes, for testing
+
 // When initSHM is called, only the simmgr daemon should set OPEN_WITH_CREATE
 // All other open with _OPEN_ACCESS
 #define	OPEN_WITH_CREATE		1
