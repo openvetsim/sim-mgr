@@ -6,7 +6,3 @@ sudo apt-get install libapache2-mod-php7.0
 sudo apt-get apache2 restart
 
 php -r 'echo "\nPHP is running!! \n\n";'
-
-
-
-
