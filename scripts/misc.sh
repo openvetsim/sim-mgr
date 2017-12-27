@@ -10,5 +10,7 @@ sudo apt-get install -y openssh-server
 sudo apt-get install -y xdotool
 sudo apt-get install =y unclutter
 
+sudo adduser vitals
+
 sudo cp vitals.sh /home/vitals/
 chown vitals:vitals /home/vitals/vitals.sh
