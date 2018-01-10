@@ -8,7 +8,8 @@ sudo apt-get install -y google-chrome-stable
 sudo apt-get install -y vsftpd
 sudo apt-get install -y openssh-server
 sudo apt-get install -y xdotool
-sudo apt-get install =y unclutter
+sudo apt-get install -y unclutter
+sudo apt-get install -y tinc
 
 sudo adduser vitals
 
