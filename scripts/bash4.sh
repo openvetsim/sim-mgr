@@ -1,6 +1,6 @@
 #!/bin/bash
 
-sudo mv ~/sim-mgr/000-default.conf /etc/apache2/sites-available/
+sudo cp ~/sim-mgr/000-default.conf /etc/apache2/sites-available/
 sudo a2enmod cgi
 sudo service apache2 restart
 
@@ -17,5 +17,5 @@ sudo git clone https://github.com/tkelleher/scenarios.git
 
 sudo mkdir simlogs
 sudo chown www-data:www-data simlogs
-sudo chown 2777 simlogs
+sudo chmod 2777 simlogs
 
