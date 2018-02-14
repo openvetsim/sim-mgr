@@ -1328,7 +1328,7 @@ start_scenario(const char *name )
 
 	sprintf(msgbuf, "Start Scenario Request: %s", name );
 	log_message("", msgbuf ); 
-	sprintf(fname, "%s/%s.xml", "/var/www/html/scenarios", name );
+	sprintf(fname, "%s/%s/main.xml", "/var/www/html/scenarios", name );
 	
 	scenario_start_time = std::time(nullptr );
 	std::strftime(timeBuf, 60, "%c", std::localtime(&scenario_start_time ));
