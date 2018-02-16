@@ -311,6 +311,8 @@ main(int argc, char **argv)
 	simmgr_shm->status.cpr.duration = 0;
 	simmgr_shm->status.cardiac.bp_cuff = 0;
 	simmgr_shm->status.cardiac.ecg_indicator = 0;
+	simmgr_shm->status.cardiac.pea = 0;
+	simmgr_shm->status.cardiac.arrest = 0;
 	simmgr_shm->status.respiration.etco2_indicator = 0;
 	simmgr_shm->status.respiration.spo2_indicator = 0;
 	simmgr_shm->status.respiration.chest_movement = 0;
