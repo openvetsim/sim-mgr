@@ -165,11 +165,11 @@
 		</init>
 		<triggers>
 			<trigger>
+				<trigger>EQ</trigger>
 				<cardiac>
 					<bps_sys>130</bps_sys>
-					<trigger>EQ</trigger>
-					<scene_id>3</scene_id>
 				</cardiac>
+				<scene_id>3</scene_id>
 			</trigger>
 		</triggers>
 	</scene>
@@ -185,12 +185,20 @@
 		</init>
 		<triggers>
 			<trigger>
+				<test>LTE</test>
 				<cardiac>
 					<rate>70</rate>
-					<trigger>LTE</trigger>
-					<scene_id>4</scene_id>
 				</cardiac>
+				<scene_id>4</scene_id>
 			</trigger>
+			<trigger>
+				<test>LTE</test>
+				<general>
+					<temperature>1007</temperature>
+				</general>
+				<scene_id>4</scene_id>
+			</trigger>
+
 		</triggers>
 	</scene>
 	<scene>

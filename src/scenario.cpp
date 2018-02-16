@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2016-2017 Terence Kelleher. All rights reserved.
  *
- * The Scenario runs as an independent process. It is execed from the simmgr and acts
+ * The Scenario runs as an independent process. It is exec'ed from the simmgr and acts
  * using the shared memory space to monitor the system and inject Initiator commands
  * as controlled by the scenario script.
  *
@@ -29,11 +29,11 @@
  *
  *    Vocals in Init:
  * 		Vocals may be set in an init definition. This may be used to invoke a vocalization
- *      at the beginning of scene. The vocalization is invoked immeadiatly when parsed. fread 
+ *      at the beginning of scene. The vocalization is invoked immediately when parsed. 
  *
  * Scene: A state definition within the scenario. 
  *
- * Trigger: A criteria for termination of a scene. The trigger defines the paremeter to be
+ * Trigger: A criteria for termination of a scene. The trigger defines the parameter to be
  *          watched, the threshold for firing and the next scene to enter.
  *
  * Ending Scene: A scene that ends the scenario. This scene has an init, but no triggers. 
@@ -42,7 +42,7 @@
  *
  * Process End:
  *		On completion, the scenario process will print a single line and then exit. If the
- *      end is due to entry of an ending sceen, the printed line is the content from the
+ *      end is due to entry of an ending scene, the printed line is the content from the
  *		<end> directive. If exit is due to an error, the line will describe the error.
  */
 
@@ -571,8 +571,8 @@ showScenes()
 			}
 			else
 			{
-				printf("\t\t%s:%s, %s, %d, %d\n", 
-					trig->param_class, trig->param_element, trigger_tests[trig->test], trig->value, trig->value2 );
+				printf("\t\t%s:%s, %s, %d, %d - Scene %d\n", 
+					trig->param_class, trig->param_element, trigger_tests[trig->test], trig->value, trig->value2, trig->scene );
 			}
 			t_snode = get_next_llist(t_snode );
 		}
@@ -1371,8 +1371,6 @@ startParseState(int lvl, char *name )
 			
 			break;
 
-			if ( ( parse_scene_state == PARSE_SCENE_STATE_TRIGS ) &&
-				 ( strcmp(name, "trigger" ) == 0 ) )
 		default:
 			break;
 	}
