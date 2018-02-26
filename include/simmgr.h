@@ -23,8 +23,7 @@
 #define LOG_TO_FILE			0
 
 // Terminate a running scenario after the limit is reached
-#define MAX_SCENARIO_RUNTIME (4*60*60)	// 4 Hours, time in seconds
-//#define MAX_SCENARIO_RUNTIME (2*60)	// 2 minutes, for testing
+#define MAX_SCENARIO_RUNTIME (1*60*60)	// 1 Hour, time in seconds
 
 // When initSHM is called, only the simmgr daemon should set OPEN_WITH_CREATE
 // All other open with _OPEN_ACCESS
