@@ -861,7 +861,7 @@ scan_commands(void )
 	{
 		sprintf(msgbuf, "Set Resp Rate = %d : %d", simmgr_shm->instructor.respiration.rate, simmgr_shm->instructor.respiration.transfer_time );
 		log_message("", msgbuf);
-		if ( simmgr_shm->instructor.respiration.transfer_time == 0 )
+		if ( simmgr_shm->instructor.respiration.transfer_time <= 0 )
 		{
 			setRespirationPeriods(simmgr_shm->status.respiration.rate,
 								  simmgr_shm->instructor.respiration.rate );

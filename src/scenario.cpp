@@ -29,7 +29,7 @@
  *
  *    Vocals in Init:
  * 		Vocals may be set in an init definition. This may be used to invoke a vocalization
- *      at the beginning of scene. The vocalization is invoked immediately when parsed.
+ *      at the beginning of scene. The vocalization is invoked immediately when parsed. 
  *
  * Scene: A state definition within the scenario. 
  *
@@ -573,8 +573,8 @@ showScenes()
 			}
 			else
 			{
-				printf("\t\t%s:%s, %s, %d, %d\n", 
-					trig->param_class, trig->param_element, trigger_tests[trig->test], trig->value, trig->value2 );
+				printf("\t\t%s:%s, %s, %d, %d - Scene %d\n", 
+					trig->param_class, trig->param_element, trigger_tests[trig->test], trig->value, trig->value2, trig->scene );
 			}
 			t_snode = get_next_llist(t_snode );
 		}
