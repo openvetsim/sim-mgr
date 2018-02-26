@@ -6,7 +6,7 @@
  *
  * This process runs independently from the SimMgr. It has two timers; one for the heart rate (pulse) and
  * one for the breath rate (respiration). It runs as two threads. The primary thread listens for connections
- * from clisents, and the child thread monitors the pulse and breath counts to send sync messages to the
+ * from clients, and the child thread monitors the pulse and breath counts to send sync messages to the
  * clients. 
  *
  * Listen for a connections on Port 50200 (SimMgr Event Port)
