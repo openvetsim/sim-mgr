@@ -15,3 +15,6 @@ sudo adduser vitals
 
 sudo cp vitals.sh /home/vitals/
 chown vitals:vitals /home/vitals/vitals.sh
+sudo cp testxdotool.sh /home/vitals/
+chown vitals:vitals /home/vitals/testxdotool.sh
+
