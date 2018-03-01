@@ -25,8 +25,8 @@ read RES_X RES_Y <<<$(xdpyinfo | awk -F'[ x]+' '/dimensions:/{print $3, $4}')
  
 # Run Chromium and open tabs
 #/usr/bin/chromium-browser --kiosk --window-position=0,0 --window-size="${RES_X},${RES_Y}" http://localhost/sim-ii/vitals.php &
-/usr/bin/google-chrome --kiosk --window-size="${RES_X},${RES_Y}" --incognito http://localhost/sim-ii/vitals.php &
-chromePid=$!
+#/usr/bin/google-chrome --kiosk --window-size="${RES_X},${RES_Y}" --incognito http://localhost/sim-ii/vitals.php &
+#chromePid=$!
 
 # Start the kiosk loop. This keystroke changes the Chromium tab
 # To have just anti-idle, use this line instead:
@@ -35,7 +35,19 @@ chromePid=$!
 # 
 # The "kill -0" checks that chrome is still running. The loop breaks if chrome is terminated
 ##
-while kill -0 $chromePid 2> /dev/null; do
-	xdotool keydown ctrl+Tab; xdotool keyup ctrl+Tab;
-	sleep 15
-done
+#while kill -0 $chromePid 2> /dev/null; do
+#	xdotool keydown ctrl+Tab; xdotool keyup ctrl+Tab;
+#	sleep 15
+#done
+
+# New changes to boot using Firefox in zoom mode
+/usr/bin/firefox http://localhost/sim-ii/vitals.php &
+Pid=&!
+
+sleep 10
+xdotool /home/vitals/testxdotool.sh
+
+# command to disable screen shutdown and dimming
+gsettings set org.gnome.desktop.session idle-delay 0
+gsettings set org.gnome.settings-daemon.plugins.power idle-dim false
+
