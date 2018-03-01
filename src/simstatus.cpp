@@ -43,6 +43,7 @@ using namespace std;
 using namespace cgicc;
 
 void sendStatus(void );
+void sendQuickStatus(void );
 void sendSimctrData(void );
 int runningAsDemo = 0;
 
@@ -242,7 +243,12 @@ main( int argc, const char* argv[] )
 				cout << ",\n";
 			}
 			i++;
-			if ( key.compare("check" ) == 0 )
+			if ( key.compare("qstat" ) == 0 )
+			{
+				// The Quick Status
+				sendQuickStatus();
+			}
+			else if ( key.compare("check" ) == 0 )
 			{
 				makejson(cout, "check", "check is ok" );
 			}
@@ -642,6 +648,7 @@ sendSimctrData(void )
 	cout << "\n}\n";
 
 }
+
 void
 sendStatus(void )
 {
@@ -887,5 +894,22 @@ sendStatus(void )
 	makejson(cout, "last", itoa(simmgr_shm->status.defibrillation.last, buffer, 10 ) );
 	cout << ",\n";
 	makejson(cout, "energy", itoa(simmgr_shm->status.defibrillation.energy, buffer, 10 ) );
+	cout << "\n}\n";
+}
+
+void
+sendQuickStatus(void )
+{
+    char buffer[256];
+
+	
+	cout << " \"cardiac\" : {\n";
+	makejson(cout, "pulseCount", itoa(simmgr_shm->status.cardiac.pulseCount, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "pulseCountVpc", itoa(simmgr_shm->status.cardiac.pulseCountVpc, buffer, 10 ) );
+	cout << "\n},\n";
+	
+	cout << " \"respiration\" : {\n";
+	makejson(cout, "breathCount", itoa(simmgr_shm->status.respiration.breathCount, buffer, 10 ) );
 	cout << "\n}\n";
 }
