@@ -369,8 +369,16 @@ main( int argc, const char* argv[] )
 					{
 						if ( value.length() != 0 )
 						{
-							addComment((char *)value.c_str() );
-							sts = 0;
+							if ( strcmp(simmgr_shm->status.scenario.state, "Running" ) == 0 ||
+								  strcmp(simmgr_shm->status.scenario.state, "Paused" ) == 0 )
+							{
+								addComment((char *)value.c_str() );
+								sts = 0;
+							}
+							else
+							{
+								sts = 5;
+							}
 						}
 						else
 						{
@@ -467,6 +475,10 @@ main( int argc, const char* argv[] )
 				else if ( sts == 4 )
 				{
 					makejson(cout, "status", "Null string in parameter" );
+				}
+				else if ( sts == 5 )
+				{
+					makejson(cout, "status", "Scenario is not running" );
 				}
 				else
 				{
