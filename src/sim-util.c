@@ -601,5 +601,5 @@ addComment(char *str )
 	sprintf(simmgr_shm->commentList[commentNext].comment, "%s", str );
 	simmgr_shm->commentListNext = commentNext;
 	sprintf(buf, "Comment: %d %s", commentNext, str );
-	log_message("", str );
+	log_message("", buf );
 }

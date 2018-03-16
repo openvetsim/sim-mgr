@@ -46,6 +46,7 @@ int start_scenario(const char *name );
 void recordStartStop(int record );
 void checkEvents(void );
 void clearAllTrends(void );
+void resetAllParameters(void );
 
 int scenarioPid = -1;
 int lastEventLogged = 0;
@@ -135,94 +136,8 @@ main(int argc, char *argv[] )
 	sprintf(simmgr_shm->server.ip_addr, "%s", ptr );
 	// server_time and msec_time are updated in the loop
 	
-	// status/cardiac
-	sprintf(simmgr_shm->status.cardiac.rhythm, "%s", "sinus" );
-	sprintf(simmgr_shm->status.cardiac.vpc, "%s", "none" );
-	sprintf(simmgr_shm->status.cardiac.vfib_amplitude, "%s", "high" );
-	simmgr_shm->status.cardiac.vpc_freq = 10;
-	simmgr_shm->status.cardiac.vpc_delay = 0;
-	simmgr_shm->status.cardiac.pea = 0;
-	simmgr_shm->status.cardiac.rate = 80;
-	simmgr_shm->status.cardiac.nibp_rate = 80;
-	simmgr_shm->status.cardiac.nibp_read = -1;
-	simmgr_shm->status.cardiac.nibp_linked_hr = 1;
-	simmgr_shm->status.cardiac.nibp_freq = 0;
-	sprintf(simmgr_shm->status.cardiac.pwave, "%s", "none" );
-	simmgr_shm->status.cardiac.pr_interval = 140; // Good definition at http://lifeinthefastlane.com/ecg-library/basics/pr-interval/
-	simmgr_shm->status.cardiac.qrs_interval = 85;
-	simmgr_shm->status.cardiac.bps_sys = 105;
-	simmgr_shm->status.cardiac.bps_dia = 70;
-	simmgr_shm->status.cardiac.right_dorsal_pulse_strength = 2;
-	simmgr_shm->status.cardiac.right_femoral_pulse_strength = 2;
-	simmgr_shm->status.cardiac.left_dorsal_pulse_strength = 2;
-	simmgr_shm->status.cardiac.left_femoral_pulse_strength = 2;
-	sprintf(simmgr_shm->status.cardiac.heart_sound, "%s", "none" );
-	simmgr_shm->status.cardiac.heart_sound_volume = 10;
-	simmgr_shm->status.cardiac.heart_sound_mute = 0;
-	simmgr_shm->status.cardiac.ecg_indicator = 0;
-	simmgr_shm->status.cardiac.bp_cuff = 0;
-	simmgr_shm->status.cardiac.arrest = 0;
-	
-	// status/respiration
-	sprintf(simmgr_shm->status.respiration.left_lung_sound, "%s", "normal" );
-	sprintf(simmgr_shm->status.respiration.left_sound_in, "%s", "normal" );
-	sprintf(simmgr_shm->status.respiration.left_sound_out, "%s", "normal" );
-	sprintf(simmgr_shm->status.respiration.left_sound_back, "%s", "normal" );
-	sprintf(simmgr_shm->status.respiration.right_lung_sound, "%s", "normal" );
-	sprintf(simmgr_shm->status.respiration.right_sound_in, "%s", "normal" );
-	sprintf(simmgr_shm->status.respiration.right_sound_out, "%s", "normal" );
-	sprintf(simmgr_shm->status.respiration.right_sound_back, "%s", "normal" );
-	simmgr_shm->status.respiration.left_lung_sound_volume = 10;
-	simmgr_shm->status.respiration.left_lung_sound_mute = 1;
-	simmgr_shm->status.respiration.right_lung_sound_volume = 10;
-	simmgr_shm->status.respiration.right_lung_sound_mute = 0;
-	simmgr_shm->status.respiration.inhalation_duration = 1350;
-	simmgr_shm->status.respiration.exhalation_duration = 1050;
-	simmgr_shm->status.respiration.rate = 20;
-	simmgr_shm->status.respiration.spo2 = 95;
-	simmgr_shm->status.respiration.etco2 = 34;
-	simmgr_shm->status.respiration.etco2_indicator = 0;
-	simmgr_shm->status.respiration.spo2_indicator = 0;
-	simmgr_shm->status.respiration.chest_movement = 0;
-	simmgr_shm->status.respiration.manual_breath = 0;
-	simmgr_shm->status.respiration.manual_count = 0;
-	
-	// status/vocals
-	sprintf(simmgr_shm->status.vocals.filename, "%s", "" );
-	simmgr_shm->status.vocals.repeat = 0;
-	simmgr_shm->status.vocals.volume = 10;
-	simmgr_shm->status.vocals.play = 0;
-	simmgr_shm->status.vocals.mute = 0;
-	
-	// status/auscultation
-	simmgr_shm->status.auscultation.side = 0;
-	simmgr_shm->status.auscultation.row = 0;
-	simmgr_shm->status.auscultation.col = 0;
-	
-	// status/pulse
-	simmgr_shm->status.pulse.right_dorsal = 0;
-	simmgr_shm->status.pulse.left_dorsal = 0;
-	simmgr_shm->status.pulse.right_femoral = 0;
-	simmgr_shm->status.pulse.left_femoral = 0;
-	
-	// status/cpr
-	simmgr_shm->status.cpr.last = 0;
-	simmgr_shm->status.cpr.compression = 0;
-	simmgr_shm->status.cpr.release = 0;
-	simmgr_shm->status.cpr.duration = 0;
-	
-	// status/defibrillation
-	simmgr_shm->status.defibrillation.last = 0;
-	simmgr_shm->status.defibrillation.energy = 0;
-	
-	// status/general
-	simmgr_shm->status.general.temperature = 1017;
-	simmgr_shm->status.general.temperature_enable = 0;
-	
-	// status/media
-	sprintf(simmgr_shm->status.media.filename, "%s", "" );
-	simmgr_shm->status.media.play = 0;
-	
+	resetAllParameters();
+
 	// status/scenario
 	sprintf(simmgr_shm->status.scenario.active, "%s", "default" );
 	sprintf(simmgr_shm->status.scenario.state, "%s", "Stopped" );
@@ -231,80 +146,11 @@ main(int argc, char *argv[] )
 	// instructor/sema
 	sem_init(&simmgr_shm->instructor.sema, 1, 1 ); // pshared =1, value =1
 	iiLockTaken = 0;
-	
-	// instructor/cardiac
-	sprintf(simmgr_shm->instructor.cardiac.rhythm, "%s", "" );
-	simmgr_shm->instructor.cardiac.rate = -1;
-	simmgr_shm->instructor.cardiac.nibp_rate = -1;
-	simmgr_shm->instructor.cardiac.nibp_read = -1;
-	simmgr_shm->instructor.cardiac.nibp_linked_hr = -1;
-	simmgr_shm->instructor.cardiac.nibp_freq = -1;
-	sprintf(simmgr_shm->instructor.cardiac.pwave, "%s", "" );
-	simmgr_shm->instructor.cardiac.pr_interval = -1;
-	simmgr_shm->instructor.cardiac.qrs_interval = -1;
-	simmgr_shm->instructor.cardiac.bps_sys = -1;
-	simmgr_shm->instructor.cardiac.bps_dia = -1;
-	simmgr_shm->instructor.cardiac.pea = -1;
-	simmgr_shm->instructor.cardiac.vpc_freq = -1;
-	simmgr_shm->instructor.cardiac.vpc_delay = -1;
-	sprintf(simmgr_shm->instructor.cardiac.vpc, "%s", "" );
-	sprintf(simmgr_shm->instructor.cardiac.vfib_amplitude, "%s", "" );
-	simmgr_shm->instructor.cardiac.right_dorsal_pulse_strength = -1;
-	simmgr_shm->instructor.cardiac.right_femoral_pulse_strength = -1;
-	simmgr_shm->instructor.cardiac.left_dorsal_pulse_strength = -1;
-	simmgr_shm->instructor.cardiac.left_femoral_pulse_strength = -1;
-	sprintf(simmgr_shm->instructor.cardiac.heart_sound, "%s", "" );
-	simmgr_shm->instructor.cardiac.heart_sound_volume = -1;
-	simmgr_shm->instructor.cardiac.heart_sound_mute = -1;
-	simmgr_shm->instructor.cardiac.ecg_indicator = -1;
-	simmgr_shm->instructor.cardiac.bp_cuff = -1;
-	simmgr_shm->instructor.cardiac.arrest = -1;
-	
+
 	// instructor/scenario
 	sprintf(simmgr_shm->instructor.scenario.active, "%s", "" );
 	sprintf(simmgr_shm->instructor.scenario.state, "%s", "" );
 	simmgr_shm->instructor.scenario.record = -1;
-	
-	// The start times is ignored.
-	
-	// instructor/respiration
-	sprintf(simmgr_shm->instructor.respiration.left_lung_sound, "%s", "" );
-	sprintf(simmgr_shm->instructor.respiration.left_sound_in, "%s", "" );
-	sprintf(simmgr_shm->instructor.respiration.left_sound_out, "%s", "" );
-	sprintf(simmgr_shm->instructor.respiration.left_sound_back, "%s", "" );
-	simmgr_shm->instructor.respiration.left_lung_sound_volume = -1;
-	simmgr_shm->instructor.respiration.left_lung_sound_mute = -1;
-	simmgr_shm->instructor.respiration.right_lung_sound_volume = -1;
-	simmgr_shm->instructor.respiration.right_lung_sound_mute = -1;
-	sprintf(simmgr_shm->instructor.respiration.right_lung_sound, "%s", "" );
-	sprintf(simmgr_shm->instructor.respiration.right_sound_in, "%s", "" );
-	sprintf(simmgr_shm->instructor.respiration.right_sound_out, "%s", "" );
-	sprintf(simmgr_shm->instructor.respiration.right_sound_back, "%s", "" );
-	simmgr_shm->instructor.respiration.inhalation_duration = -1;
-	simmgr_shm->instructor.respiration.exhalation_duration = -1;
-	simmgr_shm->instructor.respiration.rate = -1;
-	simmgr_shm->instructor.respiration.spo2 = -1;
-	simmgr_shm->instructor.respiration.etco2 = -1;
-	simmgr_shm->instructor.respiration.etco2_indicator = -1;
-	simmgr_shm->instructor.respiration.spo2_indicator = -1;
-	simmgr_shm->instructor.respiration.chest_movement = -1;
-	simmgr_shm->instructor.respiration.manual_breath = -1;
-	simmgr_shm->instructor.respiration.manual_count = -1;
-	
-	// instructor/media
-	sprintf(simmgr_shm->instructor.media.filename, "%s", "" );
-	simmgr_shm->instructor.media.play = -1;
-	
-	// instructor/general
-	simmgr_shm->instructor.general.temperature = -1;
-	simmgr_shm->instructor.general.temperature_enable = -1;
-
-	// instructor/vocals
-	sprintf(simmgr_shm->instructor.vocals.filename, "%s", "" );
-	simmgr_shm->instructor.vocals.repeat = -1;
-	simmgr_shm->instructor.vocals.volume = -1;
-	simmgr_shm->instructor.vocals.play = -1;
-	simmgr_shm->instructor.vocals.mute = -1;
 	
 	// Log File
 	sem_init(&simmgr_shm->logfile.sema, 1, 1 ); // pshared =1, value =1
@@ -1015,7 +861,7 @@ scan_commands(void )
 	{
 		sprintf(msgbuf, "Set Resp Rate = %d : %d", simmgr_shm->instructor.respiration.rate, simmgr_shm->instructor.respiration.transfer_time );
 		log_message("", msgbuf);
-		if ( simmgr_shm->instructor.respiration.transfer_time == 0 )
+		if ( simmgr_shm->instructor.respiration.transfer_time <= 0 )
 		{
 			setRespirationPeriods(simmgr_shm->status.respiration.rate,
 								  simmgr_shm->instructor.respiration.rate );
@@ -1328,12 +1174,12 @@ start_scenario(const char *name )
 
 	sprintf(msgbuf, "Start Scenario Request: %s", name );
 	log_message("", msgbuf ); 
-	sprintf(fname, "%s/%s.xml", "/var/www/html/scenarios", name );
+	sprintf(fname, "%s/%s/main.xml", "/var/www/html/scenarios", name );
 	
 	scenario_start_time = std::time(nullptr );
 	std::strftime(timeBuf, 60, "%c", std::localtime(&scenario_start_time ));
 	
-	clearAllTrends();
+	resetAllParameters();
 	
 	// exec the new scenario
 	scenarioPid = fork();
@@ -1391,12 +1237,20 @@ checkEvents(void )
 		while ( lastEventLogged != simmgr_shm->eventListNext )
 		{
 			lastEventLogged++;
+			if ( lastEventLogged >= EVENT_LIST_SIZE )
+			{
+				lastEventLogged = 0;
+			}
 			sprintf(msgbuf, "Event: %s", simmgr_shm->eventList[lastEventLogged].eventName );
 			simlog_entry(msgbuf );
 		}
 		while ( lastCommentLogged != simmgr_shm->commentListNext )
 		{
 			lastCommentLogged++;
+			if ( lastCommentLogged >= COMMENT_LIST_SIZE )
+			{
+				lastCommentLogged = 0;
+			}
 			if ( strlen(simmgr_shm->commentList[lastCommentLogged].comment ) == 0 )
 			{
 				sprintf(msgbuf, "Null Comment: lastCommentLogged is %d simmgr_shm->commentListNext is %d State is %d\n",
@@ -1410,4 +1264,165 @@ checkEvents(void )
 		}
 		releaseInstructorLock();
 	}
+}
+
+void
+resetAllParameters(void )
+{
+	// status/cardiac
+	sprintf(simmgr_shm->status.cardiac.rhythm, "%s", "sinus" );
+	sprintf(simmgr_shm->status.cardiac.vpc, "%s", "none" );
+	sprintf(simmgr_shm->status.cardiac.vfib_amplitude, "%s", "high" );
+	simmgr_shm->status.cardiac.vpc_freq = 10;
+	simmgr_shm->status.cardiac.vpc_delay = 0;
+	simmgr_shm->status.cardiac.pea = 0;
+	simmgr_shm->status.cardiac.rate = 80;
+	simmgr_shm->status.cardiac.nibp_rate = 80;
+	simmgr_shm->status.cardiac.nibp_read = -1;
+	simmgr_shm->status.cardiac.nibp_linked_hr = 1;
+	simmgr_shm->status.cardiac.nibp_freq = 0;
+	sprintf(simmgr_shm->status.cardiac.pwave, "%s", "none" );
+	simmgr_shm->status.cardiac.pr_interval = 140; // Good definition at http://lifeinthefastlane.com/ecg-library/basics/pr-interval/
+	simmgr_shm->status.cardiac.qrs_interval = 85;
+	simmgr_shm->status.cardiac.bps_sys = 105;
+	simmgr_shm->status.cardiac.bps_dia = 70;
+	simmgr_shm->status.cardiac.right_dorsal_pulse_strength = 2;
+	simmgr_shm->status.cardiac.right_femoral_pulse_strength = 2;
+	simmgr_shm->status.cardiac.left_dorsal_pulse_strength = 2;
+	simmgr_shm->status.cardiac.left_femoral_pulse_strength = 2;
+	sprintf(simmgr_shm->status.cardiac.heart_sound, "%s", "none" );
+	simmgr_shm->status.cardiac.heart_sound_volume = 10;
+	simmgr_shm->status.cardiac.heart_sound_mute = 0;
+	simmgr_shm->status.cardiac.ecg_indicator = 0;
+	simmgr_shm->status.cardiac.bp_cuff = 0;
+	simmgr_shm->status.cardiac.arrest = 0;
+	
+	// status/respiration
+	sprintf(simmgr_shm->status.respiration.left_lung_sound, "%s", "normal" );
+	sprintf(simmgr_shm->status.respiration.left_sound_in, "%s", "normal" );
+	sprintf(simmgr_shm->status.respiration.left_sound_out, "%s", "normal" );
+	sprintf(simmgr_shm->status.respiration.left_sound_back, "%s", "normal" );
+	sprintf(simmgr_shm->status.respiration.right_lung_sound, "%s", "normal" );
+	sprintf(simmgr_shm->status.respiration.right_sound_in, "%s", "normal" );
+	sprintf(simmgr_shm->status.respiration.right_sound_out, "%s", "normal" );
+	sprintf(simmgr_shm->status.respiration.right_sound_back, "%s", "normal" );
+	simmgr_shm->status.respiration.left_lung_sound_volume = 10;
+	simmgr_shm->status.respiration.left_lung_sound_mute = 1;
+	simmgr_shm->status.respiration.right_lung_sound_volume = 10;
+	simmgr_shm->status.respiration.right_lung_sound_mute = 0;
+	simmgr_shm->status.respiration.inhalation_duration = 1350;
+	simmgr_shm->status.respiration.exhalation_duration = 1050;
+	simmgr_shm->status.respiration.rate = 20;
+	simmgr_shm->status.respiration.spo2 = 95;
+	simmgr_shm->status.respiration.etco2 = 34;
+	simmgr_shm->status.respiration.etco2_indicator = 0;
+	simmgr_shm->status.respiration.spo2_indicator = 0;
+	simmgr_shm->status.respiration.chest_movement = 0;
+	simmgr_shm->status.respiration.manual_breath = 0;
+	simmgr_shm->status.respiration.manual_count = 0;
+	
+	// status/vocals
+	sprintf(simmgr_shm->status.vocals.filename, "%s", "" );
+	simmgr_shm->status.vocals.repeat = 0;
+	simmgr_shm->status.vocals.volume = 10;
+	simmgr_shm->status.vocals.play = 0;
+	simmgr_shm->status.vocals.mute = 0;
+	
+	// status/auscultation
+	simmgr_shm->status.auscultation.side = 0;
+	simmgr_shm->status.auscultation.row = 0;
+	simmgr_shm->status.auscultation.col = 0;
+	
+	// status/pulse
+	simmgr_shm->status.pulse.right_dorsal = 0;
+	simmgr_shm->status.pulse.left_dorsal = 0;
+	simmgr_shm->status.pulse.right_femoral = 0;
+	simmgr_shm->status.pulse.left_femoral = 0;
+	
+	// status/cpr
+	simmgr_shm->status.cpr.last = 0;
+	simmgr_shm->status.cpr.compression = 0;
+	simmgr_shm->status.cpr.release = 0;
+	simmgr_shm->status.cpr.duration = 0;
+	
+	// status/defibrillation
+	simmgr_shm->status.defibrillation.last = 0;
+	simmgr_shm->status.defibrillation.energy = 0;
+	
+	// status/general
+	simmgr_shm->status.general.temperature = 1017;
+	simmgr_shm->status.general.temperature_enable = 0;
+	
+	// status/media
+	sprintf(simmgr_shm->status.media.filename, "%s", "" );
+	simmgr_shm->status.media.play = 0;
+		
+	// instructor/cardiac
+	sprintf(simmgr_shm->instructor.cardiac.rhythm, "%s", "" );
+	simmgr_shm->instructor.cardiac.rate = -1;
+	simmgr_shm->instructor.cardiac.nibp_rate = -1;
+	simmgr_shm->instructor.cardiac.nibp_read = -1;
+	simmgr_shm->instructor.cardiac.nibp_linked_hr = -1;
+	simmgr_shm->instructor.cardiac.nibp_freq = -1;
+	sprintf(simmgr_shm->instructor.cardiac.pwave, "%s", "" );
+	simmgr_shm->instructor.cardiac.pr_interval = -1;
+	simmgr_shm->instructor.cardiac.qrs_interval = -1;
+	simmgr_shm->instructor.cardiac.bps_sys = -1;
+	simmgr_shm->instructor.cardiac.bps_dia = -1;
+	simmgr_shm->instructor.cardiac.pea = -1;
+	simmgr_shm->instructor.cardiac.vpc_freq = -1;
+	simmgr_shm->instructor.cardiac.vpc_delay = -1;
+	sprintf(simmgr_shm->instructor.cardiac.vpc, "%s", "" );
+	sprintf(simmgr_shm->instructor.cardiac.vfib_amplitude, "%s", "" );
+	simmgr_shm->instructor.cardiac.right_dorsal_pulse_strength = -1;
+	simmgr_shm->instructor.cardiac.right_femoral_pulse_strength = -1;
+	simmgr_shm->instructor.cardiac.left_dorsal_pulse_strength = -1;
+	simmgr_shm->instructor.cardiac.left_femoral_pulse_strength = -1;
+	sprintf(simmgr_shm->instructor.cardiac.heart_sound, "%s", "" );
+	simmgr_shm->instructor.cardiac.heart_sound_volume = -1;
+	simmgr_shm->instructor.cardiac.heart_sound_mute = -1;
+	simmgr_shm->instructor.cardiac.ecg_indicator = -1;
+	simmgr_shm->instructor.cardiac.bp_cuff = -1;
+	simmgr_shm->instructor.cardiac.arrest = -1;
+	
+	// instructor/respiration
+	sprintf(simmgr_shm->instructor.respiration.left_lung_sound, "%s", "" );
+	sprintf(simmgr_shm->instructor.respiration.left_sound_in, "%s", "" );
+	sprintf(simmgr_shm->instructor.respiration.left_sound_out, "%s", "" );
+	sprintf(simmgr_shm->instructor.respiration.left_sound_back, "%s", "" );
+	simmgr_shm->instructor.respiration.left_lung_sound_volume = -1;
+	simmgr_shm->instructor.respiration.left_lung_sound_mute = -1;
+	simmgr_shm->instructor.respiration.right_lung_sound_volume = -1;
+	simmgr_shm->instructor.respiration.right_lung_sound_mute = -1;
+	sprintf(simmgr_shm->instructor.respiration.right_lung_sound, "%s", "" );
+	sprintf(simmgr_shm->instructor.respiration.right_sound_in, "%s", "" );
+	sprintf(simmgr_shm->instructor.respiration.right_sound_out, "%s", "" );
+	sprintf(simmgr_shm->instructor.respiration.right_sound_back, "%s", "" );
+	simmgr_shm->instructor.respiration.inhalation_duration = -1;
+	simmgr_shm->instructor.respiration.exhalation_duration = -1;
+	simmgr_shm->instructor.respiration.rate = -1;
+	simmgr_shm->instructor.respiration.spo2 = -1;
+	simmgr_shm->instructor.respiration.etco2 = -1;
+	simmgr_shm->instructor.respiration.etco2_indicator = -1;
+	simmgr_shm->instructor.respiration.spo2_indicator = -1;
+	simmgr_shm->instructor.respiration.chest_movement = -1;
+	simmgr_shm->instructor.respiration.manual_breath = -1;
+	simmgr_shm->instructor.respiration.manual_count = -1;
+	
+	// instructor/media
+	sprintf(simmgr_shm->instructor.media.filename, "%s", "" );
+	simmgr_shm->instructor.media.play = -1;
+	
+	// instructor/general
+	simmgr_shm->instructor.general.temperature = -1;
+	simmgr_shm->instructor.general.temperature_enable = -1;
+
+	// instructor/vocals
+	sprintf(simmgr_shm->instructor.vocals.filename, "%s", "" );
+	simmgr_shm->instructor.vocals.repeat = -1;
+	simmgr_shm->instructor.vocals.volume = -1;
+	simmgr_shm->instructor.vocals.play = -1;
+	simmgr_shm->instructor.vocals.mute = -1;
+	
+	clearAllTrends();
 }

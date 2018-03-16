@@ -169,15 +169,18 @@ simlog_open(int rw )
 			sem_post(&simmgr_shm->logfile.sema);
 			lock_held = 0;
 		}
+	/*
 		else
 		{
+	
 			sts = do_chown (simlog_file, "www-data", "www-data" );
 			if ( sts )
 			{
-			sprintf(buffer, "simlog_open dp_chown returns: %d", sts );
-			log_message("", buffer  );
+				sprintf(buffer, "simlog_open do_chown returns: %d", sts );
+				log_message("", buffer  );
 			}
 		}
+	*/
 	}
 	else
 	{

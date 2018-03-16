@@ -6,7 +6,7 @@
  *
  * This process runs independently from the SimMgr. It has two timers; one for the heart rate (pulse) and
  * one for the breath rate (respiration). It runs as two threads. The primary thread listens for connections
- * from clisents, and the child thread monitors the pulse and breath counts to send sync messages to the
+ * from clients, and the child thread monitors the pulse and breath counts to send sync messages to the
  * clients. 
  *
  * Listen for a connections on Port 50200 (SimMgr Event Port)
@@ -101,46 +101,53 @@ static void
 beat_handler(int sig, siginfo_t *si, void *uc)
 {
 	int newCount;
+	int sts;
 	
 	if ( sig == PULSE_TIMER_SIG )
 	{
-		sem_wait(&pulseSema );
-		if ( currentPulseRate > 0 )
+		sts = sem_trywait(&pulseSema );  // If lock is held, then the timer is being reset
+		if ( sts == 0 )
 		{
-			newCount = simmgr_shm->status.cardiac.pulseCount + 1;
-			if ( currentVpcFreq > 0 )
+			if ( currentPulseRate > 0 )
 			{
-				if ( vpcFrequencyArray[vpcFrequencyIndex] > 0 )
+				newCount = simmgr_shm->status.cardiac.pulseCount + 1;
+				if ( currentVpcFreq > 0 )
 				{
-					set_pulse_rate(currentPulseRate, currentVpcDelay );
-					simmgr_shm->status.cardiac.pulseCountVpc = newCount;
-					if ( vpcFrequencyIndex++ >= VPC_ARRAY_LEN )
+					if ( vpcFrequencyArray[vpcFrequencyIndex] > 0 )
 					{
-						vpcFrequencyIndex = 0;
+						set_pulse_rate(currentPulseRate, currentVpcDelay );
+						simmgr_shm->status.cardiac.pulseCountVpc = newCount;
+						if ( vpcFrequencyIndex++ >= VPC_ARRAY_LEN )
+						{
+							vpcFrequencyIndex = 0;
+						}
 					}
 				}
+				simmgr_shm->status.cardiac.pulseCount = newCount;
 			}
-			simmgr_shm->status.cardiac.pulseCount = newCount;
+			if ( currentVpcDelay != simmgr_shm->status.cardiac.vpc_delay )
+			{
+				currentVpcDelay = simmgr_shm->status.cardiac.vpc_delay;
+			}
+			if ( currentVpcFreq != simmgr_shm->status.cardiac.vpc_freq )
+			{
+				currentVpcFreq = simmgr_shm->status.cardiac.vpc_freq;
+				calculateVPCFreq();
+			}
+			sem_post(&pulseSema );
 		}
-		if ( currentVpcDelay != simmgr_shm->status.cardiac.vpc_delay )
-		{
-			currentVpcDelay = simmgr_shm->status.cardiac.vpc_delay;
-		}
-		if ( currentVpcFreq != simmgr_shm->status.cardiac.vpc_freq )
-		{
-			currentVpcFreq = simmgr_shm->status.cardiac.vpc_freq;
-			calculateVPCFreq();
-		}
-		sem_post(&pulseSema );
 	}
 	else if ( sig == BREATH_TIMER_SIG )
 	{
-		sem_wait(&breathSema );
-		if ( simmgr_shm->status.respiration.rate > 0 )
+		sts = sem_wait(&breathSema );   // If lock is held, then the timer is being reset
+		if ( sts == 0 )
 		{
-			simmgr_shm->status.respiration.breathCount++;
+			if ( simmgr_shm->status.respiration.rate > 0 )
+			{
+				simmgr_shm->status.respiration.breathCount++;
+			}
+			sem_post(&breathSema );
 		}
-		sem_post(&breathSema );
 	}	
 }
 
@@ -181,6 +188,70 @@ calculateVPCFreq(void )
 
 /*
  * FUNCTION:
+ *		resetTimer
+ *
+ * ARGUMENTS:
+ *		rate	- Rate in Beats per minute
+ *		delay	- Delay time for first beat, for injected VPC, in msec
+ *		its		- New timer spec
+ *		itsRemaining - Running timer spec
+ *
+ * DESCRIPTION:
+ *		Calculate and set the timer, used for both heart and breath.
+ *
+ * ASSUMPTIONS:
+ *		Called with pulseSema held
+*/
+void
+resetTimer(int rate, int delay, struct itimerspec *its, struct itimerspec *itsRemaining )
+{
+	float nsecRemaining;	// nano-seconds Remaining in current Timer
+	float nsecNext;			// nano-seconds to Next based on new rate plus "delay"
+	float nsecInitial;
+	float intpart;
+	float fractpart;
+	float wait_time_nsec;
+	float frate;
+	float sec_per_beat;
+	
+	frate = (float)rate;
+	sec_per_beat = 1 / (frate/ 60);
+	
+	fractpart = modff(sec_per_beat, &intpart );
+	wait_time_nsec = ( fractpart * 1000 * 1000 * 1000 );
+	its->it_interval.tv_sec = (long int)intpart;
+	its->it_interval.tv_nsec = (long int)wait_time_nsec;
+
+	if ( itsRemaining != NULL )
+	{
+		nsecRemaining = ( itsRemaining->it_value.tv_sec * 1000 * 1000 * 1000 ) + itsRemaining->it_value.tv_nsec;
+		nsecNext = ( sec_per_beat + ( delay / 1000 )) * 1000 * 1000 * 1000;
+		
+		if ( nsecRemaining <= 0 )
+		{
+			nsecInitial = nsecNext;
+		}
+		else if ( nsecRemaining < nsecNext )
+		{
+			nsecInitial = nsecRemaining;
+		}
+		else
+		{
+			nsecInitial = nsecNext;
+		}
+		if ( nsecInitial > 1 )
+		{
+			fractpart = modff( (nsecInitial/1000/1000/1000), &intpart );
+			wait_time_nsec = ( fractpart * 1000 * 1000 * 1000 );
+		}
+	}
+
+	its->it_value.tv_sec = intpart;
+	its->it_value.tv_nsec = wait_time_nsec;
+	
+}
+/*
+ * FUNCTION:
  *		set_pulse_rate
  *
  * ARGUMENTS:
@@ -197,18 +268,9 @@ calculateVPCFreq(void )
 void
 set_pulse_rate(int bpm, int delay )
 {
-	float tempo;
-	float beat_per_sec;
-	float sec_per_beat;
-	double intpart;
-	float fractpart;
-	float wait_time_nsec;
 	struct itimerspec its;
 	struct itimerspec itsRemaining;	
-	float secRemaining;
-	float secNext;
-	float secInterval;
-	float secInitial;
+	
 	int sts;
 	
 	// When the BPM is zero, we set the timer based on 60, to allow it to continue running.
@@ -218,56 +280,17 @@ set_pulse_rate(int bpm, int delay )
 		bpm = 60;
 	}
 	
-	tempo = (float)bpm;
-	beat_per_sec = tempo / 60;
-	
-	// Set the interval as the standard interval
-	sec_per_beat = ( 1 / beat_per_sec );
-	secInterval = sec_per_beat;
-	secInitial = secInterval;
-	
-	fractpart = modf( secInterval, &intpart );
-	wait_time_nsec = ( fractpart * 1000 * 1000 * 1000 );	// This is the new wait time
-	
-	its.it_interval.tv_sec = intpart;
-	its.it_interval.tv_nsec = wait_time_nsec;
-	
 	sts = timer_gettime(pulse_timer, &itsRemaining );
 	if ( sts == 0 )
 	{
-		secRemaining = ( itsRemaining.it_interval.tv_sec * 1000 * 1000 * 1000 ) + itsRemaining.it_interval.tv_nsec;
-		secNext = sec_per_beat + ( delay / 1000 );
-		
-		if ( secRemaining <= 0 )
-		{
-			secInitial = secNext;
-		}
-		else if ( secRemaining < secNext )
-		{
-			secInitial = secRemaining;
-		}
-		else
-		{
-			secInitial = secNext;
-		}
-		fractpart = modf( secInitial, &intpart );
-		wait_time_nsec = ( fractpart * 1000 * 1000 * 1000 );
+		resetTimer(bpm, delay, &its, &itsRemaining );
 	}
 	else
 	{
 		sprintf(msgbuf, "set_pulse_rate:  timer_gettime Fails: %s", strerror(errno ) );
 		log_message("", msgbuf );
-
-		// Set First expiration as the interval plus the delay
-		if ( delay > 0 )
-		{
-			sec_per_beat += ((float)delay / 1000 );
-			fractpart = modf( sec_per_beat, &intpart );
-			wait_time_nsec = ( fractpart * 1000 * 1000 * 1000 );
-		}
+		resetTimer(bpm, delay, &its, NULL );
 	}
-	its.it_value.tv_sec = intpart;
-	its.it_value.tv_nsec = wait_time_nsec;
 	
 	if (timer_settime(pulse_timer, 0, &its, NULL) == -1)
 	{
@@ -281,67 +304,26 @@ set_pulse_rate(int bpm, int delay )
 void
 set_breath_rate(int bpm )
 {
-	float tempo;
-	float beat_per_sec;
-	float sec_per_beat;
-	double intpart;
-	float fractpart;
-	float wait_time_nsec;
 	struct itimerspec its;
 	struct itimerspec itsRemaining;	
-	float secRemaining;
-	float secNext;
-	float secInterval;
-	float secInitial;
 	int sts;
 	
 	if ( bpm == 0 )
 	{
 		bpm = 60;
 	}
-	
-	tempo = (float)bpm;
-	beat_per_sec = tempo / 60;
-	sec_per_beat = ( 1 / beat_per_sec );
-	secInterval = sec_per_beat;
-	secInitial = secInterval;
-	fractpart = modf( sec_per_beat, &intpart );
-	wait_time_nsec = ( fractpart * 1000 * 1000 * 1000 );
-	
-	// Set the interval timer with the new value
-	its.it_interval.tv_sec = intpart;
-	its.it_interval.tv_nsec = wait_time_nsec;
-	
-	its.it_value.tv_sec = intpart;
-	its.it_value.tv_nsec = wait_time_nsec;
 
 	sts = timer_gettime(breath_timer, &itsRemaining );
 	if ( sts == 0 )
 	{
-		secRemaining = itsRemaining.it_interval.tv_sec + ( itsRemaining.it_interval.tv_nsec / 1000 / 1000 / 1000 );
-		secNext = sec_per_beat;
-		if ( secRemaining <= 0 )
-		{
-			secInitial = secNext;
-		}
-		else if ( secRemaining < secNext )
-		{
-			secInitial = secRemaining;
-		}
-		else
-		{
-			secInitial = secNext;
-		}
-		fractpart = modf( secInitial, &intpart );
-		wait_time_nsec = ( fractpart * 1000 * 1000 * 1000 );
+		resetTimer(bpm, 0, &its, &itsRemaining );
 	}
 	else
 	{
 		sprintf(msgbuf, "set_breath_rate:  timer_gettime Fails: %s", strerror(errno ) );
 		log_message("", msgbuf );
+		resetTimer(bpm, 0, &its, NULL );
 	}
-	its.it_value.tv_sec = intpart;
-	its.it_value.tv_nsec = wait_time_nsec;
 	
 	if (timer_settime(breath_timer, 0, &its, NULL) == -1)
 	{
@@ -597,6 +579,7 @@ process_child(void *ptr )
 		usleep(5000 );		// 5 msec wait
 		if ( last_pulse != simmgr_shm->status.cardiac.pulseCount )
 		{
+			last_pulse = simmgr_shm->status.cardiac.pulseCount;
 			count = 0;
 			for ( i = 0 ; i < MAX_LISTENERS ; i++ )
 			{
@@ -623,7 +606,7 @@ process_child(void *ptr )
 					}
 				}
 			}
-			last_pulse = simmgr_shm->status.cardiac.pulseCount;
+			
 #ifdef DEBUG
 			if ( count )
 			{
@@ -633,6 +616,7 @@ process_child(void *ptr )
 		}
 		if ( last_breath != simmgr_shm->status.respiration.breathCount )
 		{
+			last_breath = simmgr_shm->status.respiration.breathCount;
 			count = 0;
 			for ( i = 0 ; i < MAX_LISTENERS ; i++ )
 			{
@@ -652,7 +636,6 @@ process_child(void *ptr )
 					}
 				}
 			}
-			last_breath = simmgr_shm->status.respiration.breathCount;
 #ifdef DEBUG
 			if ( count )
 			{
@@ -661,30 +644,34 @@ process_child(void *ptr )
 #endif
 		}
 		checkCount++;
-		if ( checkCount == 5 )	// 100 is an interval of 500 ms.
+		if ( checkCount == 5 )	// This runs every 25 ms.
 		{
 			// If the pulse rate has changed, then reset the timer
-			sem_wait(&pulseSema );
+			
 			if ( currentPulseRate != simmgr_shm->status.cardiac.rate )
 			{
+				sem_wait(&pulseSema );
+				set_pulse_rate(simmgr_shm->status.cardiac.rate, 0 );
 				currentPulseRate = simmgr_shm->status.cardiac.rate;
-				set_pulse_rate(currentPulseRate, 0 );
+				sem_post(&pulseSema );
+				
 	#ifdef DEBUG
 				sprintf(msgbuf, "Set Pulse to %d", currentPulseRate );
 				log_message("", msgbuf );
 	#endif
 			}
-			sem_post(&pulseSema );
+			
 		}
 		else if ( checkCount == 10 )
 		{
-			sem_wait(&breathSema );
-		
 			// If the breath rate has changed, then reset the timer
 			if ( currentBreathRate != simmgr_shm->status.respiration.rate )
 			{
+				sem_wait(&breathSema );
 				set_breath_rate(simmgr_shm->status.respiration.rate );
 				currentBreathRate = simmgr_shm->status.respiration.rate;
+				sem_post(&breathSema );
+				
 				// awRR Calculation - TBD - Need real calculations
 				simmgr_shm->status.respiration.awRR = simmgr_shm->status.respiration.rate;
 	#ifdef DEBUG
@@ -692,7 +679,6 @@ process_child(void *ptr )
 				log_message("", msgbuf );
 	#endif
 			}
-			sem_post(&breathSema );
 			checkCount = 0;
 		}
 	}

@@ -43,6 +43,7 @@ using namespace std;
 using namespace cgicc;
 
 void sendStatus(void );
+void sendQuickStatus(void );
 void sendSimctrData(void );
 int runningAsDemo = 0;
 
@@ -242,7 +243,12 @@ main( int argc, const char* argv[] )
 				cout << ",\n";
 			}
 			i++;
-			if ( key.compare("check" ) == 0 )
+			if ( key.compare("qstat" ) == 0 )
+			{
+				// The Quick Status
+				sendQuickStatus();
+			}
+			else if ( key.compare("check" ) == 0 )
 			{
 				makejson(cout, "check", "check is ok" );
 			}
@@ -363,8 +369,16 @@ main( int argc, const char* argv[] )
 					{
 						if ( value.length() != 0 )
 						{
-							addComment((char *)value.c_str() );
-							sts = 0;
+							if ( strcmp(simmgr_shm->status.scenario.state, "Running" ) == 0 ||
+								  strcmp(simmgr_shm->status.scenario.state, "Paused" ) == 0 )
+							{
+								addComment((char *)value.c_str() );
+								sts = 0;
+							}
+							else
+							{
+								sts = 5;
+							}
 						}
 						else
 						{
@@ -461,6 +475,10 @@ main( int argc, const char* argv[] )
 				else if ( sts == 4 )
 				{
 					makejson(cout, "status", "Null string in parameter" );
+				}
+				else if ( sts == 5 )
+				{
+					makejson(cout, "status", "Scenario is not running" );
 				}
 				else
 				{
@@ -642,6 +660,7 @@ sendSimctrData(void )
 	cout << "\n}\n";
 
 }
+
 void
 sendStatus(void )
 {
@@ -887,5 +906,22 @@ sendStatus(void )
 	makejson(cout, "last", itoa(simmgr_shm->status.defibrillation.last, buffer, 10 ) );
 	cout << ",\n";
 	makejson(cout, "energy", itoa(simmgr_shm->status.defibrillation.energy, buffer, 10 ) );
+	cout << "\n}\n";
+}
+
+void
+sendQuickStatus(void )
+{
+    char buffer[256];
+
+	
+	cout << " \"cardiac\" : {\n";
+	makejson(cout, "pulseCount", itoa(simmgr_shm->status.cardiac.pulseCount, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "pulseCountVpc", itoa(simmgr_shm->status.cardiac.pulseCountVpc, buffer, 10 ) );
+	cout << "\n},\n";
+	
+	cout << " \"respiration\" : {\n";
+	makejson(cout, "breathCount", itoa(simmgr_shm->status.respiration.breathCount, buffer, 10 ) );
 	cout << "\n}\n";
 }
