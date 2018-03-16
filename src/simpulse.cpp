@@ -571,6 +571,7 @@ process_child(void *ptr )
 	int count;
 	unsigned int last_pulse = simmgr_shm->status.cardiac.pulseCount;
 	unsigned int last_breath = simmgr_shm->status.respiration.breathCount;
+	int last_manual_breath = simmgr_shm->status.respiration.manual_count;
 	int checkCount = 0;
 	char *word;
 	
@@ -581,67 +582,73 @@ process_child(void *ptr )
 		{
 			last_pulse = simmgr_shm->status.cardiac.pulseCount;
 			count = 0;
-			for ( i = 0 ; i < MAX_LISTENERS ; i++ )
-			{
-				if ( listeners[i].allocated == 1 )
+				for ( i = 0 ; i < MAX_LISTENERS ; i++ )
 				{
-					fd = listeners[i].cfd;
-					if ( simmgr_shm->status.cardiac.pulseCount == simmgr_shm->status.cardiac.pulseCountVpc )
+					if ( listeners[i].allocated == 1 )
 					{
-						word = pulseWordVPC;
-					}
-					else
-					{
-						word = pulseWord;
-					}
-					len = write(fd, word, strlen(word) );
-					if ( len < 0) // This detects closed or disconnected listeners.
-					{
-						close(fd );
-						listeners[i].allocated = 0;
-					}
-					else
-					{
-						count++;
+						fd = listeners[i].cfd;
+						if ( simmgr_shm->status.cardiac.pulseCount == simmgr_shm->status.cardiac.pulseCountVpc )
+						{
+							word = pulseWordVPC;
+						}
+						else
+						{
+							word = pulseWord;
+						}
+						len = write(fd, word, strlen(word) );
+						if ( len < 0) // This detects closed or disconnected listeners.
+						{
+							close(fd );
+							listeners[i].allocated = 0;
+						}
+						else
+						{
+							count++;
+						}
 					}
 				}
-			}
-			
 #ifdef DEBUG
-			if ( count )
-			{
-				printf("Pulse sent to %d listeners\n", count );
-			}
+				if ( count )
+				{
+					printf("Pulse sent to %d listeners\n", count );
+				}
 #endif
 		}
 		if ( last_breath != simmgr_shm->status.respiration.breathCount )
 		{
 			last_breath = simmgr_shm->status.respiration.breathCount;
 			count = 0;
-			for ( i = 0 ; i < MAX_LISTENERS ; i++ )
+			if ( last_manual_breath != simmgr_shm->status.respiration.manual_count )
 			{
-				if ( listeners[i].allocated == 1 )
+				last_manual_breath = simmgr_shm->status.respiration.manual_count;
+			}
+			else
+			{
+				for ( i = 0 ; i < MAX_LISTENERS ; i++ )
 				{
-					fd = listeners[i].cfd;
-					
-					len = write(fd, breathWord, strlen(breathWord) );
-					if ( len < 0) // This detects closed or disconnected listeners.
+					if ( listeners[i].allocated == 1 )
 					{
-						close(fd );
-						listeners[i].allocated = 0;
-					}
-					else
-					{
-						count++;
+						fd = listeners[i].cfd;
+						
+						len = write(fd, breathWord, strlen(breathWord) );
+						if ( len < 0) // This detects closed or disconnected listeners.
+						{
+							close(fd );
+							listeners[i].allocated = 0;
+						}
+						else
+						{
+							count++;
+						}
 					}
 				}
-			}
 #ifdef DEBUG
-			if ( count )
-			{
-				printf("Breath sent to %d listeners\n", count );
-			}
+				if ( count )
+				{
+					printf("Breath sent to %d listeners\n", count );
+				}
 #endif
+			}
 		}
 		checkCount++;
 		if ( checkCount == 5 )	// This runs every 25 ms.
