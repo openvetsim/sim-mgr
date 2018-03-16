@@ -582,36 +582,36 @@ process_child(void *ptr )
 		{
 			last_pulse = simmgr_shm->status.cardiac.pulseCount;
 			count = 0;
-				for ( i = 0 ; i < MAX_LISTENERS ; i++ )
+			for ( i = 0 ; i < MAX_LISTENERS ; i++ )
+			{
+				if ( listeners[i].allocated == 1 )
 				{
-					if ( listeners[i].allocated == 1 )
+					fd = listeners[i].cfd;
+					if ( simmgr_shm->status.cardiac.pulseCount == simmgr_shm->status.cardiac.pulseCountVpc )
 					{
-						fd = listeners[i].cfd;
-						if ( simmgr_shm->status.cardiac.pulseCount == simmgr_shm->status.cardiac.pulseCountVpc )
-						{
-							word = pulseWordVPC;
-						}
-						else
-						{
-							word = pulseWord;
-						}
-						len = write(fd, word, strlen(word) );
-						if ( len < 0) // This detects closed or disconnected listeners.
-						{
-							close(fd );
-							listeners[i].allocated = 0;
-						}
-						else
-						{
-							count++;
-						}
+						word = pulseWordVPC;
+					}
+					else
+					{
+						word = pulseWord;
+					}
+					len = write(fd, word, strlen(word) );
+					if ( len < 0) // This detects closed or disconnected listeners.
+					{
+						close(fd );
+						listeners[i].allocated = 0;
+					}
+					else
+					{
+						count++;
 					}
 				}
+			}
 #ifdef DEBUG
-				if ( count )
-				{
-					printf("Pulse sent to %d listeners\n", count );
-				}
+			if ( count )
+			{
+				printf("Pulse sent to %d listeners\n", count );
+			}
 #endif
 		}
 		if ( last_breath != simmgr_shm->status.respiration.breathCount )
