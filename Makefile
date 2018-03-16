@@ -12,7 +12,7 @@ LDFLAGS=-lrt
 CGIBIN=/var/lib/cgi-bin
 BIN=/usr/local/bin
 
-default: $(OBJDIR) obj/simstatus.cgi obj/simmgr obj/simmgrDemo obj/simpulse obj/scenario obj/cookie.cgi
+default: $(OBJDIR) obj/simstatus.cgi obj/simmgr obj/simmgrDemo obj/simpulse obj/scenario obj/cookie.cgi  vpnconf
 
 $(OBJDIR):
 	mkdir -p $(OBJDIR)
@@ -22,6 +22,9 @@ demo: obj/simmgrDemo
 	sudo chown simmgr:simmgr $(BIN)/simmgrDemo
 	sudo chmod u+s $(BIN)/simmgrDemo
 
+vpnconf: src/vpnconf.c
+	g++ -Wall -o vpnconf src/vpnconf.c
+	
 obj/scenario: src/scenario.cpp obj/llist.o obj/sim-util.o obj/sim-parse.o obj/llist.o include/scenario.h include/simmgr.h
 	g++ $(CPPFLAGS)-I/usr/include/libxml2  $(CXXFLAGS) -o obj/scenario src/scenario.cpp obj/sim-util.o obj/sim-parse.o obj/llist.o $(LDFLAGS) -lxml2
 	
