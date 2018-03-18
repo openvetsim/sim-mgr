@@ -1,5 +1,5 @@
 #!/bin/bash
-if [[ ${XDG_VTR} != 7 ]]; then
+if [[ ${XDG_VTNR} != 7 ]]; then
 	echo This shell is intended to run on the GUI window only.
 	exit;
 fi
