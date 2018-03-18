@@ -182,7 +182,8 @@ struct hdr
 struct server
 {
 	char name[STR_SIZE]; 		// SimCtl Hostname
-	char ip_addr[STR_SIZE];		// Public Network IP Address
+	char ip_addr[STR_SIZE];		// ETH0 Network IP Address
+	char wifi_ip_addr[STR_SIZE];		// WiFi Network IP Address
 	char server_time[STR_SIZE];	// Linux date/timestamp
 	int msec_time;				// msec timer.
 };
@@ -320,6 +321,7 @@ char *nth_occurrence(char *haystack, char *needle, int nth);
 char *do_command_read(const char *cmd_str, char *buffer, int max_len );
 void get_date(char *buffer );
 char *getETH0_IP();
+char *getWIFI_IP();
 char *itoa(int val, char *buf, int radix );
 void signal_fault_handler(int sig);
 void cleanString(char *strIn );

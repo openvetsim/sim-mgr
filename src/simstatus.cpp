@@ -251,6 +251,20 @@ main( int argc, const char* argv[] )
 			else if ( key.compare("check" ) == 0 )
 			{
 				makejson(cout, "check", "check is ok" );
+				cout << ",\n";
+				cp = do_command_read("/usr/bin/uptime", buffer, sizeof(buffer)-1 );
+				if ( cp == NULL )
+				{
+					makejson(cout, "uptime", "no data");
+				}
+				else
+				{
+					makejson(cout, "uptime", buffer);
+				}
+				cout << ",\n";
+				makejson(cout, "ip_addr", simmgr_shm->server.ip_addr );
+				cout << ",\n";
+				makejson(cout, "wifi_ip_addr", simmgr_shm->server.wifi_ip_addr );
 			}
 			else if ( key.compare("uptime" ) == 0 )
 			{

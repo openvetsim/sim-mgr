@@ -134,6 +134,8 @@ main(int argc, char *argv[] )
 	do_command_read("/bin/hostname", simmgr_shm->server.name, sizeof(simmgr_shm->server.name)-1 );
 	ptr = getETH0_IP();
 	sprintf(simmgr_shm->server.ip_addr, "%s", ptr );
+	ptr = getWIFI_IP();
+	sprintf(simmgr_shm->server.wifi_ip_addr, "%s", ptr );
 	// server_time and msec_time are updated in the loop
 	
 	resetAllParameters();
