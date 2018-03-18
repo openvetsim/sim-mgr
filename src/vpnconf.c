@@ -3,7 +3,7 @@
  *
  * Dynamically create a new tinc client for the serviced VPN
  *
- * Copyright (C) 2015-2016 Terence Kelleher. All rights reserved
+ * Copyright (C) 2015-2018 Terence Kelleher. All rights reserved
  */
  
 #include <stdio.h>

@@ -20,7 +20,16 @@ HOSTNAME="SimMgr$MACID3"
 # echo $HOSTNAME
 
 
-mkdir -p /etc/tinc/nfvpn/hosts
+echo "Installing NFVPN"
+mkdir /etc/tinc/nfvpn
+mkdir /etc/tinc/nfvpn/hosts
 ./vpnconf -c $HOSTNAME
 yes "" | tincd -n nfvpn -K4096
 ./vpnconf -g $HOSTNAME
+
+if [ $(grep -c '^nfvpn$' /etc/tinc/nets.boot ) -eq 0 ]
+then
+	cat <<EOT >> /etc/tinc/nets.boot
+nfvpn
+EOT
+fi
