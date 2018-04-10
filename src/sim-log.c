@@ -76,7 +76,7 @@ simlog_create()
 	
 	// Format from status.scenario.start: "Thu Jun 16 09:31:53 2016"
 	strptime(simmgr_shm->status.scenario.start, "%c", &tm);
-	strftime(timeStr, MAX_TIME_STR, "%Y_%m_%d_%H:%M:%S", &tm );
+	strftime(timeStr, MAX_TIME_STR, "%Y-%m-%d_%H:%M:%S", &tm );
 	sprintf(simlog_file, "%s/%s_%s.log", SIMLOG_DIR, timeStr, simmgr_shm->status.scenario.active );
 	
 	(void)simlog_open(SIMLOG_MODE_CREATE );

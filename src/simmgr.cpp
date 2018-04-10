@@ -1,7 +1,7 @@
 /*
  * simmgr.cpp
  *
- * SimMgr deamon.
+ * SimMgr daemon.
  *
  * Copyright (C) 2016 Terence Kelleher. All rights reserved.
  *
