@@ -435,7 +435,7 @@ awrr_check(void)
 			newRate = round(awRR );
 			if ( oldRate != newRate )
 			{
-				setRespirationPeriods(oldRate, newRate );
+				// setRespirationPeriods(oldRate, newRate );
 				simmgr_shm->status.respiration.awRR = newRate;
 			}
 		}
@@ -651,7 +651,7 @@ setRespirationPeriods(int oldRate, int newRate )
 	{
 		if ( newRate > 0 )
 		{
-			// simmgr_shm->status.respiration.rate = newRate;
+			simmgr_shm->status.respiration.rate = newRate;
 			period = (1000*60)/newRate;	// Period in msec from rate per minute
 			if ( period > 10000 )
 			{
@@ -1058,7 +1058,7 @@ scan_commands(void )
 		log_message("", msgbuf);
 		if ( simmgr_shm->instructor.respiration.transfer_time <= 0 )
 		{
-			// setRespirationPeriods(simmgr_shm->status.respiration.rate, simmgr_shm->instructor.respiration.rate );
+			setRespirationPeriods(simmgr_shm->status.respiration.rate, simmgr_shm->instructor.respiration.rate );
 		}
 		simmgr_shm->status.respiration.rate = setTrend(&respirationTrend, 
 											simmgr_shm->instructor.respiration.rate,
@@ -1196,9 +1196,9 @@ scan_commands(void )
 	simmgr_shm->status.cardiac.rate = trendProcess(&cardiacTrend );
 	simmgr_shm->status.cardiac.bps_sys = trendProcess(&sysTrend );
 	simmgr_shm->status.cardiac.bps_dia = trendProcess(&diaTrend );
-	// oldRate = simmgr_shm->status.respiration.rate;
+	oldRate = simmgr_shm->status.respiration.rate;
 	newRate = trendProcess(&respirationTrend );
-	// setRespirationPeriods(oldRate, newRate );
+	setRespirationPeriods(oldRate, newRate );
 
 	// simmgr_shm->status.respiration.awRR = simmgr_shm->status.respiration.rate;
 	simmgr_shm->status.respiration.spo2 = trendProcess( &spo2Trend );
