@@ -49,6 +49,7 @@ void recordStartStop(int record );
 void checkEvents(void );
 void clearAllTrends(void );
 void resetAllParameters(void );
+void setRespirationPeriods(int oldRate, int newRate );
 
 int scenarioPid = -1;
 int lastEventLogged = 0;
@@ -137,8 +138,6 @@ main(int argc, char *argv[] )
 	do_command_read("/bin/hostname", simmgr_shm->server.name, sizeof(simmgr_shm->server.name)-1 );
 	ptr = getETH0_IP();
 	sprintf(simmgr_shm->server.ip_addr, "%s", ptr );
-	ptr = getWIFI_IP();
-	sprintf(simmgr_shm->server.wifi_ip_addr, "%s", ptr );
 	// server_time and msec_time are updated in the loop
 	
 	resetAllParameters();
@@ -271,7 +270,7 @@ updateScenarioState(ScenarioState new_state)
  * 3 - Calculate AWRR based on the average time of the recorded breaths within the past 90 seconds, excluding the past 2 seconds
  *
 */
-#define BREATH_CALC_LIMIT		5		// Max number of recorded breaths to count in calculation
+#define BREATH_CALC_LIMIT		3		// Max number of recorded breaths to count in calculation
 #define BREATH_LOG_LEN	128
 int breathLog[BREATH_LOG_LEN] = { 0, };
 int breathLogNext = 0;
@@ -286,10 +285,17 @@ int breathLogLast = 0;			// Time of last breath
 
 #define BREATH_LOG_DELAY	(2)
 int breathLogDelay = 0;
+
+#define BREATH_LOG_CHANGE_LOOPS	1
+int breathLogReportLoops = 0;
+
 void
 awrr_check(void)
 {
-	int now = time(NULL);	// Current sec time
+#if 0
+	simmgr_shm->status.respiration.awRR = simmgr_shm->status.respiration.rate;
+#else
+	int now = simmgr_shm->server.msec_time; //  time(NULL);	// Current sec time
 	int prev;
 	int breaths;
 	int totalTime;
@@ -299,6 +305,10 @@ awrr_check(void)
 	float awRR;
 	int i;
 	int intervals;
+	int oldRate;
+	int newRate;
+
+	oldRate = simmgr_shm->status.respiration.awRR;
 	
 	// Breath Detect and Log
 	if ( breathLogState == BREATH_LOG_STATE_DETECT )
@@ -352,15 +362,15 @@ awrr_check(void)
 	breaths = 0;
 	intervals = 0;
 	
-	if ( breathLog[prev] <= 0 )  // Don't look at empty logs
+	lastTime = breathLog[prev];
+	if ( lastTime <= 0 )  // Don't look at empty logs
 	{
 		simmgr_shm->status.respiration.awRR = 0;
 	}
 	else
 	{
-		lastTime = breathLog[prev];
 		diff = now - lastTime;
-		if ( diff > 20 )
+		if ( diff > 20000 )
 		{
 			simmgr_shm->status.respiration.awRR = 0;
 		}
@@ -374,7 +384,7 @@ awrr_check(void)
 			for ( i = 0 ; i < BREATH_CALC_LIMIT ; i++ )
 			{
 				diff = now - breathLog[prev];
-				if ( diff > 20 ) // Over Limit seconds since this recorded breath
+				if ( diff > 20000 ) // Over Limit seconds since this recorded breath
 				{
 					break;
 				}
@@ -391,39 +401,46 @@ awrr_check(void)
 				}
 			}
 		}
-	}
-	simmgr_shm->server.dbg1 = lastTime;
-	simmgr_shm->server.dbg2 = firstTime;
-	simmgr_shm->server.dbg3 = intervals;
-	
-	if ( intervals > 0 )
-	{
-		totalTime = lastTime - firstTime;
-		if ( totalTime == 0 )
+		simmgr_shm->server.dbg1 = lastTime;
+		simmgr_shm->server.dbg2 = firstTime;
+		simmgr_shm->server.dbg3 = intervals;
+		
+		if ( intervals > 0 )
+		{
+			totalTime = lastTime - firstTime;
+			if ( totalTime == 0 )
+			{
+				awRR = 0;
+			}
+			else
+			{
+				awRR = ( ( ( (float)intervals / (float)totalTime ) ) * 60000 );
+			}
+			if ( awRR < 0 )
+			{
+				awRR = 0;
+			}
+			else if ( awRR > 60 )
+			{
+				awRR = 60;
+			}
+		}
+		else
 		{
 			awRR = 0;
 		}
-		else
+		if ( breathLogReportLoops++ == BREATH_LOG_CHANGE_LOOPS )
 		{
-			awRR = ( (float)intervals / (float)totalTime ) * 60;
-		}
-		if ( awRR < 0 )
-		{
-			simmgr_shm->status.respiration.awRR = 0;
-		}
-		else if ( awRR > 60 )
-		{
-			simmgr_shm->status.respiration.awRR = 61;
-		}
-		else
-		{
-			simmgr_shm->status.respiration.awRR = (int)awRR;
+			breathLogReportLoops = 0;
+			newRate = round(awRR );
+			if ( oldRate != newRate )
+			{
+				setRespirationPeriods(oldRate, newRate );
+				simmgr_shm->status.respiration.awRR = newRate;
+			}
 		}
 	}
-	else
-	{
-		simmgr_shm->status.respiration.awRR = 0;
-	}
+#endif
 }
 /*
  * time_update
@@ -634,7 +651,7 @@ setRespirationPeriods(int oldRate, int newRate )
 	{
 		if ( newRate > 0 )
 		{
-			simmgr_shm->status.respiration.rate = newRate;
+			// simmgr_shm->status.respiration.rate = newRate;
 			period = (1000*60)/newRate;	// Period in msec from rate per minute
 			if ( period > 10000 )
 			{
@@ -1041,8 +1058,7 @@ scan_commands(void )
 		log_message("", msgbuf);
 		if ( simmgr_shm->instructor.respiration.transfer_time <= 0 )
 		{
-			setRespirationPeriods(simmgr_shm->status.respiration.rate,
-								  simmgr_shm->instructor.respiration.rate );
+			// setRespirationPeriods(simmgr_shm->status.respiration.rate, simmgr_shm->instructor.respiration.rate );
 		}
 		simmgr_shm->status.respiration.rate = setTrend(&respirationTrend, 
 											simmgr_shm->instructor.respiration.rate,
@@ -1180,9 +1196,9 @@ scan_commands(void )
 	simmgr_shm->status.cardiac.rate = trendProcess(&cardiacTrend );
 	simmgr_shm->status.cardiac.bps_sys = trendProcess(&sysTrend );
 	simmgr_shm->status.cardiac.bps_dia = trendProcess(&diaTrend );
-	oldRate = simmgr_shm->status.respiration.rate;
+	// oldRate = simmgr_shm->status.respiration.rate;
 	newRate = trendProcess(&respirationTrend );
-	setRespirationPeriods(oldRate, newRate );
+	// setRespirationPeriods(oldRate, newRate );
 
 	// simmgr_shm->status.respiration.awRR = simmgr_shm->status.respiration.rate;
 	simmgr_shm->status.respiration.spo2 = trendProcess( &spo2Trend );
@@ -1415,20 +1431,12 @@ checkEvents(void )
 		while ( lastEventLogged != simmgr_shm->eventListNext )
 		{
 			lastEventLogged++;
-			if ( lastEventLogged >= EVENT_LIST_SIZE )
-			{
-				lastEventLogged = 0;
-			}
 			sprintf(msgbuf, "Event: %s", simmgr_shm->eventList[lastEventLogged].eventName );
 			simlog_entry(msgbuf );
 		}
 		while ( lastCommentLogged != simmgr_shm->commentListNext )
 		{
 			lastCommentLogged++;
-			if ( lastCommentLogged >= COMMENT_LIST_SIZE )
-			{
-				lastCommentLogged = 0;
-			}
 			if ( strlen(simmgr_shm->commentList[lastCommentLogged].comment ) == 0 )
 			{
 				sprintf(msgbuf, "Null Comment: lastCommentLogged is %d simmgr_shm->commentListNext is %d State is %d\n",
