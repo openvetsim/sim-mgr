@@ -251,6 +251,20 @@ main( int argc, const char* argv[] )
 			else if ( key.compare("check" ) == 0 )
 			{
 				makejson(cout, "check", "check is ok" );
+				cout << ",\n";
+				cp = do_command_read("/usr/bin/uptime", buffer, sizeof(buffer)-1 );
+				if ( cp == NULL )
+				{
+					makejson(cout, "uptime", "no data");
+				}
+				else
+				{
+					makejson(cout, "uptime", buffer);
+				}
+				cout << ",\n";
+				makejson(cout, "ip_addr", simmgr_shm->server.ip_addr );
+				cout << ",\n";
+				makejson(cout, "wifi_ip_addr", simmgr_shm->server.wifi_ip_addr );
 			}
 			else if ( key.compare("uptime" ) == 0 )
 			{
@@ -369,8 +383,16 @@ main( int argc, const char* argv[] )
 					{
 						if ( value.length() != 0 )
 						{
-							addComment((char *)value.c_str() );
-							sts = 0;
+							if ( strcmp(simmgr_shm->status.scenario.state, "Running" ) == 0 ||
+								  strcmp(simmgr_shm->status.scenario.state, "Paused" ) == 0 )
+							{
+								addComment((char *)value.c_str() );
+								sts = 0;
+							}
+							else
+							{
+								sts = 5;
+							}
 						}
 						else
 						{
@@ -467,6 +489,10 @@ main( int argc, const char* argv[] )
 				else if ( sts == 4 )
 				{
 					makejson(cout, "status", "Null string in parameter" );
+				}
+				else if ( sts == 5 )
+				{
+					makejson(cout, "status", "Scenario is not running" );
 				}
 				else
 				{

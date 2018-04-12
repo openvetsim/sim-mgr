@@ -139,12 +139,15 @@ beat_handler(int sig, siginfo_t *si, void *uc)
 	}
 	else if ( sig == BREATH_TIMER_SIG )
 	{
-		sem_wait(&breathSema );
-		if ( simmgr_shm->status.respiration.rate > 0 )
+		sts = sem_wait(&breathSema );   // If lock is held, then the timer is being reset
+		if ( sts == 0 )
 		{
-			simmgr_shm->status.respiration.breathCount++;
+			if ( simmgr_shm->status.respiration.rate > 0 )
+			{
+				simmgr_shm->status.respiration.breathCount++;
+			}
+			sem_post(&breathSema );
 		}
-		sem_post(&breathSema );
 	}	
 }
 
@@ -185,59 +188,43 @@ calculateVPCFreq(void )
 
 /*
  * FUNCTION:
- *		set_pulse_rate
+ *		resetTimer
  *
  * ARGUMENTS:
- *		bpm	- Rate in Beats per Minute
- *		delay - Delay time for first beat, for injected VPC
+ *		rate	- Rate in Beats per minute
+ *		delay	- Delay time for first beat, for injected VPC, in msec
+ *		its		- New timer spec
+ *		itsRemaining - Running timer spec
  *
  * DESCRIPTION:
- *		Calculate and set the wait time in usec for the beats.
+ *		Calculate and set the timer, used for both heart and breath.
  *
  * ASSUMPTIONS:
  *		Called with pulseSema held
 */
-
 void
-set_pulse_rate(int bpm, int delay )
+resetTimer(int rate, int delay, struct itimerspec *its, struct itimerspec *itsRemaining )
 {
-	float tempo;
-	float beat_per_sec;
-	float sec_per_beat;
-	float intpart;
-	float fractpart;
-	float wait_time_nsec;
-	struct itimerspec its;
-	struct itimerspec itsRemaining;	
 	float nsecRemaining;	// nano-seconds Remaining in current Timer
 	float nsecNext;			// nano-seconds to Next based on new rate plus "delay"
 	float nsecInitial;
-	int sts;
+	float intpart;
+	float fractpart;
+	float wait_time_nsec;
+	float frate;
+	float sec_per_beat;
 	
-	// When the BPM is zero, we set the timer based on 60, to allow it to continue running.
-	// No beats are sent when this occurs, but the timer still runs.
-	if ( bpm == 0 )
-	{
-		bpm = 60;
-		//sprintf(msgbuf, "set_pulse_rate Force BPM to 60" );
-		//log_message("", msgbuf );
-	}
+	frate = (float)rate;
+	sec_per_beat = 1 / (frate/ 60);
 	
-	tempo = (float)bpm;
-	beat_per_sec = tempo / 60;
-	
-	// Set the interval as the standard interval
-	sec_per_beat = ( 1 / beat_per_sec );
-	//nsecInterval = sec_per_beat * 1000 * 1000 * 1000 ;
 	fractpart = modff(sec_per_beat, &intpart );
 	wait_time_nsec = ( fractpart * 1000 * 1000 * 1000 );
-	its.it_interval.tv_sec = (long int)intpart;
-	its.it_interval.tv_nsec = (long int)wait_time_nsec;
-			
-	sts = timer_gettime(pulse_timer, &itsRemaining );
-	if ( sts == 0 )
+	its->it_interval.tv_sec = (long int)intpart;
+	its->it_interval.tv_nsec = (long int)wait_time_nsec;
+
+	if ( itsRemaining != NULL )
 	{
-		nsecRemaining = ( itsRemaining.it_value.tv_sec * 1000 * 1000 * 1000 ) + itsRemaining.it_value.tv_nsec;
+		nsecRemaining = ( itsRemaining->it_value.tv_sec * 1000 * 1000 * 1000 ) + itsRemaining->it_value.tv_nsec;
 		nsecNext = ( sec_per_beat + ( delay / 1000 )) * 1000 * 1000 * 1000;
 		
 		if ( nsecRemaining <= 0 )
@@ -257,27 +244,53 @@ set_pulse_rate(int bpm, int delay )
 			fractpart = modff( (nsecInitial/1000/1000/1000), &intpart );
 			wait_time_nsec = ( fractpart * 1000 * 1000 * 1000 );
 		}
-		else
-		{
-			intpart = 0;
-			wait_time_nsec = nsecInitial;
-		}
+	}
+
+	its->it_value.tv_sec = intpart;
+	its->it_value.tv_nsec = wait_time_nsec;
+	
+}
+/*
+ * FUNCTION:
+ *		set_pulse_rate
+ *
+ * ARGUMENTS:
+ *		bpm	- Rate in Beats per Minute
+ *		delay - Delay time for first beat, for injected VPC
+ *
+ * DESCRIPTION:
+ *		Calculate and set the wait time in usec for the beats.
+ *
+ * ASSUMPTIONS:
+ *		Called with pulseSema held
+*/
+
+void
+set_pulse_rate(int bpm, int delay )
+{
+	struct itimerspec its;
+	struct itimerspec itsRemaining;	
+	
+	int sts;
+	
+	// When the BPM is zero, we set the timer based on 60, to allow it to continue running.
+	// No beats are sent when this occurs, but the timer still runs.
+	if ( bpm == 0 )
+	{
+		bpm = 60;
+	}
+	
+	sts = timer_gettime(pulse_timer, &itsRemaining );
+	if ( sts == 0 )
+	{
+		resetTimer(bpm, delay, &its, &itsRemaining );
 	}
 	else
 	{
 		sprintf(msgbuf, "set_pulse_rate:  timer_gettime Fails: %s", strerror(errno ) );
 		log_message("", msgbuf );
-
-		// Set First expiration as the interval plus the delay
-		if ( delay > 0 )
-		{
-			sec_per_beat += ((float)delay / 1000 );
-			fractpart = modff( sec_per_beat, &intpart );
-			wait_time_nsec = ( fractpart * 1000 * 1000 * 1000 );
-		}
+		resetTimer(bpm, delay, &its, NULL );
 	}
-	its.it_value.tv_sec = intpart;
-	its.it_value.tv_nsec = wait_time_nsec;
 	
 	if (timer_settime(pulse_timer, 0, &its, NULL) == -1)
 	{
@@ -291,69 +304,26 @@ set_pulse_rate(int bpm, int delay )
 void
 set_breath_rate(int bpm )
 {
-	float tempo;
-	float beat_per_sec;
-	float sec_per_beat;
-	float intpart;
-	float fractpart;
-	float wait_time_nsec;
 	struct itimerspec its;
 	struct itimerspec itsRemaining;	
-	float nsecRemaining;
-	float nsecNext;
-	float nsecInitial;
 	int sts;
 	
 	if ( bpm == 0 )
 	{
 		bpm = 60;
 	}
-	
-	tempo = (float)bpm;
-	beat_per_sec = tempo / 60;
-	
-	sec_per_beat = ( 1 / beat_per_sec );
-	fractpart = modff(sec_per_beat, &intpart );
-	wait_time_nsec = ( fractpart * 1000 * 1000 * 1000 );
-	its.it_interval.tv_sec = (long int)intpart;
-	its.it_interval.tv_nsec = (long int)wait_time_nsec;
 
 	sts = timer_gettime(breath_timer, &itsRemaining );
 	if ( sts == 0 )
 	{
-		nsecRemaining = ( itsRemaining.it_value.tv_sec * 1000 * 1000 * 1000 ) + itsRemaining.it_value.tv_nsec;
-		nsecNext =  sec_per_beat * 1000 * 1000 * 1000;
-		
-		if ( nsecRemaining <= 0 )
-		{
-			nsecInitial = nsecNext;
-		}
-		else if ( nsecRemaining < nsecNext )
-		{
-			nsecInitial = nsecRemaining;
-		}
-		else
-		{
-			nsecInitial = nsecNext;
-		}
-		if ( nsecInitial > 1 )
-		{
-			fractpart = modff( (nsecInitial/1000/1000/1000), &intpart );
-			wait_time_nsec = ( fractpart * 1000 * 1000 * 1000 );
-		}
-		else
-		{
-			intpart = 0;
-			wait_time_nsec = nsecInitial;
-		}
+		resetTimer(bpm, 0, &its, &itsRemaining );
 	}
 	else
 	{
 		sprintf(msgbuf, "set_breath_rate:  timer_gettime Fails: %s", strerror(errno ) );
 		log_message("", msgbuf );
+		resetTimer(bpm, 0, &its, NULL );
 	}
-	its.it_value.tv_sec = intpart;
-	its.it_value.tv_nsec = wait_time_nsec;
 	
 	if (timer_settime(breath_timer, 0, &its, NULL) == -1)
 	{
@@ -601,6 +571,7 @@ process_child(void *ptr )
 	int count;
 	unsigned int last_pulse = simmgr_shm->status.cardiac.pulseCount;
 	unsigned int last_breath = simmgr_shm->status.respiration.breathCount;
+	int last_manual_breath = simmgr_shm->status.respiration.manual_count;
 	int checkCount = 0;
 	char *word;
 	
@@ -609,6 +580,7 @@ process_child(void *ptr )
 		usleep(5000 );		// 5 msec wait
 		if ( last_pulse != simmgr_shm->status.cardiac.pulseCount )
 		{
+			last_pulse = simmgr_shm->status.cardiac.pulseCount;
 			count = 0;
 			for ( i = 0 ; i < MAX_LISTENERS ; i++ )
 			{
@@ -635,7 +607,6 @@ process_child(void *ptr )
 					}
 				}
 			}
-			last_pulse = simmgr_shm->status.cardiac.pulseCount;
 #ifdef DEBUG
 			if ( count )
 			{
@@ -645,32 +616,39 @@ process_child(void *ptr )
 		}
 		if ( last_breath != simmgr_shm->status.respiration.breathCount )
 		{
+			last_breath = simmgr_shm->status.respiration.breathCount;
 			count = 0;
-			for ( i = 0 ; i < MAX_LISTENERS ; i++ )
+			if ( last_manual_breath != simmgr_shm->status.respiration.manual_count )
 			{
-				if ( listeners[i].allocated == 1 )
+				last_manual_breath = simmgr_shm->status.respiration.manual_count;
+			}
+			else
+			{
+				for ( i = 0 ; i < MAX_LISTENERS ; i++ )
 				{
-					fd = listeners[i].cfd;
-					
-					len = write(fd, breathWord, strlen(breathWord) );
-					if ( len < 0) // This detects closed or disconnected listeners.
+					if ( listeners[i].allocated == 1 )
 					{
-						close(fd );
-						listeners[i].allocated = 0;
-					}
-					else
-					{
-						count++;
+						fd = listeners[i].cfd;
+						
+						len = write(fd, breathWord, strlen(breathWord) );
+						if ( len < 0) // This detects closed or disconnected listeners.
+						{
+							close(fd );
+							listeners[i].allocated = 0;
+						}
+						else
+						{
+							count++;
+						}
 					}
 				}
-			}
-			last_breath = simmgr_shm->status.respiration.breathCount;
 #ifdef DEBUG
-			if ( count )
-			{
-				printf("Breath sent to %d listeners\n", count );
-			}
+				if ( count )
+				{
+					printf("Breath sent to %d listeners\n", count );
+				}
 #endif
+			}
 		}
 		checkCount++;
 		if ( checkCount == 5 )	// This runs every 25 ms.
@@ -693,8 +671,6 @@ process_child(void *ptr )
 		}
 		else if ( checkCount == 10 )
 		{
-			
-		
 			// If the breath rate has changed, then reset the timer
 			if ( currentBreathRate != simmgr_shm->status.respiration.rate )
 			{
@@ -710,7 +686,6 @@ process_child(void *ptr )
 				log_message("", msgbuf );
 	#endif
 			}
-			
 			checkCount = 0;
 		}
 	}

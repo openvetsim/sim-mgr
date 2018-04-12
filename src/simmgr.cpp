@@ -137,6 +137,8 @@ main(int argc, char *argv[] )
 	do_command_read("/bin/hostname", simmgr_shm->server.name, sizeof(simmgr_shm->server.name)-1 );
 	ptr = getETH0_IP();
 	sprintf(simmgr_shm->server.ip_addr, "%s", ptr );
+	ptr = getWIFI_IP();
+	sprintf(simmgr_shm->server.wifi_ip_addr, "%s", ptr );
 	// server_time and msec_time are updated in the loop
 	
 	resetAllParameters();
@@ -1413,12 +1415,20 @@ checkEvents(void )
 		while ( lastEventLogged != simmgr_shm->eventListNext )
 		{
 			lastEventLogged++;
+			if ( lastEventLogged >= EVENT_LIST_SIZE )
+			{
+				lastEventLogged = 0;
+			}
 			sprintf(msgbuf, "Event: %s", simmgr_shm->eventList[lastEventLogged].eventName );
 			simlog_entry(msgbuf );
 		}
 		while ( lastCommentLogged != simmgr_shm->commentListNext )
 		{
 			lastCommentLogged++;
+			if ( lastCommentLogged >= COMMENT_LIST_SIZE )
+			{
+				lastCommentLogged = 0;
+			}
 			if ( strlen(simmgr_shm->commentList[lastCommentLogged].comment ) == 0 )
 			{
 				sprintf(msgbuf, "Null Comment: lastCommentLogged is %d simmgr_shm->commentListNext is %d State is %d\n",

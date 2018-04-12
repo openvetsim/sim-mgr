@@ -420,9 +420,10 @@ get_date(char *buffer )
 }
 
 char eth0_ip[512] = { 0, };
+char wifi_ip[512] = { 0, };
+char ipAddr[512] = { 0, };
 
-char *
-getETH0_IP()
+char *get_IP(const char  *iface )
 {
 	int fd;
 	struct ifreq ifr;
@@ -430,20 +431,42 @@ getETH0_IP()
 	
 	fd = socket(AF_INET, SOCK_DGRAM, 0);
 	ifr.ifr_addr.sa_family = AF_INET;
-	strncpy(ifr.ifr_name, "eth0", IFNAMSIZ-1);
+	strncpy(ifr.ifr_name, iface, IFNAMSIZ-1);
 	sts = ioctl(fd, SIOCGIFADDR, &ifr);
-	if ( sts != 0 )
+	if ( sts == 0 )
 	{
-		sprintf(eth0_ip, "no IP addr\n" );
+		sprintf(ipAddr, "%s %s", iface, inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr));
 	}
 	else
 	{
-		sprintf(eth0_ip, "%s", inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr));
+		sprintf(ipAddr, "%s", "" );
 	}
 	close(fd);
+	return ipAddr;
+}
+char *
+getETH0_IP()
+{
+	char *addr;
+	
+	addr = get_IP("eth0" );
+	if ( strlen(addr) == 0 )
+	{
+		addr = get_IP("eno1" );
+	}
+	sprintf(eth0_ip, "%s", addr );
 	return eth0_ip;
 }
-
+	
+char *
+getWIFI_IP()
+{
+	char *addr;
+	
+	addr = get_IP("wlp58s0" );
+	sprintf(wifi_ip, "%s", addr );
+	return wifi_ip;
+}
 /*
  * itoa
  * @val - Value to be converted
@@ -601,5 +624,5 @@ addComment(char *str )
 	sprintf(simmgr_shm->commentList[commentNext].comment, "%s", str );
 	simmgr_shm->commentListNext = commentNext;
 	sprintf(buf, "Comment: %d %s", commentNext, str );
-	log_message("", str );
+	log_message("", buf );
 }
