@@ -185,6 +185,9 @@ struct server
 	char ip_addr[STR_SIZE];		// Public Network IP Address
 	char server_time[STR_SIZE];	// Linux date/timestamp
 	int msec_time;				// msec timer.
+	int dbg1;
+	int dbg2;
+	int dbg3;
 };
 struct general
 {

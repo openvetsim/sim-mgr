@@ -35,10 +35,12 @@
 
 #include "../include/simmgr.h" 
 
-#define SCENARIO_LOOP_COUNT		25	// Run the scenario every SCENARIO_LOOP_COUNT iterations of the 10 msec loop
-#define SCENARIO_TIMECHECK		(SCENARIO_LOOP_COUNT - 1)
-#define SCENARIO_EVENTCHECK		(SCENARIO_LOOP_COUNT - 2)
-#define SCENARIO_COMMCHECK  	(SCENARIO_LOOP_COUNT - 10)
+#define SCENARIO_LOOP_COUNT		20	// Run the scenario every SCENARIO_LOOP_COUNT iterations of the 10 msec loop
+#define SCENARIO_COMMCHECK  	5
+#define SCENARIO_EVENTCHECK		10
+#define SCENARIO_AWRRCHECK		15
+#define SCENARIO_TIMECHECK		19
+
 
 using namespace std;
 
@@ -56,6 +58,7 @@ int runningAsDemo = 0;
 int scan_commands(void );
 void comm_check(void );
 void time_update(void );
+void awrr_check(void );
 int iiLockTaken = 0;
 char buf[1024];
 char msgbuf[2048];
@@ -175,26 +178,35 @@ main(int argc, char *argv[] )
 	clearAllTrends();
 	
 	scenarioCount = 0;
+#define SCENARIO_LOOP_COUNT		20	// Run the scenario every SCENARIO_LOOP_COUNT iterations of the 10 msec loop
+#define SCENARIO_COMMCHECK  	5
+#define SCENARIO_EVENTCHECK		10
+#define SCENARIO_AWRRCHECK		15
+#define SCENARIO_TIMECHECK		19
 	while ( 1 )
 	{
 		scenarioCount++;
 		
-		if ( scenarioCount == SCENARIO_EVENTCHECK )
+		switch ( scenarioCount )
 		{
-			checkEvents();
-		}
-		else if ( scenarioCount == SCENARIO_COMMCHECK )
-		{
-			comm_check();
-		}
-		else if ( scenarioCount == SCENARIO_TIMECHECK )
-		{
-			time_update();
-		}
-		else if ( scenarioCount >= SCENARIO_LOOP_COUNT )
-		{
-			scenarioCount = 0;
-			(void)scan_commands();
+			case SCENARIO_COMMCHECK:
+				comm_check();
+				break;
+			case SCENARIO_EVENTCHECK:
+				checkEvents();
+				break;
+			case SCENARIO_AWRRCHECK:
+				awrr_check();
+				break;
+			case SCENARIO_TIMECHECK:
+				time_update();
+				break;
+			case SCENARIO_LOOP_COUNT:
+				scenarioCount = 0;
+				(void)scan_commands();
+				break;
+			default:
+				break;
 		}
 
 		usleep(10000);	// Sleep for 10 msec
@@ -247,6 +259,170 @@ updateScenarioState(ScenarioState new_state)
 	return ( rval );
 }
 
+/*
+ * awrr_check
+ *
+ * Calculate awrr based on count of breaths, both manual and 'normal'
+ *
+ * 1 - Detect and log breath when either natural or manual start
+ * 2 - If no breaths are recorded in the past 20 seconds (excluding the past 2 seconds) report AWRR as zero
+ * 3 - Calculate AWRR based on the average time of the recorded breaths within the past 90 seconds, excluding the past 2 seconds
+ *
+*/
+#define BREATH_CALC_LIMIT		5		// Max number of recorded breaths to count in calculation
+#define BREATH_LOG_LEN	128
+int breathLog[BREATH_LOG_LEN] = { 0, };
+int breathLogNext = 0;
+
+#define BREATH_LOG_STATE_IDLE	0
+#define BREATH_LOG_STATE_DETECT	1
+int breathLogState = BREATH_LOG_STATE_IDLE;
+
+unsigned int breathLogLastNatural = 0;	// breathCount, last natural
+int breathLogLastManual = 0;	// manual_count, last manual
+int breathLogLast = 0;			// Time of last breath
+
+#define BREATH_LOG_DELAY	(2)
+int breathLogDelay = 0;
+void
+awrr_check(void)
+{
+	int now = time(NULL);	// Current sec time
+	int prev;
+	int breaths;
+	int totalTime;
+	int lastTime;
+	int firstTime;
+	int diff;
+	float awRR;
+	int i;
+	int intervals;
+	
+	// Breath Detect and Log
+	if ( breathLogState == BREATH_LOG_STATE_DETECT )
+	{
+		// After detect, wait 400 msec (two calls) before another detect allowed
+		if ( breathLogDelay++ >= BREATH_LOG_DELAY)
+		{
+			breathLogState = BREATH_LOG_STATE_IDLE;
+			breathLogLastNatural = simmgr_shm->status.respiration.breathCount;
+			breathLogLastManual = simmgr_shm->status.respiration.manual_count;
+		}
+	}
+	else if ( breathLogState == BREATH_LOG_STATE_IDLE )
+	{
+		if ( breathLogLastNatural != simmgr_shm->status.respiration.breathCount )
+		{
+			breathLogState = BREATH_LOG_STATE_DETECT;
+			breathLogLastNatural = simmgr_shm->status.respiration.breathCount;
+			breathLogLast = now;
+			breathLog[breathLogNext] = now;
+			breathLogDelay = 0;
+			breathLogNext += 1;
+			if ( breathLogNext >= BREATH_LOG_LEN )
+			{
+				breathLogNext = 0;
+			}
+		}
+		else if ( breathLogLastManual != simmgr_shm->status.respiration.manual_count )
+		{
+			breathLogState = BREATH_LOG_STATE_DETECT;
+			breathLogLastManual = simmgr_shm->status.respiration.manual_count;
+			breathLogLast = now;
+			breathLog[breathLogNext] = now;
+			breathLogDelay = 0;
+			breathLogNext += 1;
+			if ( breathLogNext >= BREATH_LOG_LEN )
+			{
+				breathLogNext = 0;
+			}
+		}
+	}
+	
+	// AWRR Calculation - Look at no more than 10 breaths - Skip if no breaths within 20 seconds
+	lastTime = 0;
+	firstTime = 0;
+	prev = breathLogNext - 1;
+	if ( prev < 0 ) 
+	{
+		prev = BREATH_LOG_LEN - 1;
+	}
+	breaths = 0;
+	intervals = 0;
+	
+	if ( breathLog[prev] <= 0 )  // Don't look at empty logs
+	{
+		simmgr_shm->status.respiration.awRR = 0;
+	}
+	else
+	{
+		lastTime = breathLog[prev];
+		diff = now - lastTime;
+		if ( diff > 20 )
+		{
+			simmgr_shm->status.respiration.awRR = 0;
+		}
+		else
+		{
+			prev -= 1;
+			if ( prev < 0 ) 
+			{
+				prev = BREATH_LOG_LEN - 1;
+			}
+			for ( i = 0 ; i < BREATH_CALC_LIMIT ; i++ )
+			{
+				diff = now - breathLog[prev];
+				if ( diff > 20 ) // Over Limit seconds since this recorded breath
+				{
+					break;
+				}
+				else
+				{
+					firstTime = breathLog[prev]; // Recorded start of the first breath
+					breaths += 1;
+					intervals += 1;
+					prev -= 1;
+					if ( prev < 0 ) 
+					{
+						prev = BREATH_LOG_LEN - 1;
+					}
+				}
+			}
+		}
+	}
+	simmgr_shm->server.dbg1 = lastTime;
+	simmgr_shm->server.dbg2 = firstTime;
+	simmgr_shm->server.dbg3 = intervals;
+	
+	if ( intervals > 0 )
+	{
+		totalTime = lastTime - firstTime;
+		if ( totalTime == 0 )
+		{
+			awRR = 0;
+		}
+		else
+		{
+			awRR = ( (float)intervals / (float)totalTime ) * 60;
+		}
+		if ( awRR < 0 )
+		{
+			simmgr_shm->status.respiration.awRR = 0;
+		}
+		else if ( awRR > 60 )
+		{
+			simmgr_shm->status.respiration.awRR = 61;
+		}
+		else
+		{
+			simmgr_shm->status.respiration.awRR = (int)awRR;
+		}
+	}
+	else
+	{
+		simmgr_shm->status.respiration.awRR = 0;
+	}
+}
 /*
  * time_update
  *
@@ -1006,7 +1182,7 @@ scan_commands(void )
 	newRate = trendProcess(&respirationTrend );
 	setRespirationPeriods(oldRate, newRate );
 
-	simmgr_shm->status.respiration.awRR = simmgr_shm->status.respiration.rate;
+	// simmgr_shm->status.respiration.awRR = simmgr_shm->status.respiration.rate;
 	simmgr_shm->status.respiration.spo2 = trendProcess( &spo2Trend );
 	simmgr_shm->status.respiration.etco2 = trendProcess( &etco2Trend );
 	simmgr_shm->status.general.temperature = trendProcess(&tempTrend );

@@ -1219,7 +1219,6 @@ startParseState(int lvl, char *name )
 			if ( strcmp(name, "init" ) == 0 )
 			{
 				parse_state = PARSE_STATE_INIT;
-				simlog_entry("SCENARIO: INIT" );
 			}
 			else if ( ( strcmp(name, "scene" ) == 0 ) || ( strcmp(name, "initial_scene" ) == 0 ) )
 			{

@@ -704,7 +704,7 @@ process_child(void *ptr )
 				sem_post(&breathSema );
 				
 				// awRR Calculation - TBD - Need real calculations
-				simmgr_shm->status.respiration.awRR = simmgr_shm->status.respiration.rate;
+				//simmgr_shm->status.respiration.awRR = simmgr_shm->status.respiration.rate;
 	#ifdef DEBUG
 				sprintf(msgbuf, "Set Breath to %d", currentBreathRate );
 				log_message("", msgbuf );

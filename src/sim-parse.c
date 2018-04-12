@@ -233,6 +233,7 @@ respiration_parse(const char *elem,  const char *value, struct respiration *resp
 	{
 		sprintf(resp->right_lung_sound, "%s", value );
 	}
+	/* These are not used
 	else if ( strcmp(elem, "inhalation_duration" ) == 0 )
 	{
 		resp->inhalation_duration = atoi(value );
@@ -241,6 +242,7 @@ respiration_parse(const char *elem,  const char *value, struct respiration *resp
 	{
 		resp->exhalation_duration = atoi(value );
 	}
+	*/
 	else if ( strcmp(elem, "left_lung_sound_volume" ) == 0 )
 	{
 		resp->left_lung_sound_volume = atoi(value );

@@ -894,6 +894,18 @@ sendStatus(void )
 	makejson(cout, "last", itoa(simmgr_shm->status.defibrillation.last, buffer, 10 ) );
 	cout << ",\n";
 	makejson(cout, "energy", itoa(simmgr_shm->status.defibrillation.energy, buffer, 10 ) );
+	cout << "\n},\n";
+	
+	cout << " \"debug\" : {\n";
+	makejson(cout, "msec", itoa(simmgr_shm->server.msec_time, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "awrr", itoa(simmgr_shm->status.respiration.awRR, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "debug1", itoa(simmgr_shm->server.dbg1, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "debug2", itoa(simmgr_shm->server.dbg2, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "debug3", itoa(simmgr_shm->server.dbg3, buffer, 10 ) );
 	cout << "\n}\n";
 }
 
