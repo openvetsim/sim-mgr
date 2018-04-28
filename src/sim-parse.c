@@ -233,7 +233,7 @@ respiration_parse(const char *elem,  const char *value, struct respiration *resp
 	{
 		sprintf(resp->right_lung_sound, "%s", value );
 	}
-	/* These are not used
+	/* These are set by sim-mgr, not instructor
 	else if ( strcmp(elem, "inhalation_duration" ) == 0 )
 	{
 		resp->inhalation_duration = atoi(value );

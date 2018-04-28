@@ -949,5 +949,15 @@ sendQuickStatus(void )
 	
 	cout << " \"respiration\" : {\n";
 	makejson(cout, "breathCount", itoa(simmgr_shm->status.respiration.breathCount, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "inhalation_duration", itoa(simmgr_shm->status.respiration.inhalation_duration, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "exhalation_duration", itoa(simmgr_shm->status.respiration.exhalation_duration, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "rate", itoa(simmgr_shm->status.respiration.rate, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "awRR", itoa(simmgr_shm->status.respiration.awRR, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "manual_count", itoa(simmgr_shm->status.respiration.manual_count, buffer, 10 ) );
 	cout << "\n}\n";
 }
