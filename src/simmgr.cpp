@@ -235,9 +235,10 @@ updateScenarioState(ScenarioState new_state)
 			
 			switch ( scenario_state )
 			{
-				case ScenarioStopped:
+				case ScenarioStopped: // Set by scenario manager after Terminate Cleanup is complete
 					sprintf(simmgr_shm->status.scenario.state, "Stopped" );
 					(void)simlog_end();
+					(void)resetAllParameters();
 					break;
 				case ScenarioRunning:
 					sprintf(simmgr_shm->status.scenario.state, "Running" );
@@ -245,9 +246,8 @@ updateScenarioState(ScenarioState new_state)
 				case ScenarioPaused:
 					sprintf(simmgr_shm->status.scenario.state, "Paused" );
 					break;
-				case ScenarioTerminate:
+				case ScenarioTerminate:	// Request from SIM II
 					sprintf(simmgr_shm->status.scenario.state, "Terminate" );
-					(void)simlog_end();
 					break;
 				default:
 					sprintf(simmgr_shm->status.scenario.state, "Unknown" );
