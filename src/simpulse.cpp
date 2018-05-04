@@ -113,14 +113,14 @@ beat_handler(int sig, siginfo_t *si, void *uc)
 				newCount = simmgr_shm->status.cardiac.pulseCount + 1;
 				if ( currentVpcFreq > 0 )
 				{
+					if ( vpcFrequencyIndex++ >= VPC_ARRAY_LEN )
+					{
+						vpcFrequencyIndex = 0;
+					}
 					if ( vpcFrequencyArray[vpcFrequencyIndex] > 0 )
 					{
 						set_pulse_rate(currentPulseRate, currentVpcDelay );
 						simmgr_shm->status.cardiac.pulseCountVpc = newCount;
-						if ( vpcFrequencyIndex++ >= VPC_ARRAY_LEN )
-						{
-							vpcFrequencyIndex = 0;
-						}
 					}
 				}
 				simmgr_shm->status.cardiac.pulseCount = newCount;
