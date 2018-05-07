@@ -62,7 +62,7 @@ int currentBreathRate = 0;
 int runningAsDemo = 0;
 
 void set_beat_time(int bpm );
-void set_pulse_rate(int bpm, int delay );
+void set_pulse_rate(int bpm );
 void set_breath_rate(int bpm );
 void calculateVPCFreq(void );
 
@@ -96,6 +96,7 @@ int vpcFrequencyIndex = 0;
 
 sem_t pulseSema;
 sem_t breathSema;
+int beatSkip = 0;
 
 static void
 beat_handler(int sig, siginfo_t *si, void *uc)
@@ -110,25 +111,35 @@ beat_handler(int sig, siginfo_t *si, void *uc)
 		{
 			if ( currentPulseRate > 0 )
 			{
-				newCount = simmgr_shm->status.cardiac.pulseCount + 1;
-				if ( currentVpcFreq > 0 )
+				if ( beatSkip > 0 )
 				{
-					if ( vpcFrequencyIndex++ >= VPC_ARRAY_LEN )
-					{
-						vpcFrequencyIndex = 0;
-					}
-					if ( vpcFrequencyArray[vpcFrequencyIndex] > 0 )
-					{
-						set_pulse_rate(currentPulseRate, currentVpcDelay );
-						simmgr_shm->status.cardiac.pulseCountVpc = newCount;
-					}
+					beatSkip -= 1;
 				}
-				simmgr_shm->status.cardiac.pulseCount = newCount;
+				else
+				{
+					newCount = simmgr_shm->status.cardiac.pulseCount + 1;
+					if ( currentVpcFreq > 0 )
+					{
+						if ( vpcFrequencyIndex++ >= VPC_ARRAY_LEN )
+						{
+							vpcFrequencyIndex = 0;
+						}
+						if ( vpcFrequencyArray[vpcFrequencyIndex] > 0 )
+						{
+							// set_pulse_rate(currentPulseRate, currentVpcDelay );
+							simmgr_shm->status.cardiac.pulseCountVpc = newCount;
+							beatSkip = atoi(&simmgr_shm->status.cardiac.vpc[2] );
+						}
+					}
+					simmgr_shm->status.cardiac.pulseCount = newCount;
+				}
 			}
+			/*
 			if ( currentVpcDelay != simmgr_shm->status.cardiac.vpc_delay )
 			{
 				currentVpcDelay = simmgr_shm->status.cardiac.vpc_delay;
 			}
+			*/
 			if ( currentVpcFreq != simmgr_shm->status.cardiac.vpc_freq )
 			{
 				currentVpcFreq = simmgr_shm->status.cardiac.vpc_freq;
@@ -250,13 +261,33 @@ resetTimer(int rate, int delay, struct itimerspec *its, struct itimerspec *itsRe
 	its->it_value.tv_nsec = wait_time_nsec;
 	
 }
+
+/*
+struct vpc_delay_table_entry
+{
+	int vpcCount
+	int maxRate;
+	int pixels;
+}
+#define MS_PER_PIXEL	15
+struct vpc_delay_table_entry vpc_table[] = 
+{
+	{ 1, 81, 43 },
+	{ 1, 161, 23 },
+	{ 1, 999, 15 },
+	{ 2, 101, 40 },
+	{ 2, 181, 20 },
+	{ 2, 999, 13 },
+	{ 0, 0, 0 }
+};
+*/
+	
 /*
  * FUNCTION:
  *		set_pulse_rate
  *
  * ARGUMENTS:
  *		bpm	- Rate in Beats per Minute
- *		delay - Delay time for first beat, for injected VPC
  *
  * DESCRIPTION:
  *		Calculate and set the wait time in usec for the beats.
@@ -266,12 +297,12 @@ resetTimer(int rate, int delay, struct itimerspec *its, struct itimerspec *itsRe
 */
 
 void
-set_pulse_rate(int bpm, int delay )
+set_pulse_rate(int bpm )
 {
 	struct itimerspec its;
 	struct itimerspec itsRemaining;	
-	
 	int sts;
+	int delay = 0;
 	
 	// When the BPM is zero, we set the timer based on 60, to allow it to continue running.
 	// No beats are sent when this occurs, but the timer still runs.
@@ -279,7 +310,7 @@ set_pulse_rate(int bpm, int delay )
 	{
 		bpm = 60;
 	}
-	
+
 	sts = timer_gettime(pulse_timer, &itsRemaining );
 	if ( sts == 0 )
 	{
@@ -505,7 +536,7 @@ main(int argc, char *argv[] )
 	
 	currentPulseRate = simmgr_shm->status.cardiac.rate;
 	sem_wait(&pulseSema );
-	set_pulse_rate(currentPulseRate, 0 );
+	set_pulse_rate(currentPulseRate );
 	sem_post(&pulseSema );
 	simmgr_shm->status.cardiac.pulseCount = 0;
 	simmgr_shm->status.cardiac.pulseCountVpc = 0;
@@ -658,7 +689,7 @@ process_child(void *ptr )
 			if ( currentPulseRate != simmgr_shm->status.cardiac.rate )
 			{
 				sem_wait(&pulseSema );
-				set_pulse_rate(simmgr_shm->status.cardiac.rate, 0 );
+				set_pulse_rate(simmgr_shm->status.cardiac.rate );
 				currentPulseRate = simmgr_shm->status.cardiac.rate;
 				sem_post(&pulseSema );
 				
