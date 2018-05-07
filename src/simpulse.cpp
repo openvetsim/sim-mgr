@@ -118,7 +118,7 @@ beat_handler(int sig, siginfo_t *si, void *uc)
 				else
 				{
 					newCount = simmgr_shm->status.cardiac.pulseCount + 1;
-					if ( currentVpcFreq > 0 )
+					if ( ( strncmp(simmgr_shm->status.cardiac.vpc, "none", 4 ) != 0 ) && ( currentVpcFreq > 0 ) )
 					{
 						if ( vpcFrequencyIndex++ >= VPC_ARRAY_LEN )
 						{
@@ -128,7 +128,7 @@ beat_handler(int sig, siginfo_t *si, void *uc)
 						{
 							// set_pulse_rate(currentPulseRate, currentVpcDelay );
 							simmgr_shm->status.cardiac.pulseCountVpc = newCount;
-							beatSkip = atoi(&simmgr_shm->status.cardiac.vpc[2] );
+							beatSkip = 1;
 						}
 					}
 					simmgr_shm->status.cardiac.pulseCount = newCount;
@@ -605,12 +605,16 @@ process_child(void *ptr )
 	int last_manual_breath = simmgr_shm->status.respiration.manual_count;
 	int checkCount = 0;
 	char *word;
+	int sts;
 	
 	while ( 1 )
 	{
 		usleep(5000 );		// 5 msec wait
-		if ( last_pulse != simmgr_shm->status.cardiac.pulseCount )
+		sts = sem_trywait(&pulseSema );
+		if ( sts == 0 )
 		{
+		  if ( last_pulse != simmgr_shm->status.cardiac.pulseCount )
+		    {
 			last_pulse = simmgr_shm->status.cardiac.pulseCount;
 			count = 0;
 			for ( i = 0 ; i < MAX_LISTENERS ; i++ )
@@ -644,6 +648,8 @@ process_child(void *ptr )
 				printf("Pulse sent to %d listeners\n", count );
 			}
 #endif
+		    }
+		  sem_post(&pulseSema );
 		}
 		if ( last_breath != simmgr_shm->status.respiration.breathCount )
 		{
