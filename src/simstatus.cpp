@@ -280,9 +280,10 @@ main( int argc, const char* argv[] )
 			}
 			else if ( key.compare("date" ) == 0 )
 			{
-				get_date(buffer );
-				makejson(cout, "date", buffer );
-				}
+				//get_date(buffer );
+				//makejson(cout, "date", buffer );
+				makejson(cout, "date", simmgr_shm->server.server_time );
+			}
 			else if ( key.compare("ip" ) == 0 )
 			{
 				makejson(cout, "ip_addr", simmgr_shm->server.ip_addr );

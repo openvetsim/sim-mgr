@@ -119,69 +119,68 @@ static void
 beat_handler(int sig, siginfo_t *si, void *uc)
 {
 	int sts;
+	int rate;
 	
 	if ( sig == PULSE_TIMER_SIG )
 	{
-		sts = sem_trywait(&pulseSema );  // If lock is held, then the timer is being reset
-		if ( sts == 0 )
+		sts = sem_wait(&pulseSema );
+		rate = currentPulseRate;
+		sem_post(&pulseSema );
+		if ( rate > 0 )
 		{
-			if ( currentPulseRate > 0 )
+			if ( beatPhase-- <= 0 )
 			{
-				if ( beatPhase-- <= 0 )
+				beatPhase = 9;	// Preset for "normal"
+				if ( vpcState > 0 )
 				{
-					beatPhase = 10;	// Preset for "normal"
-					if ( vpcState > 0 )
+					// VPC Injection
+					simmgr_shm->status.cardiac.pulseCountVpc++;
+					vpcState--;
+					switch ( vpcState )
 					{
-						// VPC Injection
-						simmgr_shm->status.cardiac.pulseCountVpc++;
-						vpcState--;
-						switch ( vpcState )
-						{
-							case 0: // Last VPC
-								switch ( simmgr_shm->status.cardiac.vpc_count )
-								{
-									case 0:	// This should only occur if VPCs were just disabled.
-									case 1:
-									default:	// Should not happen
-										beatPhase = 13;
-										break;
-									case 2:
-										beatPhase = 16;
-										break;;
-									case 3:
-										beatPhase = 19;
-										break;
-								}
-							default:
-								beatPhase = 7;
-								break;
-						}
+						case 0: // Last VPC
+							switch ( simmgr_shm->status.cardiac.vpc_count )
+							{
+								case 0:	// This should only occur if VPCs were just disabled.
+								case 1:
+								default:	// Should not happen
+									beatPhase = 13;
+									break;
+								case 2:
+									beatPhase = 16;
+									break;
+								case 3:
+									beatPhase = 19;
+									break;
+							}
+						default:
+							beatPhase = 7;
+							break;
 					}
-					else
+				}
+				else
+				{
+					// Normal Cycle
+					simmgr_shm->status.cardiac.pulseCount++;
+					if ( currentVpcFreq > 0 )
 					{
-						// Normal Cycle
-						simmgr_shm->status.cardiac.pulseCount++;
-						if ( currentVpcFreq > 0 )
+						if ( vpcFrequencyIndex++ >= VPC_ARRAY_LEN )
 						{
-							if ( vpcFrequencyIndex++ >= VPC_ARRAY_LEN )
-							{
-								vpcFrequencyIndex = 0;
-							}
-							if ( vpcFrequencyArray[vpcFrequencyIndex] > 0 )
-							{
-								vpcState = simmgr_shm->status.cardiac.vpc_count;
-								beatPhase = 7;
-							}
+							vpcFrequencyIndex = 0;
+						}
+						if ( vpcFrequencyArray[vpcFrequencyIndex] > 0 )
+						{
+							vpcState = simmgr_shm->status.cardiac.vpc_count;
+							beatPhase = 7;
 						}
 					}
 				}
 			}
-			if ( currentVpcFreq != simmgr_shm->status.cardiac.vpc_freq )
-			{
-				currentVpcFreq = simmgr_shm->status.cardiac.vpc_freq;
-				calculateVPCFreq();
-			}
-			sem_post(&pulseSema );
+		}
+		if ( currentVpcFreq != simmgr_shm->status.cardiac.vpc_freq )
+		{
+			currentVpcFreq = simmgr_shm->status.cardiac.vpc_freq;
+			calculateVPCFreq();
 		}
 	}
 	else if ( sig == BREATH_TIMER_SIG )
@@ -322,6 +321,7 @@ set_pulse_rate(int bpm )
 	struct itimerspec its;
 	struct itimerspec itsRemaining;	
 	int sts;
+	long int msec;
 	
 	// When the BPM is zero, we set the timer based on 60, to allow it to continue running.
 	// No beats are sent when this occurs, but the timer still runs.
@@ -348,6 +348,12 @@ set_pulse_rate(int bpm )
 		sprintf(msgbuf, "set_pulse_rate(%d): timer_settime: %s", bpm, strerror(errno) );
 		log_message("", msgbuf );
 		exit ( -1 );
+	}
+	else
+	{
+		msec = its.it_interval.tv_nsec / 1000 / 1000;
+		sprintf(msgbuf, "set_pulse_rate(%d): %ld.%ld", bpm, its.it_interval.tv_sec, msec );
+		log_message("", msgbuf );
 	}
 }
 
@@ -496,7 +502,7 @@ main(int argc, char *argv[] )
 	pulse_sev.sigev_signo = PULSE_TIMER_SIG;
 	pulse_sev.sigev_value.sival_ptr = &pulse_timer;
 	
-	if ( timer_create(CLOCK_MONOTONIC, &pulse_sev, &pulse_timer ) == -1 )
+	if ( timer_create(CLOCK_REALTIME, &pulse_sev, &pulse_timer ) == -1 )
 	{
 		perror("timer_create" );
 		sprintf(msgbuf, "timer_create() fails for Pulse Timer %s", strerror(errno) );
@@ -537,7 +543,7 @@ main(int argc, char *argv[] )
 	breath_sev.sigev_signo = BREATH_TIMER_SIG;
 	breath_sev.sigev_value.sival_ptr = &breath_timer;
 	
-	if ( timer_create(CLOCK_MONOTONIC, &breath_sev, &breath_timer ) == -1 )
+	if ( timer_create(CLOCK_REALTIME, &breath_sev, &breath_timer ) == -1 )
 	{
 		perror("timer_create" );
 		sprintf(msgbuf, "timer_create() fails for Breath Timer %s", strerror(errno) );
@@ -598,6 +604,48 @@ main(int argc, char *argv[] )
 }
 
 /*
+ * FUNCTION: broadcast_word
+ *
+ * ARGUMENTS:
+ *		ptr - Unused
+ *
+ * RETURNS:
+ *		Never
+ *
+ * DESCRIPTION:
+ *		This process monitors the pulse and breath counts. When incremented (by the beat_handler)
+ *		a message is sent to the listeners.
+ *		It also monitors the rates and adjusts the timeout for the beat_handler when a rate is changed.
+*/
+int
+broadcast_word(char *word )
+{
+	int count = 0;
+	int fd;
+	int len;
+	int i;
+
+	for ( i = 0 ; i < MAX_LISTENERS ; i++ )
+	{
+		if ( listeners[i].allocated == 1 )
+		{
+			fd = listeners[i].cfd;
+			len = write(fd, word, strlen(word) );
+			if ( len < 0) // This detects closed or disconnected listeners.
+			{
+				close(fd );
+				listeners[i].allocated = 0;
+			}
+			else
+			{
+				count++;
+			}
+		}
+	}
+	return ( count );
+}
+
+/*
  * FUNCTION: process_child
  *
  * ARGUMENTS:
@@ -615,61 +663,41 @@ main(int argc, char *argv[] )
 void *
 process_child(void *ptr )
 {
-	int fd;
-	int len;
-	int i;
 	int count;
 	unsigned int last_pulse = simmgr_shm->status.cardiac.pulseCount;
+	unsigned int last_pulseVpc = simmgr_shm->status.cardiac.pulseCountVpc;
 	unsigned int last_breath = simmgr_shm->status.respiration.breathCount;
 	int last_manual_breath = simmgr_shm->status.respiration.manual_count;
 	int checkCount = 0;
-	char *word;
-	int sts;
 	
 	while ( 1 )
 	{
 		usleep(5000 );		// 5 msec wait
-		sts = sem_trywait(&pulseSema );
-		if ( sts == 0 )
+		
+		if ( last_pulse != simmgr_shm->status.cardiac.pulseCount )
 		{
-		  if ( last_pulse != simmgr_shm->status.cardiac.pulseCount )
-		    {
 			last_pulse = simmgr_shm->status.cardiac.pulseCount;
-			count = 0;
-			for ( i = 0 ; i < MAX_LISTENERS ; i++ )
-			{
-				if ( listeners[i].allocated == 1 )
-				{
-					fd = listeners[i].cfd;
-					if ( simmgr_shm->status.cardiac.pulseCount == simmgr_shm->status.cardiac.pulseCountVpc )
-					{
-						word = pulseWordVPC;
-					}
-					else
-					{
-						word = pulseWord;
-					}
-					len = write(fd, word, strlen(word) );
-					if ( len < 0) // This detects closed or disconnected listeners.
-					{
-						close(fd );
-						listeners[i].allocated = 0;
-					}
-					else
-					{
-						count++;
-					}
-				}
-			}
-#ifdef DEBUG
+			count = broadcast_word(pulseWord );
+
 			if ( count )
 			{
+#ifdef DEBUG
 				printf("Pulse sent to %d listeners\n", count );
-			}
 #endif
-		    }
-		  sem_post(&pulseSema );
+			}
 		}
+		if ( last_pulseVpc != simmgr_shm->status.cardiac.pulseCountVpc )
+		{
+			last_pulseVpc = simmgr_shm->status.cardiac.pulseCountVpc;
+			count = broadcast_word(pulseWordVPC );
+			if ( count )
+			{
+#ifdef DEBUG
+				printf("PulseVPC sent to %d listeners\n", count );
+#endif
+			}
+		}
+
 		if ( last_breath != simmgr_shm->status.respiration.breathCount )
 		{
 			last_breath = simmgr_shm->status.respiration.breathCount;
@@ -680,30 +708,13 @@ process_child(void *ptr )
 			}
 			else
 			{
-				for ( i = 0 ; i < MAX_LISTENERS ; i++ )
-				{
-					if ( listeners[i].allocated == 1 )
-					{
-						fd = listeners[i].cfd;
-						
-						len = write(fd, breathWord, strlen(breathWord) );
-						if ( len < 0) // This detects closed or disconnected listeners.
-						{
-							close(fd );
-							listeners[i].allocated = 0;
-						}
-						else
-						{
-							count++;
-						}
-					}
-				}
-#ifdef DEBUG
+				count = broadcast_word(breathWord );
 				if ( count )
 				{
+#ifdef DEBUG
 					printf("Breath sent to %d listeners\n", count );
-				}
 #endif
+				}
 			}
 		}
 		checkCount++;
@@ -717,13 +728,11 @@ process_child(void *ptr )
 				set_pulse_rate(simmgr_shm->status.cardiac.rate );
 				currentPulseRate = simmgr_shm->status.cardiac.rate;
 				sem_post(&pulseSema );
-				
-	#ifdef DEBUG
+#ifdef DEBUG
 				sprintf(msgbuf, "Set Pulse to %d", currentPulseRate );
 				log_message("", msgbuf );
-	#endif
+#endif
 			}
-			
 		}
 		else if ( checkCount == 10 )
 		{
@@ -737,10 +746,10 @@ process_child(void *ptr )
 				
 				// awRR Calculation - TBD - Need real calculations
 				//simmgr_shm->status.respiration.awRR = simmgr_shm->status.respiration.rate;
-	#ifdef DEBUG
+#ifdef DEBUG
 				sprintf(msgbuf, "Set Breath to %d", currentBreathRate );
 				log_message("", msgbuf );
-	#endif
+#endif
 			}
 			checkCount = 0;
 		}

@@ -22,7 +22,8 @@
 #include <stdbool.h>
 #include <sys/mman.h>
 #include <arpa/inet.h>
-#include <sys/timeb.h> 
+//#include <sys/timeb.h>
+#include <sys/time.h> 
 
 #include <iostream>
 #include <vector>  
@@ -34,13 +35,6 @@
 #include <algorithm>
 
 #include "../include/simmgr.h" 
-
-#define SCENARIO_LOOP_COUNT		20	// Run the scenario every SCENARIO_LOOP_COUNT iterations of the 10 msec loop
-#define SCENARIO_COMMCHECK  	5
-#define SCENARIO_EVENTCHECK		10
-#define SCENARIO_AWRRCHECK		15
-#define SCENARIO_TIMECHECK		19
-
 
 using namespace std;
 
@@ -59,8 +53,8 @@ int runningAsDemo = 0;
 int scan_commands(void );
 void comm_check(void );
 void time_update(void );
+int msec_time_update(void );
 void awrr_check(void );
-void hr_check(void);
 int iiLockTaken = 0;
 char buf[1024];
 char msgbuf[2048];
@@ -85,6 +79,10 @@ typedef struct str_thdata
     char message[100];
 } thdata;
 
+
+timer_t hrcheck_timer;
+struct sigevent hrcheck_sev;
+static void hrcheck_handler(int sig, siginfo_t *si, void *uc);
 
 /* prototype for thread routines */
 void heart_thread ( void *ptr );
@@ -118,6 +116,9 @@ main(int argc, char *argv[] )
 	int scenarioCount;
 	daemonize();
 	char sesid[512] = { 0, };
+	struct sigaction new_action;
+	sigset_t mask;
+	struct itimerspec its;
 	
 	sts = on_exit(killScenario, (void *)0 );
 	
@@ -178,17 +179,64 @@ main(int argc, char *argv[] )
 	simmgr_shm->instructor.cpr.duration = -1;
 	
 	clearAllTrends();
+
+	// Use a timer for HR checks
+	new_action.sa_flags = SA_SIGINFO;
+	new_action.sa_sigaction = hrcheck_handler;
+	sigemptyset(&new_action.sa_mask);
+
+#define HRCHECK_TIMER_SIG	(SIGRTMIN+2)
+	if (sigaction(HRCHECK_TIMER_SIG, &new_action, NULL) == -1)
+	{
+		perror("sigaction");
+		sprintf(msgbuf, "sigaction() fails for HRCheck Timer: %s", strerror(errno) );
+		log_message("", msgbuf );
+		exit ( -1 );
+	}
+	// Block timer signal temporarily
+	sigemptyset(&mask);
+	sigaddset(&mask, HRCHECK_TIMER_SIG);
+	if (sigprocmask(SIG_SETMASK, &mask, NULL) == -1)
+	{
+		perror("sigprocmask");
+		sprintf(msgbuf, "sigprocmask() fails for Pulse Timer %s", strerror(errno) );
+		log_message("", msgbuf );
+		exit ( -1 );
+	}
+	// Create the Timer
+	hrcheck_sev.sigev_notify = SIGEV_SIGNAL;
+	hrcheck_sev.sigev_signo = HRCHECK_TIMER_SIG;
+	hrcheck_sev.sigev_value.sival_ptr = &hrcheck_timer;
+	
+	if ( timer_create(CLOCK_REALTIME, &hrcheck_sev, &hrcheck_timer ) == -1 )
+	{
+		perror("timer_create" );
+		sprintf(msgbuf, "timer_create() fails for HRCheck Timer %s", strerror(errno) );
+		log_message("", msgbuf );
+		exit (-1);
+	}
+    if (sigprocmask(SIG_UNBLOCK, &mask, NULL) == -1)
+    {
+		perror("sigprocmask");
+		sprintf(msgbuf, "sigprocmask() fails for HRCheck Timer%s ", strerror(errno) );
+		log_message("", msgbuf );
+		exit ( -1 );
+	}
+	its.it_interval.tv_sec = (long int)0;
+	its.it_interval.tv_nsec = (long int)(5 * 1000 * 1000);	// 10 msec
+	its.it_value.tv_sec = (long int)0;
+	its.it_value.tv_nsec = (long int)(5 * 1000 * 1000);	// 10 msec
+	timer_settime(hrcheck_timer, 0, &its, NULL);
 	
 	scenarioCount = 0;
-#define SCENARIO_LOOP_COUNT		20	// Run the scenario every SCENARIO_LOOP_COUNT iterations of the 10 msec loop
+#define SCENARIO_LOOP_COUNT		19	// Run the scenario every SCENARIO_LOOP_COUNT iterations of the 10 msec loop
 #define SCENARIO_COMMCHECK  	5
 #define SCENARIO_EVENTCHECK		10
 #define SCENARIO_AWRRCHECK		15
-#define SCENARIO_TIMECHECK		19
+#define SCENARIO_TIMECHECK		18
 	while ( 1 )
 	{
 		scenarioCount++;
-		
 		switch ( scenarioCount )
 		{
 			case SCENARIO_COMMCHECK:
@@ -210,7 +258,6 @@ main(int argc, char *argv[] )
 			default:
 				break;
 		}
-		hr_check();
 		usleep(10000);	// Sleep for 10 msec
 	}
 }
@@ -445,7 +492,7 @@ awrr_check(void)
 #endif
 }
 /*
- * hr_check
+ * hrcheck_handler
  *
  * Calculate heart rate based on count of beats, (normal, CPR and  VPC)
  *
@@ -454,28 +501,27 @@ awrr_check(void)
  * 3 - Calculate beats based on the average time of the recorded beats within the past 90 seconds, excluding the past 2 seconds
  *
 */
-#define HR_CALC_LIMIT		10		// Max number of recorded beats to count in calculation
+#define HR_CALC_LIMIT		30		// Max number of recorded beats to count in calculation
 #define HR_LOG_LEN	128
 int hrLog[HR_LOG_LEN] = { 0, };
 int hrLogNext = 0;
 
 unsigned int hrLogLastNatural = 0;	// beatCount, last natural
 unsigned int hrLogLastVPC = 0;	// VPC count, last VPC
-int hrLogLast = 0;			// Time of last beat
 
 #define HR_LOG_DELAY	(40)
 int hrLogDelay = 0;
 
-#define HR_LOG_CHANGE_LOOPS	20
+#define HR_LOG_CHANGE_LOOPS	50	// hr_check is called every 5 msec. So this will cause a recalc every 250 msec
 int hrLogReportLoops = 0;
 
-void
-hr_check(void)
+static void 
+hrcheck_handler(int sig, siginfo_t *si, void *uc)
 {
 #if 0
 	simmgr_shm->status.cardiac.avg_rate = simmgr_shm->status.cardiac.rate;
 #else
-	int now; //  time(NULL);	// Current sec time
+	int now; // Current msec time
 	int prev;
 	int beats;
 	int totalTime;
@@ -487,11 +533,13 @@ hr_check(void)
 	float minutes;
 	int i;
 	int intervals;
+	/*
 	int oldRate;
 	int newRate;
+	*/
 	int newBeat = 0;
 	
-	now = simmgr_shm->server.msec_time;
+	now = msec_time_update();
 	
 	if ( hrLogLastNatural != simmgr_shm->status.cardiac.pulseCount )
 	{
@@ -505,7 +553,6 @@ hr_check(void)
 	}
 	if ( newBeat )
 	{
-		hrLogLast = now;
 		hrLog[hrLogNext] = now;
 		hrLogNext += 1;
 		if ( hrLogNext >= HR_LOG_LEN )
@@ -514,7 +561,7 @@ hr_check(void)
 		}
 	}
 
-	if ( hrLogReportLoops++ == HR_LOG_CHANGE_LOOPS )
+	if ( hrLogReportLoops++ >= HR_LOG_CHANGE_LOOPS )
 	{
 		hrLogReportLoops = 0;
 		// AVG Calculation - Look at no more than 10 beats - Skip if no beats within 20 seconds
@@ -523,7 +570,7 @@ hr_check(void)
 		prev = hrLogNext - 1;
 		if ( prev < 0 ) 
 		{
-			prev = HR_LOG_LEN - 1;
+			prev = (HR_LOG_LEN - 1);
 		}
 		beats = 1;
 		intervals = 0;
@@ -545,7 +592,7 @@ hr_check(void)
 				prev -= 1;
 				if ( prev < 0 ) 
 				{
-					prev = HR_LOG_LEN - 1;
+					prev = (HR_LOG_LEN - 1);
 				}
 				for ( i = 0 ; i < HR_CALC_LIMIT ; i++ )
 				{
@@ -597,16 +644,32 @@ hr_check(void)
 			{
 				avg_rate = 0;
 			}
-		
-			oldRate = simmgr_shm->status.cardiac.avg_rate;
-			newRate = round(avg_rate );
-			if ( oldRate != newRate )
-			{
-				simmgr_shm->status.cardiac.avg_rate = newRate;
-			}
+			simmgr_shm->status.cardiac.avg_rate = round(avg_rate );
 		}
 	}
 #endif
+}
+/*
+ * msec_timer_update
+*/
+int
+msec_time_update(void )
+{
+	int msec;
+	struct timeval tv;
+	int sts;
+	
+	sts = gettimeofday(&tv, NULL );
+	if ( sts )
+	{
+		msec = 0;
+	}
+	else
+	{
+		msec = ( tv.tv_sec * 1000 ) + ( tv.tv_usec / 1000) ;
+	}
+	simmgr_shm->server.msec_time = msec;
+	return ( msec );
 }
 /*
  * time_update
@@ -618,17 +681,17 @@ int last_time_sec = -1;
 void
 time_update(void )
 {
+	time_t the_time;
 	struct tm tm;
-	struct timeb timeb;
 	int hour;
 	int min;
 	int sec;
 	
-	(void)ftime(&timeb );
-	(void)localtime_r(&timeb.time, &tm );
+	the_time = time(NULL );
+	(void)localtime_r(&the_time, &tm );
 	(void)asctime_r(&tm, buf );
+	strtok(buf, "\n");		// Remove Line Feed
 	sprintf(simmgr_shm->server.server_time, "%s", buf );
-	simmgr_shm->server.msec_time = (((tm.tm_hour*60*60)+(tm.tm_min*60)+tm.tm_sec)*1000)+ timeb.millitm;
 	
 	now = std::time(nullptr );
 	sec = (int)difftime(now, scenario_start_time );
