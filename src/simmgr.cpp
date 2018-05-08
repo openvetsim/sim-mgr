@@ -501,7 +501,7 @@ awrr_check(void)
  * 3 - Calculate beats based on the average time of the recorded beats within the past 90 seconds, excluding the past 2 seconds
  *
 */
-#define HR_CALC_LIMIT		30		// Max number of recorded beats to count in calculation
+#define HR_CALC_LIMIT		10		// Max number of recorded beats to count in calculation
 #define HR_LOG_LEN	128
 int hrLog[HR_LOG_LEN] = { 0, };
 int hrLogNext = 0;
