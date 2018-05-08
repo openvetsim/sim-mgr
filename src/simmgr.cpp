@@ -3,7 +3,7 @@
  *
  * SimMgr daemon.
  *
- * Copyright (C) 2016 Terence Kelleher. All rights reserved.
+ * Copyright (C) 2016-2018 Terence Kelleher. All rights reserved.
  *
  */
  
@@ -60,6 +60,7 @@ int scan_commands(void );
 void comm_check(void );
 void time_update(void );
 void awrr_check(void );
+void hr_check(void);
 int iiLockTaken = 0;
 char buf[1024];
 char msgbuf[2048];
@@ -209,7 +210,7 @@ main(int argc, char *argv[] )
 			default:
 				break;
 		}
-
+		hr_check();
 		usleep(10000);	// Sleep for 10 msec
 	}
 }
@@ -401,10 +402,11 @@ awrr_check(void)
 				}
 			}
 		}
+		/*
 		simmgr_shm->server.dbg1 = lastTime;
 		simmgr_shm->server.dbg2 = firstTime;
 		simmgr_shm->server.dbg3 = intervals;
-		
+		*/
 		if ( intervals > 0 )
 		{
 			totalTime = lastTime - firstTime;
@@ -437,6 +439,170 @@ awrr_check(void)
 			{
 				// setRespirationPeriods(oldRate, newRate );
 				simmgr_shm->status.respiration.awRR = newRate;
+			}
+		}
+	}
+#endif
+}
+/*
+ * hr_check
+ *
+ * Calculate heart rate based on count of beats, (normal, CPR and  VPC)
+ *
+ * 1 - Detect and log beat when any of natural, vpc or CPR
+ * 2 - If no beats are recorded in the past 20 seconds (excluding the past 2 seconds) report rate as zero
+ * 3 - Calculate beats based on the average time of the recorded beats within the past 90 seconds, excluding the past 2 seconds
+ *
+*/
+#define HR_CALC_LIMIT		10		// Max number of recorded beats to count in calculation
+#define HR_LOG_LEN	128
+int hrLog[HR_LOG_LEN] = { 0, };
+int hrLogNext = 0;
+
+unsigned int hrLogLastNatural = 0;	// beatCount, last natural
+unsigned int hrLogLastVPC = 0;	// VPC count, last VPC
+int hrLogLast = 0;			// Time of last beat
+
+#define HR_LOG_DELAY	(40)
+int hrLogDelay = 0;
+
+#define HR_LOG_CHANGE_LOOPS	20
+int hrLogReportLoops = 0;
+
+void
+hr_check(void)
+{
+#if 0
+	simmgr_shm->status.cardiac.avg_rate = simmgr_shm->status.cardiac.rate;
+#else
+	int now; //  time(NULL);	// Current sec time
+	int prev;
+	int beats;
+	int totalTime;
+	int lastTime;
+	int firstTime;
+	int diff;
+	float avg_rate;
+	float seconds;
+	float minutes;
+	int i;
+	int intervals;
+	int oldRate;
+	int newRate;
+	int newBeat = 0;
+	
+	now = simmgr_shm->server.msec_time;
+	
+	if ( hrLogLastNatural != simmgr_shm->status.cardiac.pulseCount )
+	{
+		hrLogLastNatural = simmgr_shm->status.cardiac.pulseCount;
+		newBeat = 1;
+	}
+	else if ( hrLogLastVPC != simmgr_shm->status.cardiac.pulseCountVpc )
+	{
+		hrLogLastVPC = simmgr_shm->status.cardiac.pulseCountVpc;
+		newBeat = 1;
+	}
+	if ( newBeat )
+	{
+		hrLogLast = now;
+		hrLog[hrLogNext] = now;
+		hrLogNext += 1;
+		if ( hrLogNext >= HR_LOG_LEN )
+		{
+			hrLogNext = 0;
+		}
+	}
+
+	if ( hrLogReportLoops++ == HR_LOG_CHANGE_LOOPS )
+	{
+		hrLogReportLoops = 0;
+		// AVG Calculation - Look at no more than 10 beats - Skip if no beats within 20 seconds
+		lastTime = 0;
+		firstTime = 0;
+		prev = hrLogNext - 1;
+		if ( prev < 0 ) 
+		{
+			prev = HR_LOG_LEN - 1;
+		}
+		beats = 1;
+		intervals = 0;
+		
+		lastTime = hrLog[prev];
+		if ( lastTime <= 0 )  // Don't look at empty logs
+		{
+			simmgr_shm->status.cardiac.avg_rate = 0;
+		}
+		else
+		{
+			diff = now - lastTime;
+			if ( diff > 20000 )
+			{
+				simmgr_shm->status.cardiac.avg_rate = 0;
+			}
+			else
+			{
+				prev -= 1;
+				if ( prev < 0 ) 
+				{
+					prev = HR_LOG_LEN - 1;
+				}
+				for ( i = 0 ; i < HR_CALC_LIMIT ; i++ )
+				{
+					diff = now - hrLog[prev];
+					if ( diff > 20000 ) // Over Limit seconds since this recorded beat
+					{
+						break;
+					}
+					else
+					{
+						firstTime = hrLog[prev]; // Recorded start of the first beat
+						beats += 1;
+						intervals += 1;
+						prev -= 1;
+						if ( prev < 0 ) 
+						{
+							prev = HR_LOG_LEN - 1;
+						}
+					}
+				}
+			}
+			simmgr_shm->server.dbg1 = lastTime;
+			simmgr_shm->server.dbg2 = firstTime;
+			simmgr_shm->server.dbg3 = intervals;
+			
+			if ( intervals > 0 )
+			{
+				totalTime = lastTime - firstTime;
+				if ( totalTime == 0 )
+				{
+					avg_rate = 0;
+				}
+				else
+				{
+					seconds = (float)totalTime / 1000;
+					minutes = seconds / 60;
+					avg_rate = (float)intervals / minutes;
+				}
+				if ( avg_rate < 0 )
+				{
+					avg_rate = 0;
+				}
+				else if ( avg_rate > 360 )
+				{
+					avg_rate = 360;
+				}
+			}
+			else
+			{
+				avg_rate = 0;
+			}
+		
+			oldRate = simmgr_shm->status.cardiac.avg_rate;
+			newRate = round(avg_rate );
+			if ( oldRate != newRate )
+			{
+				simmgr_shm->status.cardiac.avg_rate = newRate;
 			}
 		}
 	}
@@ -946,15 +1112,45 @@ scan_commands(void )
 		simmgr_shm->status.cardiac.vpc_freq = simmgr_shm->instructor.cardiac.vpc_freq;
 		simmgr_shm->instructor.cardiac.vpc_freq = -1;
 	}
+	/*
 	if ( simmgr_shm->instructor.cardiac.vpc_delay >= 0 )
 	{
 		simmgr_shm->status.cardiac.vpc_delay = simmgr_shm->instructor.cardiac.vpc_delay;
 		simmgr_shm->instructor.cardiac.vpc_delay = -1;
 	}
+	*/
 	if ( strlen(simmgr_shm->instructor.cardiac.vpc) > 0 )
 	{
 		sprintf(simmgr_shm->status.cardiac.vpc, "%s", simmgr_shm->instructor.cardiac.vpc );
 		sprintf(simmgr_shm->instructor.cardiac.vpc, "%s", "" );
+		switch ( simmgr_shm->status.cardiac.vpc[0] )
+		{
+			case '1':
+				simmgr_shm->status.cardiac.vpc_type = 1;
+				break;
+			case '2':
+				simmgr_shm->status.cardiac.vpc_type = 2;
+				break;
+			default:
+				simmgr_shm->status.cardiac.vpc_type = 0;
+				break;
+		}
+		switch ( simmgr_shm->status.cardiac.vpc[2] )
+		{
+			case '1':
+				simmgr_shm->status.cardiac.vpc_count = 1;
+				break;
+			case '2':
+				simmgr_shm->status.cardiac.vpc_count = 2;
+				break;
+			case '3':
+				simmgr_shm->status.cardiac.vpc_count = 3;
+				break;
+			default:
+				simmgr_shm->status.cardiac.vpc_count = 0;
+				simmgr_shm->status.cardiac.vpc_type = 0;
+				break;
+		}
 	}
 	if ( strlen(simmgr_shm->instructor.cardiac.vfib_amplitude) > 0 )
 	{

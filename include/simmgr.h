@@ -53,11 +53,13 @@ enum NibpState
 struct cardiac
 {
 	char rhythm[STR_SIZE];
-	char vpc[STR_SIZE];
-	int vpc_freq;		// 0-100% - Frequencey of VPC insertions (when vpc is not set to "none")
-	int vpc_delay;
+	char vpc[STR_SIZE];		// Format is T-C where T is type (1 or 2) and C is count (1, 2 or 3). Or "none" for no VPCs
+	int vpc_freq;		// 0-100% - Frequency of VPC insertions (when vpc is not set to "none")
+	int vpc_delay;		// Unused
+	int vpc_count;		// Parsed from vpc
+	int vpc_type;		// Parsed from vpc
 	char vfib_amplitude[STR_SIZE];	// low, med, high
-	int pea;			// Pulseless Electrical Activity
+	int pea;			// Pulse-less Electrical Activity
 	int rate;			// Heart Rate in Beats per Minute
 	int avg_rate;		// Calculated heart rate
 	int nibp_rate;		// Non-Invasive Rate - Only reports when cuff is on

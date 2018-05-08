@@ -420,7 +420,7 @@ cpr_parse(const char *elem,  const char *value, struct cpr *cpr )
 * initializeParameterStruct
 * @initParams: Pointer to a "struct instructor"
 *
-* Initialize the paraneters structure to be "no set" on all parameters.
+* Initialize the parameters structure to be "no set" on all parameters.
 * For strings, they are null. For numerics, they are -1.
 */
 
