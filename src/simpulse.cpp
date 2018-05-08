@@ -129,11 +129,12 @@ beat_handler(int sig, siginfo_t *si, void *uc)
 			{
 				if ( beatPhase-- <= 0 )
 				{
-					if ( vpcState )
+					beatPhase = 10;	// Preset for "normal"
+					if ( vpcState > 0 )
 					{
 						// VPC Injection
 						simmgr_shm->status.cardiac.pulseCountVpc++;
-						vpcState -= 1;
+						vpcState--;
 						switch ( vpcState )
 						{
 							case 0: // Last VPC

@@ -929,7 +929,7 @@ sendStatus(void )
 	cout << " \"debug\" : {\n";
 	makejson(cout, "msec", itoa(simmgr_shm->server.msec_time, buffer, 10 ) );
 	cout << ",\n";
-	makejson(cout, "awrr", itoa(simmgr_shm->status.respiration.awRR, buffer, 10 ) );
+	makejson(cout, "avg_rate", itoa(simmgr_shm->status.cardiac.avg_rate, buffer, 10 ) );
 	cout << ",\n";
 	makejson(cout, "debug1", itoa(simmgr_shm->server.dbg1, buffer, 10 ) );
 	cout << ",\n";
@@ -967,5 +967,17 @@ sendQuickStatus(void )
 	makejson(cout, "awRR", itoa(simmgr_shm->status.respiration.awRR, buffer, 10 ) );
 	cout << ",\n";
 	makejson(cout, "manual_count", itoa(simmgr_shm->status.respiration.manual_count, buffer, 10 ) );
+	cout << "\n},\n";
+	
+	cout << " \"debug\" : {\n";
+	makejson(cout, "msec", itoa(simmgr_shm->server.msec_time, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "avg_rate", itoa(simmgr_shm->status.cardiac.avg_rate, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "debug1", itoa(simmgr_shm->server.dbg1, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "debug2", itoa(simmgr_shm->server.dbg2, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "debug3", itoa(simmgr_shm->server.dbg3, buffer, 10 ) );
 	cout << "\n}\n";
 }
