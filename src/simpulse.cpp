@@ -130,7 +130,6 @@ beat_handler(int sig, siginfo_t *si, void *uc)
 		{
 			if ( beatPhase-- <= 0 )
 			{
-				beatPhase = 9;	// Preset for "normal"
 				if ( vpcState > 0 )
 				{
 					// VPC Injection
@@ -153,13 +152,16 @@ beat_handler(int sig, siginfo_t *si, void *uc)
 									beatPhase = 19;
 									break;
 							}
+							break;
 						default:
-							beatPhase = 7;
+							beatPhase = 6;
 							break;
 					}
 				}
 				else
 				{
+					beatPhase = 9;	// Preset for "normal"
+
 					// Normal Cycle
 					simmgr_shm->status.cardiac.pulseCount++;
 					if ( currentVpcFreq > 0 )
@@ -171,7 +173,7 @@ beat_handler(int sig, siginfo_t *si, void *uc)
 						if ( vpcFrequencyArray[vpcFrequencyIndex] > 0 )
 						{
 							vpcState = simmgr_shm->status.cardiac.vpc_count;
-							beatPhase = 7;
+							beatPhase = 6;
 						}
 					}
 				}
