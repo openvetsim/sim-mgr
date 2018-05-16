@@ -14,7 +14,7 @@
  * 		1 - On connection, the daemon will fork a task to support the connection
  *		2 - Each connection waits on sync messages
  *
- * Copyright (C) 2016 Terence Kelleher. All rights reserved.
+ * Copyright (C) 2016-2018 Terence Kelleher. All rights reserved.
  *
  */
  
@@ -93,6 +93,7 @@ char breathWord[] = "breath\n";
 #define VPC_ARRAY_LEN	200
 int vpcFrequencyArray[VPC_ARRAY_LEN];
 int vpcFrequencyIndex = 0;
+int vpcType = 0;
 
 #define IS_CARDIAC	1
 #define NOT_CARDIAC	0
@@ -123,9 +124,9 @@ beat_handler(int sig, siginfo_t *si, void *uc)
 	
 	if ( sig == PULSE_TIMER_SIG )
 	{
-		sts = sem_wait(&pulseSema );
+		//sts = sem_wait(&pulseSema );
 		rate = currentPulseRate;
-		sem_post(&pulseSema );
+		//sem_post(&pulseSema );
 		if ( rate > 0 )
 		{
 			if ( beatPhase-- <= 0 )
@@ -164,7 +165,7 @@ beat_handler(int sig, siginfo_t *si, void *uc)
 
 					// Normal Cycle
 					simmgr_shm->status.cardiac.pulseCount++;
-					if ( currentVpcFreq > 0 )
+					if ( ( vpcType > 0 ) && ( currentVpcFreq > 0 ) )
 					{
 						if ( vpcFrequencyIndex++ >= VPC_ARRAY_LEN )
 						{
@@ -179,22 +180,24 @@ beat_handler(int sig, siginfo_t *si, void *uc)
 				}
 			}
 		}
-		if ( currentVpcFreq != simmgr_shm->status.cardiac.vpc_freq )
+		if ( currentVpcFreq != simmgr_shm->status.cardiac.vpc_freq ||
+			 vpcType != simmgr_shm->status.cardiac.vpc_type )
 		{
 			currentVpcFreq = simmgr_shm->status.cardiac.vpc_freq;
+			vpcType == simmgr_shm->status.cardiac.vpc_type;
 			calculateVPCFreq();
 		}
 	}
 	else if ( sig == BREATH_TIMER_SIG )
 	{
-		sts = sem_wait(&breathSema );   // If lock is held, then the timer is being reset
-		if ( sts == 0 )
+		//sts = sem_wait(&breathSema );   // If lock is held, then the timer is being reset
+		//if ( sts == 0 )
 		{
-			if ( simmgr_shm->status.respiration.rate > 0 )
+			//if ( simmgr_shm->status.respiration.rate > 0 )
 			{
 				simmgr_shm->status.respiration.breathCount++;
 			}
-			sem_post(&breathSema );
+			//sem_post(&breathSema );
 		}
 	}	
 }
