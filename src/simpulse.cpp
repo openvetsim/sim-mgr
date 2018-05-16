@@ -124,9 +124,9 @@ beat_handler(int sig, siginfo_t *si, void *uc)
 	
 	if ( sig == PULSE_TIMER_SIG )
 	{
-		//sts = sem_wait(&pulseSema );
+		sts = sem_wait(&pulseSema );
 		rate = currentPulseRate;
-		//sem_post(&pulseSema );
+		sem_post(&pulseSema );
 		if ( rate > 0 )
 		{
 			if ( beatPhase-- <= 0 )
@@ -184,20 +184,20 @@ beat_handler(int sig, siginfo_t *si, void *uc)
 			 vpcType != simmgr_shm->status.cardiac.vpc_type )
 		{
 			currentVpcFreq = simmgr_shm->status.cardiac.vpc_freq;
-			vpcType == simmgr_shm->status.cardiac.vpc_type;
+			vpcType = simmgr_shm->status.cardiac.vpc_type;
 			calculateVPCFreq();
 		}
 	}
 	else if ( sig == BREATH_TIMER_SIG )
 	{
-		//sts = sem_wait(&breathSema );   // If lock is held, then the timer is being reset
-		//if ( sts == 0 )
+		sts = sem_wait(&breathSema );   // If lock is held, then the timer is being reset
+		if ( sts == 0 )
 		{
-			//if ( simmgr_shm->status.respiration.rate > 0 )
+			if ( simmgr_shm->status.respiration.rate > 0 )
 			{
 				simmgr_shm->status.respiration.breathCount++;
 			}
-			//sem_post(&breathSema );
+			sem_post(&breathSema );
 		}
 	}	
 }
