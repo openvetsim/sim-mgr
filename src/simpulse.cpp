@@ -620,7 +620,6 @@ main(int argc, char *argv[] )
  * DESCRIPTION:
  *		This process monitors the pulse and breath counts. When incremented (by the beat_handler)
  *		a message is sent to the listeners.
- *		It also monitors the rates and adjusts the timeout for the beat_handler when a rate is changed.
 */
 int
 broadcast_word(char *word )
@@ -674,56 +673,70 @@ process_child(void *ptr )
 	unsigned int last_breath = simmgr_shm->status.respiration.breathCount;
 	int last_manual_breath = simmgr_shm->status.respiration.manual_count;
 	int checkCount = 0;
+	int scenarioRunning = false;
 	
 	while ( 1 )
 	{
 		usleep(5000 );		// 5 msec wait
-		
-		if ( last_pulse != simmgr_shm->status.cardiac.pulseCount )
+		if ( scenarioRunning )
 		{
-			last_pulse = simmgr_shm->status.cardiac.pulseCount;
-			count = broadcast_word(pulseWord );
+			if ( last_pulse != simmgr_shm->status.cardiac.pulseCount )
+			{
+				last_pulse = simmgr_shm->status.cardiac.pulseCount;
+				count = broadcast_word(pulseWord );
 
-			if ( count )
-			{
-#ifdef DEBUG
-				printf("Pulse sent to %d listeners\n", count );
-#endif
-			}
-		}
-		if ( last_pulseVpc != simmgr_shm->status.cardiac.pulseCountVpc )
-		{
-			last_pulseVpc = simmgr_shm->status.cardiac.pulseCountVpc;
-			count = broadcast_word(pulseWordVPC );
-			if ( count )
-			{
-#ifdef DEBUG
-				printf("PulseVPC sent to %d listeners\n", count );
-#endif
-			}
-		}
-
-		if ( last_breath != simmgr_shm->status.respiration.breathCount )
-		{
-			last_breath = simmgr_shm->status.respiration.breathCount;
-			count = 0;
-			if ( last_manual_breath != simmgr_shm->status.respiration.manual_count )
-			{
-				last_manual_breath = simmgr_shm->status.respiration.manual_count;
-			}
-			else
-			{
-				count = broadcast_word(breathWord );
 				if ( count )
 				{
 #ifdef DEBUG
-					printf("Breath sent to %d listeners\n", count );
+					printf("Pulse sent to %d listeners\n", count );
 #endif
+				}
+			}
+			if ( last_pulseVpc != simmgr_shm->status.cardiac.pulseCountVpc )
+			{
+				last_pulseVpc = simmgr_shm->status.cardiac.pulseCountVpc;
+				count = broadcast_word(pulseWordVPC );
+				if ( count )
+				{
+#ifdef DEBUG
+					printf("PulseVPC sent to %d listeners\n", count );
+#endif
+				}
+			}
+		
+			if ( last_breath != simmgr_shm->status.respiration.breathCount )
+			{
+				last_breath = simmgr_shm->status.respiration.breathCount;
+				count = 0;
+				if ( last_manual_breath != simmgr_shm->status.respiration.manual_count )
+				{
+					last_manual_breath = simmgr_shm->status.respiration.manual_count;
+				}
+				else
+				{
+					count = broadcast_word(breathWord );
+					if ( count )
+					{
+#ifdef DEBUG
+						printf("Breath sent to %d listeners\n", count );
+#endif
+					}
 				}
 			}
 		}
 		checkCount++;
-		if ( checkCount == 5 )	// This runs every 25 ms.
+		if ( checkCount == 2 ) // This runs every 25 ms.
+		{
+			if ( strcmp(simmgr_shm->status.scenario.state, "Running" ) == 0 )
+			{
+				scenarioRunning = true;
+			}
+			else
+			{
+				scenarioRunning = false;
+			}
+		}
+		if ( checkCount == 5 )	
 		{
 			// If the pulse rate has changed, then reset the timer
 			
