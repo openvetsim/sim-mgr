@@ -94,7 +94,7 @@ char breathWord[] = "breath\n";
 int vpcFrequencyArray[VPC_ARRAY_LEN];
 int vpcFrequencyIndex = 0;
 int vpcType = 0;
-
+int afibActive = 0;
 #define IS_CARDIAC	1
 #define NOT_CARDIAC	0
 
@@ -121,7 +121,11 @@ beat_handler(int sig, siginfo_t *si, void *uc)
 {
 	int sts;
 	int rate;
+	time_t t;
 	
+	/* Intializes random number generator */
+   srand((unsigned) time(&t));
+   
 	if ( sig == PULSE_TIMER_SIG )
 	{
 		sts = sem_wait(&pulseSema );
@@ -161,11 +165,16 @@ beat_handler(int sig, siginfo_t *si, void *uc)
 				}
 				else
 				{
-					beatPhase = 9;	// Preset for "normal"
-
+					
 					// Normal Cycle
 					simmgr_shm->status.cardiac.pulseCount++;
-					if ( ( vpcType > 0 ) && ( currentVpcFreq > 0 ) )
+					if ( afibActive )
+					{
+						// Next beat phase is between 50% and 200% of standard. 
+						// Calculate a random from 0 to 14 and add to 5
+						beatPhase = 5 + (rand() % 14);
+					}
+					else if ( ( vpcType > 0 ) && ( currentVpcFreq > 0 ) )
 					{
 						if ( vpcFrequencyIndex++ >= VPC_ARRAY_LEN )
 						{
@@ -176,16 +185,17 @@ beat_handler(int sig, siginfo_t *si, void *uc)
 							vpcState = simmgr_shm->status.cardiac.vpc_count;
 							beatPhase = 6;
 						}
+						else
+						{
+							beatPhase = 9;
+						}
+					}
+					else
+					{
+						beatPhase = 9;	// Preset for "normal"
 					}
 				}
 			}
-		}
-		if ( currentVpcFreq != simmgr_shm->status.cardiac.vpc_freq ||
-			 vpcType != simmgr_shm->status.cardiac.vpc_type )
-		{
-			currentVpcFreq = simmgr_shm->status.cardiac.vpc_freq;
-			vpcType = simmgr_shm->status.cardiac.vpc_type;
-			calculateVPCFreq();
 		}
 	}
 	else if ( sig == BREATH_TIMER_SIG )
@@ -725,7 +735,7 @@ process_child(void *ptr )
 			}
 		}
 		checkCount++;
-		if ( checkCount == 2 ) // This runs every 25 ms.
+		if ( checkCount == 2 ) // This runs every 50 ms.
 		{
 			if ( strcmp(simmgr_shm->status.scenario.state, "Running" ) == 0 )
 			{
@@ -750,6 +760,27 @@ process_child(void *ptr )
 				sprintf(msgbuf, "Set Pulse to %d", currentPulseRate );
 				log_message("", msgbuf );
 #endif
+			}
+		}
+		else if ( checkCount == 6 )	
+		{
+			if ( currentVpcFreq != simmgr_shm->status.cardiac.vpc_freq ||
+			 vpcType != simmgr_shm->status.cardiac.vpc_type )
+			{
+				currentVpcFreq = simmgr_shm->status.cardiac.vpc_freq;
+				vpcType = simmgr_shm->status.cardiac.vpc_type;
+				calculateVPCFreq();
+			}
+		}
+		else if ( checkCount == 7 )	
+		{
+			if ( strncmp(simmgr_shm->status.cardiac.rhythm, "afib", 4 ) == 0 )
+			{
+				afibActive = 1;
+			}
+			else
+			{
+				afibActive = 0;
 			}
 		}
 		else if ( checkCount == 10 )
