@@ -14,7 +14,7 @@
  * 		1 - On connection, the daemon will fork a task to support the connection
  *		2 - Each connection waits on sync messages
  *
- * Copyright (C) 2016 Terence Kelleher. All rights reserved.
+ * Copyright (C) 2016-2018 Terence Kelleher. All rights reserved.
  *
  */
  
@@ -93,7 +93,8 @@ char breathWord[] = "breath\n";
 #define VPC_ARRAY_LEN	200
 int vpcFrequencyArray[VPC_ARRAY_LEN];
 int vpcFrequencyIndex = 0;
-
+int vpcType = 0;
+int afibActive = 0;
 #define IS_CARDIAC	1
 #define NOT_CARDIAC	0
 
@@ -120,7 +121,11 @@ beat_handler(int sig, siginfo_t *si, void *uc)
 {
 	int sts;
 	int rate;
+	time_t t;
 	
+	/* Intializes random number generator */
+   srand((unsigned) time(&t));
+   
 	if ( sig == PULSE_TIMER_SIG )
 	{
 		sts = sem_wait(&pulseSema );
@@ -130,7 +135,6 @@ beat_handler(int sig, siginfo_t *si, void *uc)
 		{
 			if ( beatPhase-- <= 0 )
 			{
-				beatPhase = 9;	// Preset for "normal"
 				if ( vpcState > 0 )
 				{
 					// VPC Injection
@@ -153,16 +157,24 @@ beat_handler(int sig, siginfo_t *si, void *uc)
 									beatPhase = 19;
 									break;
 							}
+							break;
 						default:
-							beatPhase = 7;
+							beatPhase = 6;
 							break;
 					}
 				}
 				else
 				{
+					
 					// Normal Cycle
 					simmgr_shm->status.cardiac.pulseCount++;
-					if ( currentVpcFreq > 0 )
+					if ( afibActive )
+					{
+						// Next beat phase is between 50% and 200% of standard. 
+						// Calculate a random from 0 to 14 and add to 5
+						beatPhase = 5 + (rand() % 14);
+					}
+					else if ( ( vpcType > 0 ) && ( currentVpcFreq > 0 ) )
 					{
 						if ( vpcFrequencyIndex++ >= VPC_ARRAY_LEN )
 						{
@@ -171,16 +183,19 @@ beat_handler(int sig, siginfo_t *si, void *uc)
 						if ( vpcFrequencyArray[vpcFrequencyIndex] > 0 )
 						{
 							vpcState = simmgr_shm->status.cardiac.vpc_count;
-							beatPhase = 7;
+							beatPhase = 6;
 						}
+						else
+						{
+							beatPhase = 9;
+						}
+					}
+					else
+					{
+						beatPhase = 9;	// Preset for "normal"
 					}
 				}
 			}
-		}
-		if ( currentVpcFreq != simmgr_shm->status.cardiac.vpc_freq )
-		{
-			currentVpcFreq = simmgr_shm->status.cardiac.vpc_freq;
-			calculateVPCFreq();
 		}
 	}
 	else if ( sig == BREATH_TIMER_SIG )
@@ -615,7 +630,6 @@ main(int argc, char *argv[] )
  * DESCRIPTION:
  *		This process monitors the pulse and breath counts. When incremented (by the beat_handler)
  *		a message is sent to the listeners.
- *		It also monitors the rates and adjusts the timeout for the beat_handler when a rate is changed.
 */
 int
 broadcast_word(char *word )
@@ -669,56 +683,70 @@ process_child(void *ptr )
 	unsigned int last_breath = simmgr_shm->status.respiration.breathCount;
 	int last_manual_breath = simmgr_shm->status.respiration.manual_count;
 	int checkCount = 0;
+	int scenarioRunning = false;
 	
 	while ( 1 )
 	{
 		usleep(5000 );		// 5 msec wait
-		
-		if ( last_pulse != simmgr_shm->status.cardiac.pulseCount )
+		if ( scenarioRunning )
 		{
-			last_pulse = simmgr_shm->status.cardiac.pulseCount;
-			count = broadcast_word(pulseWord );
+			if ( last_pulse != simmgr_shm->status.cardiac.pulseCount )
+			{
+				last_pulse = simmgr_shm->status.cardiac.pulseCount;
+				count = broadcast_word(pulseWord );
 
-			if ( count )
-			{
-#ifdef DEBUG
-				printf("Pulse sent to %d listeners\n", count );
-#endif
-			}
-		}
-		if ( last_pulseVpc != simmgr_shm->status.cardiac.pulseCountVpc )
-		{
-			last_pulseVpc = simmgr_shm->status.cardiac.pulseCountVpc;
-			count = broadcast_word(pulseWordVPC );
-			if ( count )
-			{
-#ifdef DEBUG
-				printf("PulseVPC sent to %d listeners\n", count );
-#endif
-			}
-		}
-
-		if ( last_breath != simmgr_shm->status.respiration.breathCount )
-		{
-			last_breath = simmgr_shm->status.respiration.breathCount;
-			count = 0;
-			if ( last_manual_breath != simmgr_shm->status.respiration.manual_count )
-			{
-				last_manual_breath = simmgr_shm->status.respiration.manual_count;
-			}
-			else
-			{
-				count = broadcast_word(breathWord );
 				if ( count )
 				{
 #ifdef DEBUG
-					printf("Breath sent to %d listeners\n", count );
+					printf("Pulse sent to %d listeners\n", count );
 #endif
+				}
+			}
+			if ( last_pulseVpc != simmgr_shm->status.cardiac.pulseCountVpc )
+			{
+				last_pulseVpc = simmgr_shm->status.cardiac.pulseCountVpc;
+				count = broadcast_word(pulseWordVPC );
+				if ( count )
+				{
+#ifdef DEBUG
+					printf("PulseVPC sent to %d listeners\n", count );
+#endif
+				}
+			}
+		
+			if ( last_breath != simmgr_shm->status.respiration.breathCount )
+			{
+				last_breath = simmgr_shm->status.respiration.breathCount;
+				count = 0;
+				if ( last_manual_breath != simmgr_shm->status.respiration.manual_count )
+				{
+					last_manual_breath = simmgr_shm->status.respiration.manual_count;
+				}
+				else
+				{
+					count = broadcast_word(breathWord );
+					if ( count )
+					{
+#ifdef DEBUG
+						printf("Breath sent to %d listeners\n", count );
+#endif
+					}
 				}
 			}
 		}
 		checkCount++;
-		if ( checkCount == 5 )	// This runs every 25 ms.
+		if ( checkCount == 2 ) // This runs every 50 ms.
+		{
+			if ( strcmp(simmgr_shm->status.scenario.state, "Running" ) == 0 )
+			{
+				scenarioRunning = true;
+			}
+			else
+			{
+				scenarioRunning = false;
+			}
+		}
+		if ( checkCount == 5 )	
 		{
 			// If the pulse rate has changed, then reset the timer
 			
@@ -732,6 +760,27 @@ process_child(void *ptr )
 				sprintf(msgbuf, "Set Pulse to %d", currentPulseRate );
 				log_message("", msgbuf );
 #endif
+			}
+		}
+		else if ( checkCount == 6 )	
+		{
+			if ( currentVpcFreq != simmgr_shm->status.cardiac.vpc_freq ||
+			 vpcType != simmgr_shm->status.cardiac.vpc_type )
+			{
+				currentVpcFreq = simmgr_shm->status.cardiac.vpc_freq;
+				vpcType = simmgr_shm->status.cardiac.vpc_type;
+				calculateVPCFreq();
+			}
+		}
+		else if ( checkCount == 7 )	
+		{
+			if ( strncmp(simmgr_shm->status.cardiac.rhythm, "afib", 4 ) == 0 )
+			{
+				afibActive = 1;
+			}
+			else
+			{
+				afibActive = 0;
 			}
 		}
 		else if ( checkCount == 10 )
