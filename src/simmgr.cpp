@@ -320,8 +320,8 @@ updateScenarioState(ScenarioState new_state)
 */
 #define BREATH_CALC_LIMIT		3		// Max number of recorded breaths to count in calculation
 #define BREATH_LOG_LEN	128
-int breathLog[BREATH_LOG_LEN] = { 0, };
-int breathLogNext = 0;
+unsigned int breathLog[BREATH_LOG_LEN] = { 0, };
+unsigned int breathLogNext = 0;
 
 #define BREATH_LOG_STATE_IDLE	0
 #define BREATH_LOG_STATE_DETECT	1
@@ -329,7 +329,7 @@ int breathLogState = BREATH_LOG_STATE_IDLE;
 
 unsigned int breathLogLastNatural = 0;	// breathCount, last natural
 int breathLogLastManual = 0;	// manual_count, last manual
-int breathLogLast = 0;			// Time of last breath
+unsigned int breathLogLast = 0;			// Time of last breath
 
 #define BREATH_LOG_DELAY	(2)
 int breathLogDelay = 0;
@@ -347,8 +347,8 @@ awrr_check(void)
 	int prev;
 	int breaths;
 	int totalTime;
-	int lastTime;
-	int firstTime;
+	unsigned int lastTime;
+	unsigned int firstTime;
 	int diff;
 	float awRR;
 	int i;
@@ -503,7 +503,7 @@ awrr_check(void)
 */
 #define HR_CALC_LIMIT		10		// Max number of recorded beats to count in calculation
 #define HR_LOG_LEN	128
-int hrLog[HR_LOG_LEN] = { 0, };
+unsigned int hrLog[HR_LOG_LEN] = { 0, };
 int hrLogNext = 0;
 
 unsigned int hrLogLastNatural = 0;	// beatCount, last natural
@@ -525,7 +525,7 @@ hrcheck_handler(int sig, siginfo_t *si, void *uc)
 	int prev;
 	int beats;
 	int totalTime;
-	int lastTime;
+	unsigned int lastTime;
 	int firstTime;
 	int diff;
 	float avg_rate;
@@ -551,8 +551,10 @@ hrcheck_handler(int sig, siginfo_t *si, void *uc)
 		hrLogLastVPC = simmgr_shm->status.cardiac.pulseCountVpc;
 		newBeat = 1;
 	}
+
 	if ( newBeat )
 	{
+		prev = hrLogNext;
 		hrLog[hrLogNext] = now;
 		hrLogNext += 1;
 		if ( hrLogNext >= HR_LOG_LEN )
@@ -560,23 +562,30 @@ hrcheck_handler(int sig, siginfo_t *si, void *uc)
 			hrLogNext = 0;
 		}
 	}
-
+	else
+	{
+		prev = hrLogNext - 1;
+		if ( prev < 0 ) 
+		{
+			prev = (HR_LOG_LEN - 1);
+		}
+	}
 	if ( hrLogReportLoops++ >= HR_LOG_CHANGE_LOOPS )
 	{
 		hrLogReportLoops = 0;
 		// AVG Calculation - Look at no more than 10 beats - Skip if no beats within 20 seconds
 		lastTime = 0;
 		firstTime = 0;
-		prev = hrLogNext - 1;
-		if ( prev < 0 ) 
-		{
-			prev = (HR_LOG_LEN - 1);
-		}
+		
 		beats = 1;
 		intervals = 0;
 		
 		lastTime = hrLog[prev];
-		if ( lastTime <= 0 )  // Don't look at empty logs
+		if ( lastTime < 0 )  // Don't look at empty logs
+		{
+			simmgr_shm->status.cardiac.avg_rate = 0;
+		}
+		else if ( lastTime == 0 )  // Don't look at empty logs
 		{
 			simmgr_shm->status.cardiac.avg_rate = 0;
 		}
