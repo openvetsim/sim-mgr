@@ -22,5 +22,6 @@ sudo add-apt-repository -y ppa:obsproject/obs-studio
 sudo apt-get -y update
 sudo apt-get install -y obs-studio
 
-
-
+sudo cp obs*.sh /usr/local/bin/
+sudo chmod 0774 /usr/local/bin/obs*.sh
+sudo chown vitals:vitals /usr/local/bin/obs*.sh
