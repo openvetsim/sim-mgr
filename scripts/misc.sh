@@ -12,6 +12,7 @@ sudo apt-get install -y unclutter
 sudo apt-get install -y tinc
 
 sudo adduser vitals
+sudo usermod -a -G www-data vitals
 
 sudo cp vitals.sh /home/vitals/
 chown vitals:vitals /home/vitals/vitals.sh
