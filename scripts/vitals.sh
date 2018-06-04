@@ -17,7 +17,8 @@ export DISPLAY=:0
  
 # Hide the mouse from the display
 unclutter &
- 
+sleep 10  ## This allows .profile to complete execution before firefox starts. Otherwise, we can't get to full screen
+
 /usr/bin/firefox -private "http://localhost/sim-ii/vitals.php" &
 
 xdotool search --name --sync "Vet School Simulator" windowfocus %1 key F11

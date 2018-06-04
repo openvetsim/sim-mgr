@@ -14,3 +14,6 @@ sudo chown www-data:www-data /var/lib/cgi-bin
 sudo chmod 2777 /var/lib/cgi-bin
 
 sudo adduser simmgr
+sudo cp simmgr_sudo /etc/sudoers.d
+sudo chown root:root /etc/sudoers.d/simmgr_sudo
+sudo chmod 0440 /etc/sudoers.d/simmgr_sudo
