@@ -34,6 +34,9 @@ obj/tinyxml2.o: src/tinyxml2/tinyxml2.cpp src/tinyxml2/tinyxml2.h
 obj/sim-util.o: src/sim-util.c include/simmgr.h
 	g++ $(CPPFLAGS) $(CXXFLAGS) -g -c -o obj/sim-util.o src/sim-util.c
 
+obj/simpulseDemo.o: src/simpulseDemo.cpp include/simmgr.h
+	g++ $(CPPFLAGS) $(CXXFLAGS) -g -c -o obj/simpulseDemo.o src/simpulseDemo.cpp
+	
 obj/sim-parse.o: src/sim-parse.c include/simmgr.h
 	g++ $(CPPFLAGS) $(CXXFLAGS) -g -c -o obj/sim-parse.o src/sim-parse.c
 
@@ -52,8 +55,8 @@ obj/cookie.cgi: src/cookie.cpp
 obj/simmgr: src/simmgr.cpp obj/sim-log.o obj/sim-util.o include/simmgr.h
 	g++ $(CPPFLAGS) $(CXXFLAGS)  -lcgicc -o obj/simmgr src/simmgr.cpp  obj/sim-log.o obj/sim-util.o $(LDFLAGS)
 	
-obj/simmgrDemo: src/simmgrDemo.cpp obj/sim-log.o obj/sim-util.o include/simmgr.h
-	g++ $(CPPFLAGS) $(CXXFLAGS)  -lcgicc -o obj/simmgrDemo src/simmgrDemo.cpp  obj/sim-log.o obj/sim-util.o $(LDFLAGS)
+obj/simmgrDemo: src/simmgrDemo.cpp obj/sim-log.o obj/sim-util.o obj/simpulseDemo.o include/simmgr.h
+	g++ $(CPPFLAGS) $(CXXFLAGS)  -lcgicc -o obj/simmgrDemo src/simmgrDemo.cpp  obj/sim-log.o obj/sim-util.o obj/simpulseDemo.o $(LDFLAGS)
 	
 obj/simpulse: src/simpulse.cpp obj/sim-util.o include/simmgr.h
 	g++ $(CPPFLAGS) $(CXXFLAGS)  -lcgicc -o obj/simpulse src/simpulse.cpp  obj/sim-util.o $(LDFLAGS)
