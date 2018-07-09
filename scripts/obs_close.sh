@@ -13,3 +13,4 @@ else
 	echo "Failed to get window focus"
 	exit $STATUS
 fi
+xdotool search --name --sync "Vet School Simulator" windowfocus
