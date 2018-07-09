@@ -87,6 +87,7 @@ simlog_create()
 		simlog_write((char *)"Start" );
 		simlog_close();
 		sprintf(simmgr_shm->logfile.filename, "%s_%s.log", timeStr, simmgr_shm->status.scenario.active );
+		sprintf(simmgr_shm->logfile.vfilename, "%s_%s.mp4", timeStr, simmgr_shm->status.scenario.active );
 		return ( 0 );
 	}
 	else

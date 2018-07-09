@@ -121,10 +121,6 @@ beat_handler(int sig, siginfo_t *si, void *uc)
 {
 	int sts;
 	int rate;
-	time_t t;
-	
-	/* Intializes random number generator */
-   srand((unsigned) time(&t));
    
 	if ( sig == PULSE_TIMER_SIG )
 	{

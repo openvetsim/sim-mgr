@@ -24,6 +24,9 @@
 #include <arpa/inet.h>
 //#include <sys/timeb.h>
 #include <sys/time.h> 
+#include <libgen.h>
+#include <dirent.h>
+#include <sys/stat.h>
 
 #include <iostream>
 #include <vector>  
@@ -35,6 +38,7 @@
 #include <algorithm>
 
 #include "../include/simmgr.h" 
+#include "../include/obsmon.h"
 
 using namespace std;
 
@@ -88,6 +92,8 @@ static void hrcheck_handler(int sig, siginfo_t *si, void *uc);
 void heart_thread ( void *ptr );
 void nibp_thread ( void *ptr );
 
+int initOBSSHM(int create );
+
 void
 strToLower(char *buf )
 {
@@ -125,10 +131,15 @@ main(int argc, char *argv[] )
 	sts = initSHM(OPEN_WITH_CREATE, sesid );
 	if ( sts < 0 )
 	{
-		perror("initSHM" );
+		perror("initSHM SIMMGR" );
 		exit ( -1 );
 	}
-	
+	sts = initOBSSHM(OPEN_WITH_CREATE );
+	if ( sts < 0 )
+	{
+		perror("initSHM OBS" );
+		exit ( -1 );
+	}
 	// Zero out the shared memory and reinit the values
 	memset(simmgr_shm, 0, sizeof(struct simmgr_shm) );
 
@@ -147,7 +158,7 @@ main(int argc, char *argv[] )
 	// status/scenario
 	sprintf(simmgr_shm->status.scenario.active, "%s", "default" );
 	sprintf(simmgr_shm->status.scenario.state, "%s", "Stopped" );
-	simmgr_shm->instructor.scenario.record = 0;
+	simmgr_shm->status.scenario.record = 0;
 	
 	// instructor/sema
 	sem_init(&simmgr_shm->instructor.sema, 1, 1 ); // pshared =1, value =1
@@ -285,6 +296,10 @@ updateScenarioState(ScenarioState new_state)
 			{
 				case ScenarioStopped: // Set by scenario manager after Terminate Cleanup is complete
 					sprintf(simmgr_shm->status.scenario.state, "Stopped" );
+					if ( simmgr_shm->status.scenario.record > 0 )
+					{
+						recordStartStop(0 );
+					}
 					(void)simlog_end();
 					(void)resetAllParameters();
 					break;
@@ -584,10 +599,12 @@ hrcheck_handler(int sig, siginfo_t *si, void *uc)
 		if ( lastTime < 0 )  // Don't look at empty logs
 		{
 			simmgr_shm->status.cardiac.avg_rate = 0;
+			simmgr_shm->server.dbg3 = 1;
 		}
 		else if ( lastTime == 0 )  // Don't look at empty logs
 		{
 			simmgr_shm->status.cardiac.avg_rate = 0;
+			simmgr_shm->server.dbg3 = 2;
 		}
 		else
 		{
@@ -625,7 +642,9 @@ hrcheck_handler(int sig, siginfo_t *si, void *uc)
 			}
 			simmgr_shm->server.dbg1 = lastTime;
 			simmgr_shm->server.dbg2 = firstTime;
-			simmgr_shm->server.dbg3 = intervals;
+			//simmgr_shm->server.dbg3 = intervals;
+			
+			simmgr_shm->server.dbg3 = 3000 + intervals;
 			
 			if ( intervals > 0 )
 			{
@@ -923,7 +942,6 @@ scan_commands(void )
 	int trycount;
 	int oldRate;
 	int newRate;
-	int doRecord = -1;
 	int currentIsPulsed;
 	int newIsPulsed;
 	// Lock the command interface before processing commands
@@ -944,7 +962,7 @@ scan_commands(void )
 	// Scenario
 	if ( simmgr_shm->instructor.scenario.record >= 0 )
 	{
-		doRecord = simmgr_shm->instructor.scenario.record;
+		simmgr_shm->status.scenario.record = simmgr_shm->instructor.scenario.record;
 		simmgr_shm->instructor.scenario.record = -1;
 	}
 	
@@ -1328,10 +1346,13 @@ scan_commands(void )
 		{
 			setRespirationPeriods(simmgr_shm->status.respiration.rate, simmgr_shm->instructor.respiration.rate );
 		}
-		simmgr_shm->status.respiration.rate = setTrend(&respirationTrend, 
-											simmgr_shm->instructor.respiration.rate,
-											simmgr_shm->status.respiration.rate,
-											simmgr_shm->instructor.respiration.transfer_time );
+		else
+		{
+			simmgr_shm->status.respiration.rate = setTrend(&respirationTrend, 
+												simmgr_shm->instructor.respiration.rate,
+												simmgr_shm->status.respiration.rate,
+												simmgr_shm->instructor.respiration.transfer_time );
+		}
 		simmgr_shm->instructor.respiration.rate = -1;
 	}
 	
@@ -1575,10 +1596,97 @@ scan_commands(void )
 			killScenario(1, NULL );
 		}
 	}
-	// This must be done after the lock has been released as the recordStartStop process may block.
-	if ( doRecord >= 0 )
+	
+	return ( 0 );
+}
+
+
+/*
+ * FUNCTION: initOBSSHM
+ *
+ * Open the shared memory space
+ *
+ * Parameters: create 0 = Open only, 1 = Create
+ *
+ * Returns: 0 for success
+ */
+int 	obsShmFp;					// The File for shared memory
+struct	obsShmData *obsShm;			// Pointer to shared data
+
+int
+initOBSSHM(int create )
+{
+	void *space;
+	int mmapSize;
+	int permission;
+	char shmFileName[512];
+	
+	mmapSize = sizeof(struct obsShmData );
+
+	sprintf(shmFileName, "%s", OBS_SHM_NAME );
+	
+	switch ( create )
 	{
-		recordStartStop(doRecord );
+		case OPEN_WITH_CREATE:
+			permission = O_RDWR | O_CREAT | O_TRUNC;
+			break;
+			
+		case OPEN_ACCESS:
+		default:
+			permission = O_RDWR;			
+			break;
+	}
+	
+	// Open the Shared Memory space
+	obsShmFp = shm_open(shmFileName, permission , 0777 );
+	if ( obsShmFp < 0 )
+	{
+		sprintf(msgbuf, "Could not open OBS SHM file(%d) \"%s\": Error  \"%s\"", obsShmFp, shmFileName, strerror(errno) );
+		log_message("", msgbuf ); 
+	}
+	else
+	{
+		if ( mmapSize < 4096 )
+		{
+			mmapSize = 4096;
+		}
+		
+		if (  create == OPEN_WITH_CREATE )
+		{
+			lseek(obsShmFp, mmapSize, SEEK_SET );
+			write(obsShmFp, "", 1 );
+			sprintf(shmFileName, "/dev/shm/%s", OBS_SHM_NAME );
+			chmod(shmFileName, 0777 );
+		}
+
+		space = mmap((caddr_t)0,
+					mmapSize, 
+					PROT_READ | PROT_WRITE,
+					MAP_SHARED,
+					obsShmFp,
+					0 );
+		if ( space == MAP_FAILED )
+		{
+			sprintf(msgbuf, "mmap failed on OBS SHM file \"%s\": Error  \"%s\"", shmFileName, strerror(errno) );
+			log_message("", msgbuf ); 
+		}
+		else
+		{
+			obsShm = (struct obsShmData *)space;
+			if (  create == OPEN_WITH_CREATE )
+			{
+				obsShm->buff_size = MSG_BUFF_MAX;
+				obsShm->next_write = 0;
+				obsShm->next_read = 0;
+				obsShm->obsRunning = 0;
+				sprintf(msgbuf, "OBS SHM file(%d) \"%s\": Create Success  \"%s\"", obsShmFp, shmFileName, strerror(errno) );
+			}
+			else
+			{
+				sprintf(msgbuf, "OBS SHM file(%d) \"%s\": Open Success  \"%s\"", obsShmFp, shmFileName, strerror(errno) );
+			}
+			log_message("", msgbuf ); 
+		}
 	}
 	
 	return ( 0 );
@@ -1588,45 +1696,35 @@ scan_commands(void )
  * recordStartStop
  * @record - Start if 1, Stop if 0
  *
- * Fork and then process start with external server
+ * 
  */
- 
+
 void
 recordStartStop(int record )
 {
-	//char fname[128];
-	int pid;
-	sprintf(msgbuf, "Start/Stop Record: %d", record );
-	log_message("", msgbuf ); 
 	
-	pid = fork();
-	
-	if ( pid < 0 )
+	if ( record )
 	{
-		sprintf(msgbuf, "Start/Stop Record: Fork Failed %s", strerror(errno )  );
-		log_message("", msgbuf ); 
+		if ( obsShm->obsRunning == 0 )
+		{
+			obsShm->buff[obsShm->next_write] = OBSMON_OPEN;
+			obsShm->next_write = ( obsShm->next_write + 1 ) MOD obsShm->buff_size;
+			usleep(500000 );
+		}
+		obsShm->buff[obsShm->next_write] = OBSMON_START;
+		obsShm->next_write = ( obsShm->next_write + 1 ) MOD obsShm->buff_size;
 	}
-	else if ( pid == 0 )
+	else
 	{
-		// Child
-		sprintf(msgbuf, "Start/Stop Record: %d  %p", record, simmgr_shm  );
-		log_message("", msgbuf ); 
-		// Sleep to simluate comm with server (until we get the server code functioning)
-		sleep(7 );
-		if ( record )
-		{
-			// Start Record
-			simmgr_shm->status.scenario.record = 1;
-		}
-		else
-		{
-			// Stop Record
-			simmgr_shm->status.scenario.record = 0;
-		}
-		// Stop the child
-		exit ( 0 );
+		sprintf(obsShm->newFilename, "%s", simmgr_shm->logfile.vfilename );
+		
+		obsShm->buff[obsShm->next_write] = OBSMON_STOP;
+		obsShm->next_write = ( obsShm->next_write + 1 ) MOD obsShm->buff_size;
+		
+		
+		obsShm->buff[obsShm->next_write] = OBSMON_CLOSE;
+		obsShm->next_write = ( obsShm->next_write + 1 ) MOD obsShm->buff_size;
 	}
-	
 }
 int
 start_scenario(const char *name )
@@ -1642,6 +1740,11 @@ start_scenario(const char *name )
 	std::strftime(timeBuf, 60, "%c", std::localtime(&scenario_start_time ));
 	
 	resetAllParameters();
+	
+	if ( simmgr_shm->status.scenario.record > 0 )
+	{
+		recordStartStop(1 );
+	}
 	
 	// exec the new scenario
 	scenarioPid = fork();

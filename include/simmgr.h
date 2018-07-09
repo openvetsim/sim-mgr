@@ -217,6 +217,7 @@ struct logfile
 	int		active;
 	int		lines_written;
 	char	filename[STR_SIZE];
+	char	vfilename[STR_SIZE];
 };
 struct status
 {

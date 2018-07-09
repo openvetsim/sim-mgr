@@ -11,18 +11,9 @@ sudo apt-get install -y xdotool
 sudo apt-get install -y unclutter
 sudo apt-get install -y tinc
 
-sudo adduser vitals
-sudo usermod -a -G www-data vitals
-
-sudo cp vitals.sh /home/vitals/
-chown vitals:vitals /home/vitals/vitals.sh
-sudo cp grabScreen.sh /home/vitals/
-chown vitals:vitals /home/vitals/grabScreen.sh
-
 sudo add-apt-repository -y ppa:obsproject/obs-studio
 sudo apt-get -y update
 sudo apt-get install -y obs-studio
 
-sudo cp obs*.sh /usr/local/bin/
-sudo chmod 0774 /usr/local/bin/obs*.sh
-sudo chown vitals:vitals /usr/local/bin/obs*.sh
+./updateVitals.sh
+

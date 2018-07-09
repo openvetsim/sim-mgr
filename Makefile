@@ -1,5 +1,5 @@
 OBJDIR := obj
-TARGETS= $(OBJDIR) obj/simmgr obj/simmgrDemo obj/simpulse obj/simstatus.cgi obj/scenario obj/obscmd
+TARGETS= $(OBJDIR) obj/simmgr obj/simmgrDemo obj/simpulse obj/simstatus.cgi obj/scenario obj/obscmd obj/obsmon
 
 ## -pthread (Posix Threads) is required where shared memory and/or multiple threads are used
 CFLAGS=-pthread -Wall -g -ggdb -rdynamic
@@ -12,7 +12,7 @@ LDFLAGS=-lrt
 CGIBIN=/var/lib/cgi-bin
 BIN=/usr/local/bin
 
-default: $(OBJDIR) obj/simstatus.cgi obj/simmgr obj/simmgrDemo obj/simpulse obj/scenario obj/obscmd vpnconf
+default: $(OBJDIR) obj/simstatus.cgi obj/simmgr obj/simmgrDemo obj/simpulse obj/scenario obj/obscmd obj/obsmon vpnconf
 
 $(OBJDIR):
 	mkdir -p $(OBJDIR)
@@ -25,9 +25,12 @@ demo: obj/simmgrDemo
 vpnconf: src/vpnconf.c
 	g++ -Wall -o vpnconf src/vpnconf.c
 
-obj/obscmd: src/obscmd.c
-	g++ -Wall -o obj/obscmd src/obscmd.c
+obj/obscmd: src/obscmd.c  include/obsmon.h
+	g++ -Wall -o obj/obscmd src/obscmd.c $(LDFLAGS)
 
+obj/obsmon: src/obsmon.c include/obsmon.h
+	g++ -Wall -o obj/obsmon src/obsmon.c $(LDFLAGS)
+	
 obj/scenario: src/scenario.cpp obj/llist.o obj/sim-util.o obj/sim-parse.o obj/llist.o include/scenario.h include/simmgr.h
 	g++ $(CPPFLAGS)-I/usr/include/libxml2  $(CXXFLAGS) -o obj/scenario src/scenario.cpp obj/sim-util.o obj/sim-parse.o obj/llist.o $(LDFLAGS) -lxml2
 	
@@ -71,9 +74,7 @@ install: check $(TARGETS) installDaemon
 	sudo cp -u obj/simmgr $(BIN)
 	sudo chown simmgr:simmgr $(BIN)/simmgr
 	sudo chmod u+s $(BIN)/simmgr
-	sudo cp -u obj/obscmd $(BIN)
-	sudo chown vitals:vitals $(BIN)/obscmd
-	sudo chmod u+s $(BIN)/obscmd
+	sudo cp -u obj/obsmon $(BIN)
 	sudo cp -u obj/simmgrDemo $(BIN)
 	sudo chown simmgr:simmgr $(BIN)/simmgrDemo
 	sudo chmod u+s $(BIN)/simmgrDemo
@@ -83,7 +84,9 @@ install: check $(TARGETS) installDaemon
 	sudo cp -u obj/scenario $(BIN)
 	sudo chown simmgr:simmgr $(BIN)/scenario
 	sudo chmod u+s $(BIN)/scenario
-	
+	sudo cp -u scripts/obs_*.sh $(BIN)
+	sudo chmod 0755 $(BIN)/obs_*.sh $(BIN)/obsmon
+
 installDaemon:
 	sudo cp -u simmgr.init /etc/init.d/simmgr
 	sudo update-rc.d simmgr defaults
