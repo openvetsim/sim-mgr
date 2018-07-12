@@ -904,7 +904,7 @@ setRespirationPeriods(int oldRate, int newRate )
 {
 	int period;
 	
-	if ( oldRate != newRate )
+	//if ( oldRate != newRate )
 	{
 		if ( newRate > 0 )
 		{
@@ -1351,6 +1351,10 @@ scan_commands(void )
 												simmgr_shm->instructor.respiration.rate,
 												simmgr_shm->status.respiration.rate,
 												simmgr_shm->instructor.respiration.transfer_time );
+		if ( simmgr_shm->instructor.respiration.transfer_time == 0 )
+		{
+			setRespirationPeriods(simmgr_shm->status.respiration.rate, simmgr_shm->instructor.respiration.rate );
+		}
 		simmgr_shm->instructor.respiration.rate = -1;
 		simmgr_shm->instructor.respiration.transfer_time = -1;
 	}
@@ -1708,7 +1712,6 @@ recordStartStop(int record )
 		{
 			obsShm->buff[obsShm->next_write] = OBSMON_OPEN;
 			obsShm->next_write = ( obsShm->next_write + 1 ) MOD obsShm->buff_size;
-			usleep(500000 );
 		}
 		obsShm->buff[obsShm->next_write] = OBSMON_START;
 		obsShm->next_write = ( obsShm->next_write + 1 ) MOD obsShm->buff_size;
@@ -1726,24 +1729,45 @@ recordStartStop(int record )
 	}
 }
 int
+getVideoFileCount(void )
+{
+	int file_count = 0;
+	DIR * dirp;
+	struct dirent * entry;
+
+	dirp = opendir("/var/www/html/simlogs/video"); /* There should be error handling after this */
+	while ((entry = readdir(dirp)) != NULL) {
+		if (entry->d_type == DT_REG) { /* If the entry is a regular file */
+			 file_count++;
+		}
+	}
+	closedir(dirp);
+	return ( file_count );
+}
+int
 start_scenario(const char *name )
 {
 	char timeBuf[64];
 	char fname[128];
-
+	int fileCountBefore;
+	int fileCountAfter;
+	
 	sprintf(msgbuf, "Start Scenario Request: %s", name );
 	log_message("", msgbuf ); 
 	sprintf(fname, "%s/%s/main.xml", "/var/www/html/scenarios", name );
-	
-	scenario_start_time = std::time(nullptr );
-	std::strftime(timeBuf, 60, "%c", std::localtime(&scenario_start_time ));
-	
+
 	resetAllParameters();
 	
 	if ( simmgr_shm->status.scenario.record > 0 )
 	{
+		fileCountBefore = getVideoFileCount();
 		recordStartStop(1 );
+		while ( ( fileCountAfter = getVideoFileCount() ) == fileCountBefore )
+			;
 	}
+	
+	scenario_start_time = std::time(nullptr );
+	std::strftime(timeBuf, 60, "%c", std::localtime(&scenario_start_time ));
 	
 	// exec the new scenario
 	scenarioPid = fork();
