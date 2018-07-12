@@ -917,6 +917,11 @@ setRespirationPeriods(int oldRate, int newRate )
 			period = (period * 7) / 10;	// Use 70% of the period for duration calculations
 			simmgr_shm->status.respiration.inhalation_duration = period / 2;
 			simmgr_shm->status.respiration.exhalation_duration = period - simmgr_shm->status.respiration.inhalation_duration;
+			sprintf(msgbuf, "setRespirationPeriods = %d %d:%d",
+				simmgr_shm->status.respiration.rate,
+				simmgr_shm->status.respiration.inhalation_duration,
+				simmgr_shm->status.respiration.exhalation_duration );
+			log_message("", msgbuf);
 		}
 		else
 		{
@@ -1340,20 +1345,14 @@ scan_commands(void )
 	}
 	if ( simmgr_shm->instructor.respiration.rate >= 0 )
 	{
-		sprintf(msgbuf, "Set Resp Rate = %d : %d", simmgr_shm->instructor.respiration.rate, simmgr_shm->instructor.respiration.transfer_time );
+		sprintf(msgbuf, "Set Resp Rate = %d -> %d : %d", simmgr_shm->status.respiration.rate, simmgr_shm->instructor.respiration.rate, simmgr_shm->instructor.respiration.transfer_time );
 		log_message("", msgbuf);
-		if ( simmgr_shm->instructor.respiration.transfer_time <= 0 )
-		{
-			setRespirationPeriods(simmgr_shm->status.respiration.rate, simmgr_shm->instructor.respiration.rate );
-		}
-		else
-		{
-			simmgr_shm->status.respiration.rate = setTrend(&respirationTrend, 
+		simmgr_shm->status.respiration.rate = setTrend(&respirationTrend, 
 												simmgr_shm->instructor.respiration.rate,
 												simmgr_shm->status.respiration.rate,
 												simmgr_shm->instructor.respiration.transfer_time );
-		}
 		simmgr_shm->instructor.respiration.rate = -1;
+		simmgr_shm->instructor.respiration.transfer_time = -1;
 	}
 	
 	if ( simmgr_shm->instructor.respiration.spo2 >= 0 )
