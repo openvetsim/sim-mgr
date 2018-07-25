@@ -917,11 +917,11 @@ setRespirationPeriods(int oldRate, int newRate )
 			period = (period * 7) / 10;	// Use 70% of the period for duration calculations
 			simmgr_shm->status.respiration.inhalation_duration = period / 2;
 			simmgr_shm->status.respiration.exhalation_duration = period - simmgr_shm->status.respiration.inhalation_duration;
-			sprintf(msgbuf, "setRespirationPeriods = %d %d:%d",
-				simmgr_shm->status.respiration.rate,
-				simmgr_shm->status.respiration.inhalation_duration,
-				simmgr_shm->status.respiration.exhalation_duration );
-			log_message("", msgbuf);
+			//sprintf(msgbuf, "setRespirationPeriods = %d %d:%d",
+			//	simmgr_shm->status.respiration.rate,
+			//	simmgr_shm->status.respiration.inhalation_duration,
+			//	simmgr_shm->status.respiration.exhalation_duration );
+			//log_message("", msgbuf);
 		}
 		else
 		{
