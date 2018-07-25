@@ -95,8 +95,8 @@ struct scenario_trigger
 	char 	param_class[TRIGGER_NAME_LENGTH];	// Class eg: cardiac, resipration, ...
 	char 	param_element[TRIGGER_NAME_LENGTH];	// Parameter eg: rate, transfer_time, ...
 	int		test;
-	int		value;		// Comaprison value
-	int		value2;		// Comaprison value (only for Inside/Outside)
+	int		value;		// Comparison value
+	int		value2;		// Comparison value (only for Inside/Outside)
 	int 	scene;		// ID of next scene
 };
 
