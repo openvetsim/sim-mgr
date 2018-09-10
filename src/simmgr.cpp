@@ -333,7 +333,7 @@ updateScenarioState(ScenarioState new_state)
  * 3 - Calculate AWRR based on the average time of the recorded breaths within the past 90 seconds, excluding the past 2 seconds
  *
 */
-#define BREATH_CALC_LIMIT		3		// Max number of recorded breaths to count in calculation
+#define BREATH_CALC_LIMIT		4		// Max number of recorded breaths to count in calculation
 #define BREATH_LOG_LEN	128
 unsigned int breathLog[BREATH_LOG_LEN] = { 0, };
 unsigned int breathLogNext = 0;
@@ -414,7 +414,7 @@ awrr_check(void)
 		}
 	}
 	
-	// AWRR Calculation - Look at no more than 10 breaths - Skip if no breaths within 20 seconds
+	// AWRR Calculation - Look at no more than BREATH_CALC_LIMIT breaths - Skip if no breaths within 20 seconds
 	lastTime = 0;
 	firstTime = 0;
 	prev = breathLogNext - 1;
@@ -496,7 +496,7 @@ awrr_check(void)
 		if ( breathLogReportLoops++ == BREATH_LOG_CHANGE_LOOPS )
 		{
 			breathLogReportLoops = 0;
-			newRate = round(awRR );
+			newRate = roundf(awRR );
 			if ( oldRate != newRate )
 			{
 				// setRespirationPeriods(oldRate, newRate );
