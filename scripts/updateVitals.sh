@@ -11,7 +11,7 @@ else
 	sudo usermod -a -G www-data vitals
 	
 	## Add call to vitals.sh in the .profile for vitals.
-	echo -e "if [[ ${XDG_VTNR} == 7 ]];\n    then\n    $HOME/vitals.sh &\n    obsmon &\nfi\n" >> ~vitals/.profile
+	echo -e 'if [[ $XDG_VTNR == "7" ]];\n    then\n    $HOME/vitals.sh &\n    obsmon &\nfi\n' >> ~vitals/.profile
 fi
 
 sudo cp vitals.sh /home/vitals/
