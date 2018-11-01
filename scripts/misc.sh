@@ -27,4 +27,6 @@ mkdir /var/www/html/simlogs/video
 # update permissions
 chown www-data:www-data /var/wwww
 chmod 0755 /var/www/html
-chown -R www-data:www-data /vat/www/html
+chown -R www-data:www-data /var/www/html
+chmod g+s /var/www/html/simlogs
+chmod g+s /var/www/html/simlogs/video
