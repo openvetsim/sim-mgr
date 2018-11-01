@@ -17,3 +17,14 @@ sudo apt-get install -y obs-studio
 
 ./updateVitals.sh
 
+# clone sim-player
+cd /var/www/html/
+git clone https://github.com/tkelleher/sim-payer.git
+
+# create video directory for OBS
+mkdir /var/www/html/simlogs/video
+
+# update permissions
+chown www-data:www-data /var/wwww
+chmod 0755 /var/www/html
+chown -R www-data:www-data /vat/www/html
