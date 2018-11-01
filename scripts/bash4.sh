@@ -8,14 +8,3 @@ cd ~/sim-mgr
 make
 make install
 sudo service simmgr start
-
-cd /var/www/html
-git clone https://github.com/tkelleher/sim-ii.git
-
-cd /var/www/html
-git clone https://github.com/tkelleher/scenarios.git
-
-sudo mkdir simlogs
-sudo chown www-data:www-data simlogs
-sudo chmod 2777 simlogs
-
