@@ -27,6 +27,7 @@
 #include <libgen.h>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <math.h>
 
 #include <iostream>
 #include <vector>  

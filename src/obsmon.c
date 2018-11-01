@@ -166,13 +166,13 @@ renameVideoFile(char *filename )
 {
 	int sts;
 	char *path; 
-	char newFile[512];
-	char oldFile[512];
+	char newFile[1024];
+	char oldFile[1024];
 	
-	sprintf(oldFile, "%s", filename );
+	snprintf(oldFile, 1024, "%s", filename );
 	path = dirname(filename );
 	
-	sprintf(newFile, "%s/%s", path, obsShm->newFilename );
+	snprintf(newFile, 1024, "%s/%s", path, obsShm->newFilename );
 	printf("Rename %s to %s\n", oldFile, newFile );
 	sts = rename(oldFile, newFile );
 	return ( sts );
