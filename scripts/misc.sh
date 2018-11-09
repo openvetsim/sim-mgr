@@ -10,6 +10,7 @@ sudo apt-get install -y openssh-server
 sudo apt-get install -y xdotool
 sudo apt-get install -y unclutter
 sudo apt-get install -y tinc
+sudo apt-get install -y net-tools
 
 sudo add-apt-repository -y ppa:obsproject/obs-studio
 sudo apt-get -y update
