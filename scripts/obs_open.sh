@@ -11,7 +11,8 @@ obs &
 xdotool search --name --sync --onlyvisible "obs" windowfocus
 STATUS=$?
 if [ $STATUS -eq 0 ]; then
-	xdotool getactivewindow windowmove 10000 10000
+	#xdotool getactivewindow windowmove 10000 10000
+	xdotool getactivewindow windowminimize
 	STATUS=$?
 	if [ $STATUS -eq 0 ]; then
 		echo "Failed window move"
