@@ -30,7 +30,7 @@ chmod g+s /var/www/html/simlogs
 
 # create video directory for OBS
 mkdir /var/www/html/simlogs/video
-chmod g+s /var/www/html/simlogs/video
+chmod g+sw /var/www/html/simlogs/video
 
 # clone the sim-ii
 cd /var/www/html
@@ -42,3 +42,5 @@ git clone https://github.com/tkelleher/scenarios.git
 # clone sim-player
 cd /var/www/html/
 git clone https://github.com/tkelleher/sim-player.git
+
+# update permissions 
