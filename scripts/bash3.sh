@@ -1,13 +1,13 @@
 #!/bin/bash
 RELEASE=`lsb_release -rs`
 
-sudo apt-get install g++
+sudo apt-get -y install g++
 # wget ftp://ftp.gnu.org/gnu/cgicc/cgicc-3.2.19.tar.gz
 # tar xvf cgicc-3.2.19.tar.gz
 # sudo mv cgicc /usr/include
 if [[ ${RELEASE} == "18.04" ]]; 
 then
-	sudo apt-get install libcgicc-dev
+	sudo apt-get install -y libcgicc-dev
 else
 	sudo apt-get install -y build-essential libcgicc5v5 libcgicc5-dev libcgicc-doc
 fi
