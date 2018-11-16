@@ -766,6 +766,7 @@ time_update(void )
 	struct tm tm;
 	int hour;
 	int min;
+	int seconds;
 	int sec;
 	
 	the_time = time(NULL );
@@ -774,8 +775,8 @@ time_update(void )
 	strtok(buf, "\n");		// Remove Line Feed
 	sprintf(simmgr_shm->server.server_time, "%s", buf );
 	now = std::time(nullptr );
-	sec = (int)difftime(now, scenario_start_time );
-	if ( ( sec > MAX_SCENARIO_RUNTIME ) &&
+	seconds = (int)difftime(now, scenario_start_time );
+	if ( ( seconds > MAX_SCENARIO_RUNTIME ) &&
 		 ( ( scenario_state == ScenarioRunning ) || 
 		   ( scenario_state == ScenarioPaused ) ) )
 	{
@@ -788,12 +789,22 @@ time_update(void )
 	}
 	else if ( scenario_state == ScenarioRunning )
 	{
+		sec = seconds;
 		min = (sec / 60);
 		hour = min / 60;
-		sec = sec%60;
-		sprintf(simmgr_shm->status.scenario.runtime, "%02d:%02d:%02d", hour, min%60, sec);
-	
-		if ( ( sec == 0 ) && ( last_time_sec != 0 ) )
+		sprintf(simmgr_shm->status.scenario.runtimeAbsolute, "%02d:%02d:%02d", hour, min%60, sec%60);
+		
+		sec = simmgr_shm->status.scenario.elapsed_msec_scenario / 1000;
+		min = (sec / 60);
+		hour = min / 60;
+		sprintf(simmgr_shm->status.scenario.runtimeScenario, "%02d:%02d:%02d", hour, min%60, sec%60);
+		
+		sec = simmgr_shm->status.scenario.elapsed_msec_scene / 1000;
+		min = (sec / 60);
+		hour = min / 60;
+		sprintf(simmgr_shm->status.scenario.runtimeScene, "%02d:%02d:%02d", hour, min%60, sec%60);
+		
+		if ( ( seconds == 0 ) && ( last_time_sec != 0 ) )
 		{
 			// Do periodic Stats update every minute
 			sprintf(buf, "VS: Temp: %0.1f; RR: %d; awRR: %d; HR: %d; %s; BP: %d/%d; SPO2: %d; etCO2: %d mmHg; Probes: ECG: %s; BP: %s; SPO2: %s; ETCO2: %s; Temp %s",
@@ -814,7 +825,7 @@ time_update(void )
 			);
 			simlog_entry(buf );
 		}
-		last_time_sec = sec;
+		last_time_sec = seconds;
 	}
 	else if ( scenario_state == ScenarioStopped )
 	{
@@ -1735,7 +1746,9 @@ start_scenario(const char *name )
 		sprintf(simmgr_shm->status.scenario.active, "%s", name );
 		
 		sprintf(simmgr_shm->status.scenario.start, "%s", timeBuf );
-		sprintf(simmgr_shm->status.scenario.runtime, "%s", "00:00:00" );
+		sprintf(simmgr_shm->status.scenario.runtimeAbsolute, "%s", "00:00:00" );		
+		sprintf(simmgr_shm->status.scenario.runtimeScenario, "%s", "00:00:00" );
+		sprintf(simmgr_shm->status.scenario.runtimeScene, "%s", "00:00:00" );
 		//sprintf(simmgr_shm->status.scenario.scene_name, "%s", "init" );
 		//simmgr_shm->status.scenario.scene_id = 0;
 		

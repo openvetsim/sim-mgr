@@ -392,6 +392,7 @@ main( int argc, const char* argv[] )
 							}
 							else
 							{
+								addComment((char *)value.c_str() );
 								sts = 5;
 							}
 						}
@@ -688,7 +689,11 @@ sendStatus(void )
 	cout << ",\n";
 	makejson(cout, "start", simmgr_shm->status.scenario.start );
 	cout << ",\n";
-	makejson(cout, "runtime", simmgr_shm->status.scenario.runtime );
+	makejson(cout, "runtime", simmgr_shm->status.scenario.runtimeAbsolute );
+	cout << ",\n";
+	makejson(cout, "runtimeScenario", simmgr_shm->status.scenario.runtimeScenario );
+	cout << ",\n";
+	makejson(cout, "runtimeScene", simmgr_shm->status.scenario.runtimeScene );
 	cout << ",\n";
 	makejson(cout, "scene_name", simmgr_shm->status.scenario.scene_name );
 	cout << ",\n";

@@ -65,6 +65,7 @@ char buf[1024];
 char msgbuf[2048];
 
 // Time values, to track start time and elapsed time
+// This is the "absolute" time
 std::time_t scenario_start_time;
 std::time_t now;
 std::time_t scenario_run_time;
@@ -278,16 +279,21 @@ int
 updateScenarioState(ScenarioState new_state)
 {
 	int rval = true;
-	
-	if ( new_state != scenario_state )
+	ScenarioState old_state;
+	old_state = scenario_state;
+	if ( new_state != old_state )
 	{
-		if ( ( new_state == ScenarioTerminate ) && ( ( scenario_state != ScenarioRunning ) && ( scenario_state != ScenarioPaused )) )
+		if ( ( new_state == ScenarioTerminate ) && ( ( old_state != ScenarioRunning ) && ( old_state != ScenarioPaused )) )
 		{
 			rval = false;
+			sprintf(msgbuf, "Terminate requested while in state %d", old_state );
+			simlog_entry(msgbuf );
 		}
-		else if ( ( new_state == ScenarioPaused ) && ( ( scenario_state != ScenarioRunning ) && ( scenario_state != ScenarioPaused )) )
+		else if ( ( new_state == ScenarioPaused ) && ( ( old_state != ScenarioRunning ) && ( old_state != ScenarioPaused )) )
 		{
 			rval = false;
+			sprintf(msgbuf, "Pause requested while in state %d", old_state );
+			simlog_entry(msgbuf );
 		}
 		else 
 		{
@@ -305,9 +311,16 @@ updateScenarioState(ScenarioState new_state)
 					(void)resetAllParameters();
 					break;
 				case ScenarioRunning:
+					if ( old_state == ScenarioPaused )
+					{
+						sprintf(msgbuf, "Resume" );
+						simlog_entry(msgbuf );
+					}
 					sprintf(simmgr_shm->status.scenario.state, "Running" );
 					break;
 				case ScenarioPaused:
+					sprintf(msgbuf, "Pause" );
+					simlog_entry(msgbuf );
 					sprintf(simmgr_shm->status.scenario.state, "Paused" );
 					break;
 				case ScenarioTerminate:	// Request from SIM II
@@ -714,6 +727,7 @@ time_update(void )
 	struct tm tm;
 	int hour;
 	int min;
+	int seconds;
 	int sec;
 	
 	the_time = time(NULL );
@@ -723,8 +737,17 @@ time_update(void )
 	sprintf(simmgr_shm->server.server_time, "%s", buf );
 	
 	now = std::time(nullptr );
-	sec = (int)difftime(now, scenario_start_time );
-	if ( ( sec > MAX_SCENARIO_RUNTIME ) &&
+	seconds = (int)difftime(now, scenario_start_time );
+	
+	if ( ( scenario_state == ScenarioRunning ) || 
+		 ( scenario_state == ScenarioPaused ) )
+	{
+		sec = seconds;
+		min = (sec / 60);
+		hour = min / 60;
+		sprintf(simmgr_shm->status.scenario.runtimeAbsolute, "%02d:%02d:%02d", hour, min%60, sec%60);
+	}
+	if ( ( seconds > MAX_SCENARIO_RUNTIME ) &&
 		 ( ( scenario_state == ScenarioRunning ) || 
 		   ( scenario_state == ScenarioPaused ) ) )
 	{
@@ -737,12 +760,17 @@ time_update(void )
 	}
 	else if ( scenario_state == ScenarioRunning )
 	{
+		sec = simmgr_shm->status.scenario.elapsed_msec_scenario / 1000;
 		min = (sec / 60);
 		hour = min / 60;
-		sec = sec%60;
-		sprintf(simmgr_shm->status.scenario.runtime, "%02d:%02d:%02d", hour, min%60, sec);
-	
-		if ( ( sec == 0 ) && ( last_time_sec != 0 ) )
+		sprintf(simmgr_shm->status.scenario.runtimeScenario, "%02d:%02d:%02d", hour, min%60, sec%60);
+		
+		sec = simmgr_shm->status.scenario.elapsed_msec_scene / 1000;
+		min = (sec / 60);
+		hour = min / 60;
+		sprintf(simmgr_shm->status.scenario.runtimeScene, "%02d:%02d:%02d", hour, min%60, sec%60);
+		
+		if ( ( seconds == 0 ) && ( last_time_sec != 0 ) )
 		{
 			// Do periodic Stats update every minute
 			sprintf(buf, "VS: Temp: %0.1f; RR: %d; awRR: %d; HR: %d; %s; BP: %d/%d; SPO2: %d; etCO2: %d mmHg; Probes: ECG: %s; BP: %s; SPO2: %s; ETCO2: %s; Temp %s",
@@ -763,7 +791,7 @@ time_update(void )
 			);
 			simlog_entry(buf );
 		}
-		last_time_sec = sec;
+		last_time_sec = seconds;
 	}
 	else if ( scenario_state == ScenarioStopped )
 	{
@@ -1792,7 +1820,9 @@ start_scenario(const char *name )
 		sprintf(simmgr_shm->status.scenario.active, "%s", name );
 		
 		sprintf(simmgr_shm->status.scenario.start, "%s", timeBuf );
-		sprintf(simmgr_shm->status.scenario.runtime, "%s", "00:00:00" );
+		sprintf(simmgr_shm->status.scenario.runtimeAbsolute, "%s", "00:00:00" );		
+		sprintf(simmgr_shm->status.scenario.runtimeScenario, "%s", "00:00:00" );
+		sprintf(simmgr_shm->status.scenario.runtimeScene, "%s", "00:00:00" );
 		//sprintf(simmgr_shm->status.scenario.scene_name, "%s", "init" );
 		//simmgr_shm->status.scenario.scene_id = 0;
 		
@@ -1825,22 +1855,30 @@ checkEvents(void )
 		takeInstructorLock();
 		while ( lastEventLogged != simmgr_shm->eventListNext )
 		{
-			lastEventLogged++;
 			sprintf(msgbuf, "Event: %s", simmgr_shm->eventList[lastEventLogged].eventName );
 			simlog_entry(msgbuf );
+			lastEventLogged++;
+			if ( lastEventLogged >= EVENT_LIST_SIZE )
+			{
+				lastEventLogged = 0;
+			}
 		}
 		while ( lastCommentLogged != simmgr_shm->commentListNext )
 		{
-			lastCommentLogged++;
 			if ( strlen(simmgr_shm->commentList[lastCommentLogged].comment ) == 0 )
 			{
 				sprintf(msgbuf, "Null Comment: lastCommentLogged is %d simmgr_shm->commentListNext is %d State is %d\n",
 					lastCommentLogged, simmgr_shm->commentListNext, scenario_state );
-				lastCommentLogged = simmgr_shm->commentListNext;
+				log_message("Error", msgbuf );
 			}
 			else
 			{
 				simlog_entry(simmgr_shm->commentList[lastCommentLogged].comment );
+			}
+			lastCommentLogged++;
+			if ( lastCommentLogged >= COMMENT_LIST_SIZE )
+			{
+				lastCommentLogged = 0;
 			}
 		}
 		releaseInstructorLock();

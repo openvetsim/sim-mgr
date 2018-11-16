@@ -579,22 +579,25 @@ releaseInstructorLock()
  *
  * Must be called with instructor lock held
  */
-static char buf[2048];
 void
 addEvent(char *str )
 {
 	int eventNext;
 
 	// Event: add to event list at end and increment eventListNext
-	eventNext = simmgr_shm->eventListNext + 1;
+	eventNext = simmgr_shm->eventListNext;
 	if ( eventNext >= EVENT_LIST_SIZE )
 	{
 		eventNext = 0;
 	}
+	
 	sprintf(simmgr_shm->eventList[eventNext].eventName, "%s", str );
+	eventNext += 1;
+	if ( eventNext >= EVENT_LIST_SIZE )
+	{
+		eventNext = 0;
+	}
 	simmgr_shm->eventListNext = eventNext;
-	sprintf(buf, "Event: %d %s", eventNext, str );
-	log_message("", buf );
 }
 
 /*
@@ -608,14 +611,18 @@ addComment(char *str )
 {
 	int commentNext;
 	
-	// Event: add to event list at end and increment commentListNext
-	commentNext = simmgr_shm->commentListNext + 1;
+	commentNext = simmgr_shm->commentListNext;
 	if ( commentNext >= COMMENT_LIST_SIZE )
 	{
 		commentNext = 0;
 	}
+	// Event: add to Comment list at end and increment commentListNext
 	sprintf(simmgr_shm->commentList[commentNext].comment, "%s", str );
+	
+	commentNext += 1;
+	if ( commentNext >= COMMENT_LIST_SIZE )
+	{
+		commentNext = 0;
+	}
 	simmgr_shm->commentListNext = commentNext;
-	sprintf(buf, "Comment: %d %s", commentNext, str );
-	log_message("", buf );
 }

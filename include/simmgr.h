@@ -1,5 +1,5 @@
 /*
- * simmagr.h
+ * simmgr.h
  *
  * Simulation Manager
  *
@@ -91,11 +91,15 @@ struct scenario
 {
 	char active[STR_SIZE];		// Name of active scenario
 	char start[STR_SIZE];		// Date/Time scenario started
-	char runtime[STR_SIZE];
+	char runtimeAbsolute[STR_SIZE];
+	char runtimeScenario[STR_SIZE];
+	char runtimeScene[STR_SIZE];
 	char state[STR_SIZE];
 	char scene_name[STR_SIZE];	// Currently running scene
 	int scene_id;				// Currently running scene
 	int record;					// Set in initiator section to start/stop video recording
+	int elapsed_msec_scenario;
+	int elapsed_msec_scene;
 };
 
 struct respiration
@@ -263,7 +267,7 @@ struct comment_inj
 	char 	comment[COMMENT_SIZE];
 };
 #define EVENT_LIST_SIZE			128
-#define COMMENT_LIST_SIZE		4
+#define COMMENT_LIST_SIZE		16
 #define RESP_HISTORY_DEPTH		5
 #define CARDIAC_HISTORY_DEPTH	10
 #define DECAY_SECONDS			10

@@ -92,6 +92,7 @@ struct scenario_event *new_event;
 int parse_state = PARSE_STATE_NONE;
 int parse_init_state = PARSE_INIT_STATE_NONE;
 int parse_scene_state = PARSE_SCENE_STATE_NONE;
+int parse_header_state = PARSE_HEADER_STATE_NONE;
 
 static void saveData(const xmlChar *xmlName, const xmlChar *xmlValue );
 static int readScenario(const char *filename);
@@ -100,9 +101,11 @@ static struct scenario_scene *findScene(int scene_id );
 static struct scenario_scene *showScenes();
 static void startScene(int sceneId );
 
+// loopStart and loopStop are used to measure the actual sleep time of the scenario loop,
+// to calculate the time in a scene and in the scenario
 struct timespec loopStart;
 struct timespec loopStop;
-int elapsed_msec;
+
 int eventLast;	// Index of last processed event_callback
 
 struct timespec cprStart; // Time of first CPR detected
@@ -111,7 +114,8 @@ int cprCumulative = 0;		// Cumulative time for CPR active in this scene
 
 const char *parse_states[] =
 {
-	"PARSE_STATE_NONE", "PARSE_STATE_INIT", "PARSE_STATE_SCENE"
+	"PARSE_STATE_NONE", "PARSE_STATE_INIT", "PARSE_STATE_SCENE",
+	"PARSE_STATE_HEADER"
 };
 
 const char *parse_init_states[] =
@@ -124,6 +128,12 @@ const char *parse_scene_states[] =
 {
 	"NONE", "INIT", "CARDIAC", "RESPIRATION",
 	"GENERAL", "VOCALS", "TIMEOUT", "TRIGS", "TRIG"
+};
+
+const char *parse_header_states[] =
+{
+	"NONE", "AUTHOR", "TITLE", "DATE_OF_CREATION",
+	"DESCRIPTION"
 };
 
 const char *trigger_tests[] =
@@ -148,8 +158,9 @@ char logMsg[512];
  */
 
 char usage[] = "[-cv] [-S sessionID] xml-file-name";
-char msgbuf[1024];
-char getArgList[] = "cvS:";
+#define MAX_MSGBUF_SIZE 1024
+char msgbuf[MAX_MSGBUF_SIZE];
+char getArgList[] = "cvS:q";
 
 int 
 main(int argc, char **argv)
@@ -158,6 +169,8 @@ main(int argc, char **argv)
 	int c;
 	int sts;
 	char *sesid = NULL;
+	int q = false;
+	int i;
 	
 	opterr = 0;
 	while ((c = getopt(argc, argv, getArgList )) != -1 )
@@ -174,6 +187,9 @@ main(int argc, char **argv)
 				sesid = optarg;
 				runningAsDemo = 1;
 				break;
+			case 'q':
+				q = true;
+				break;
 			case '?':
 				if (isprint (optopt))
 					fprintf (stderr, "Unknown option `-%c'.\n", optopt);
@@ -187,7 +203,8 @@ main(int argc, char **argv)
 		}
 		
 	}
-	if ( optind >= argc )
+	
+	if ( !q && optind >= argc )
 	{
 		//sprintf(msgbuf, "%s: %s\n", argv[0], usage );
 		//log_message("", msgbuf );
@@ -195,15 +212,7 @@ main(int argc, char **argv)
         return(1);
 	}
 	
-	sprintf(msgbuf, "scenario: Start %s (%s )", argv[optind], sesid );
-	if ( !checkOnly )
-	{
-		log_message("", msgbuf );
-	}
-	if ( verbose )
-	{
-		fprintf(stderr, "%s\n", msgbuf );
-	}
+	
 		
 	if ( checkOnly )
 	{
@@ -215,11 +224,35 @@ main(int argc, char **argv)
 		// Wait for Shared Memory to become available
 		while ( initSHM(OPEN_ACCESS, sesid ) != 0 )
 		{
-			sprintf(msgbuf, "scenario: SHM Failed - waiting" );
+			snprintf(msgbuf, MAX_MSGBUF_SIZE, "scenario: SHM Failed - waiting" );
 			log_message("", msgbuf );
 			sleep(10 );
 		}
 	}
+	if ( q ) 
+	{
+		// Show Comment data
+		printf("commentListNext: %d\n", simmgr_shm->commentListNext );
+		for ( i = 0 ; i < COMMENT_LIST_SIZE ; i++ )
+		{
+			printf("%d: %s\n", i, simmgr_shm->commentList[i].comment );
+		}
+		exit ( 0 );
+	}
+	
+	snprintf(msgbuf, MAX_MSGBUF_SIZE, "Scenario File %s SessionID %s", argv[optind], sesid );
+	if ( !checkOnly )
+	{
+		log_message("", msgbuf );
+	}
+	if ( verbose )
+	{
+		fprintf(stderr, "%s\n", msgbuf );
+	}
+	
+	simmgr_shm->status.scenario.elapsed_msec_scenario = 0;
+	simmgr_shm->status.scenario.elapsed_msec_scene = 0;
+	
 	// Allocate and clear the base scenario structure
 	scenario = (struct scenario_data *)calloc(1, sizeof(struct scenario_data) );
 	initializeParameterStruct(&scenario->initParams );
@@ -231,8 +264,7 @@ main(int argc, char **argv)
 
     if ( readScenario(argv[optind]) < 0 )
 	{
-		
-		sprintf(msgbuf, "scenario: readScenario Fails" );
+		snprintf(msgbuf, MAX_MSGBUF_SIZE, "scenario: readScenario Fails" );
 		if ( !checkOnly )
 		{
 			log_message("", msgbuf );
@@ -258,7 +290,7 @@ main(int argc, char **argv)
 	{
 		printf("Calling findScene for scenario\n" );
 	}
-	sprintf(msgbuf, "scenario: Calling findScene for scenario" );
+	snprintf(msgbuf, MAX_MSGBUF_SIZE, "scenario: Calling findScene for scenario" );
 	if ( !checkOnly )
 	{
 		log_message("", msgbuf );
@@ -267,15 +299,16 @@ main(int argc, char **argv)
 	{
 		fprintf(stderr, "%s\n", msgbuf );
 	}
+	
 	// Get the name of the current scene
 	current_scene = findScene(current_scene_id );
 	if ( ! current_scene )
 	{
-		sprintf(msgbuf, "Starting scene not found" );
+		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Starting scene not found in XML file" );
 		current_scene_id = -1;
 		if ( !checkOnly )
 		{
-			log_message("", msgbuf );
+			addComment(msgbuf );
 		}
 		if ( verbose )
 		{
@@ -307,7 +340,7 @@ main(int argc, char **argv)
 	{
 		printf("Calling processInit for scenario\n" );
 	}
-	sprintf(msgbuf, "scenario: Calling processInit for scenario" );
+	snprintf(msgbuf, MAX_MSGBUF_SIZE, "scenario: Calling processInit for scenario" );
 	log_message("", msgbuf );
 	simmgr_shm->status.cpr.compression = 0;
 	simmgr_shm->status.cpr.duration = 0;
@@ -321,6 +354,16 @@ main(int argc, char **argv)
 	simmgr_shm->status.respiration.manual_breath = 0;
 	simmgr_shm->status.respiration.manual_count = 0;
 	simmgr_shm->status.general.temperature_enable = 0;
+	
+	// Log the Scenario Name
+	snprintf(msgbuf, MAX_MSGBUF_SIZE, "Title: %s", scenario->title );
+	addComment(msgbuf );
+	snprintf(msgbuf, MAX_MSGBUF_SIZE, "Author: %s", scenario->author );
+	addComment(msgbuf );
+	snprintf(msgbuf, MAX_MSGBUF_SIZE, "Created: %s", scenario->date_created );
+	addComment(msgbuf );
+	snprintf(msgbuf, MAX_MSGBUF_SIZE, "Description: %s", scenario->description );
+	addComment(msgbuf );
 	
 	// Apply initialization parameters
 	processInit(&scenario->initParams );
@@ -342,8 +385,8 @@ main(int argc, char **argv)
 		printf("Starting Loop\n" );
 	}
 
-	clock_gettime( CLOCK_REALTIME, &loopStart );
-	elapsed_msec = 0;
+	simmgr_shm->status.scenario.elapsed_msec_scenario = 0;
+	simmgr_shm->status.scenario.elapsed_msec_scene = 0;
 	
 	cprActive = 0;
 	cprCumulative = 0;
@@ -364,8 +407,9 @@ main(int argc, char **argv)
 				// If the scenario needs to do any cleanup, this is the place.
 				
 				// After setting state to Stopped, the simmgr will kill the scenario process
-				sprintf(msgbuf, "scenario: Terminate" );
-				log_message("", msgbuf );
+				snprintf(msgbuf, MAX_MSGBUF_SIZE, "scenario: Terminate" );
+				//log_message("", msgbuf );
+				addComment(msgbuf );
 				sts = takeInstructorLock();
 				if ( !sts )
 				{
@@ -379,8 +423,9 @@ main(int argc, char **argv)
 		{
 			if ( scenario_state != ScenarioStopped )
 			{
-				sprintf(msgbuf, "scenario: Stopped" );
-				log_message("", msgbuf );
+				snprintf(msgbuf, MAX_MSGBUF_SIZE, "scenario: Stopped" );
+				//log_message("", msgbuf );
+				addComment(msgbuf );
 				scenario_state = ScenarioStopped;
 			}
 		}
@@ -397,12 +442,13 @@ main(int argc, char **argv)
 		}
 		if ( loopCount++ == 100 )
 		{
-			sprintf(msgbuf, "%s: timeout %d elapsed %d HR %d  BP %d/%d",
-				simmgr_shm->status.scenario.state, current_scene->timeout, elapsed_msec,
+			/*sprintf(msgbuf, "%s: timeout %d elapsed %d %d %d HR %d  BP %d/%d",
+				simmgr_shm->status.scenario.state, current_scene->timeout, 
+				simmgr_shm->status.scenario.elapsed_msec_absolute, simmgr_shm->status.scenario.elapsed_msec_scenario, simmgr_shm->status.scenario.elapsed_msec_scene,
 				getValueFromName((char *)"cardiac", (char *)"rate"),
 				getValueFromName((char *)"cardiac", (char *)"bps_sys"),
 				getValueFromName((char *)"cardiac", (char *)"bps_dia") );
-			log_message("", msgbuf );
+			log_message("", msgbuf ); */
 			loopCount = 0;
 		}
 	}
@@ -420,7 +466,7 @@ findScene(int scene_id )
 {
 	struct snode *snode;
 	struct scenario_scene *scene;
-	int limit = 50;
+	//int limit = 50;
 	
 	snode = scenario->scene_list.next;
 	
@@ -431,14 +477,16 @@ findScene(int scene_id )
 		{
 			return ( scene );
 		}
+		/*
 		if ( limit-- == 0 )
 		{
 			printf("findScene Limit reached\n" );
 			sprintf(msgbuf, "scenario: findScene Limit reached" );
 			log_message("", msgbuf );
-	
+			addComment(msgbuf );
 			exit ( -2 );
 		}
+		*/
 		snode = get_next_llist(snode );
 	}
 	return ( NULL );
@@ -623,32 +671,32 @@ logTrigger(struct scenario_trigger *trig, int time )
 		switch ( trig->test )
 		{
 			case TRIGGER_TEST_EVENT:
-				sprintf(msgbuf, "Trig Event: %s", trig->param_element );
+				snprintf(msgbuf, MAX_MSGBUF_SIZE, "Scene Trigger Event: %s", trig->param_element );
 				break;
 		
 			case TRIGGER_TEST_INSIDE:
-				sprintf(msgbuf, "Trig: %d < %s:%s < %d", 
+				snprintf(msgbuf, MAX_MSGBUF_SIZE, "Scene Trigger: %d < %s:%s < %d", 
 					trig->value, trig->param_class, trig->param_element, trig->value2 );
 				break;
 		
 			case TRIGGER_TEST_OUTSIDE:
-				sprintf(msgbuf, "Trig: %d > %s:%s > %d", 
+				snprintf(msgbuf, MAX_MSGBUF_SIZE, "Scene Trigger: %d > %s:%s > %d", 
 					trig->value, trig->param_class, trig->param_element, trig->value2 );
 				break;
 				
 			default:
-				sprintf(msgbuf, "Trig: %s:%s %s %d", 
+				snprintf(msgbuf, MAX_MSGBUF_SIZE, "Scene Trigger: %s:%s %s %d", 
 					trig->param_class, trig->param_element, trigger_tests_sym[trig->test], trig->value );
 				break;
 		}
 	}
 	else if ( time )
 	{
-		sprintf(msgbuf, "Trig: Timeout %d seconds", time );
+		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Scene Trigger: Timeout %d seconds", time );
 	}
 	else
 	{
-		sprintf(msgbuf, "Trig: unknown" );
+		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Scene Trigger: unknown" );
 	}
 		
 	sts = takeInstructorLock();
@@ -780,13 +828,15 @@ scene_check(void )
 		snode = get_next_llist(snode );
 	}
 	// Check timeout
+	clock_gettime( CLOCK_REALTIME, &loopStop );
+	sec_diff = ( loopStop.tv_sec - loopStart.tv_sec );
+	msec_diff = ( ( ( sec_diff * 1000000000)+loopStop.tv_nsec) - loopStart.tv_nsec ) / 1000000;
+	simmgr_shm->status.scenario.elapsed_msec_scenario += msec_diff;
+	simmgr_shm->status.scenario.elapsed_msec_scene += msec_diff;
+		
 	if ( current_scene->timeout )
 	{
-		clock_gettime( CLOCK_REALTIME, &loopStop );
-		sec_diff = ( loopStop.tv_sec - loopStart.tv_sec );
-		msec_diff = ( ( ( sec_diff * 1000000000)+loopStop.tv_nsec) - loopStart.tv_nsec ) / 1000000;
-		elapsed_msec += msec_diff;
-		if ( elapsed_msec >=  ( current_scene->timeout * 1000 ) )
+		if ( simmgr_shm->status.scenario.elapsed_msec_scene >=  ( current_scene->timeout * 1000 ) )
 		{
 			logTrigger((struct scenario_trigger *)0, current_scene->timeout );
 			startScene(current_scene->timeout_scene );
@@ -805,17 +855,19 @@ startScene(int sceneId )
 	if ( ! new_scene )
 	{
 		fprintf(stderr, "Scene %d not found", sceneId );
-		sprintf(msgbuf, "Scene %d not found", sceneId );
-		log_message("", msgbuf );
+		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Scene %d not found. Terminating.", sceneId );
+		addComment(msgbuf );
 		takeInstructorLock();
 		sprintf(simmgr_shm->instructor.scenario.state, "%s", "Terminate" );
+		sprintf(simmgr_shm->status.scenario.scene_name, "%s", "" );
 		releaseInstructorLock();
 		return;
 	}
 	current_scene = new_scene;
-	elapsed_msec = 0;
+	simmgr_shm->status.scenario.elapsed_msec_scene = 0;
 	cprCumulative = 0;
 	sprintf(simmgr_shm->status.scenario.scene_name, "%s", current_scene->name );
+
 	simmgr_shm->status.scenario.scene_id = sceneId;
 	simmgr_shm->status.respiration.manual_count = 0;
 	
@@ -825,8 +877,8 @@ startScene(int sceneId )
 		{
 			printf("End scene %s\n", current_scene->name );
 		}
-		sprintf(msgbuf, "End Scene %d %s", sceneId, current_scene->name );
-		log_message("", msgbuf );
+		snprintf(msgbuf, MAX_MSGBUF_SIZE, "End Scene %d %s", sceneId, current_scene->name );
+		addComment(msgbuf );
 		takeInstructorLock();
 		sprintf(simmgr_shm->instructor.scenario.state, "%s", "Terminate" );
 		releaseInstructorLock();
@@ -837,8 +889,8 @@ startScene(int sceneId )
 		{
 			printf("New scene %s\n", current_scene->name );
 		}
-		sprintf(msgbuf, "New Scene %d %s", sceneId, current_scene->name );
-		log_message("", msgbuf );
+		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Start Scene %d: %s", sceneId, current_scene->name );
+		addComment(msgbuf );
 		processInit(&current_scene->initParams );
 	}
 }
@@ -1124,9 +1176,31 @@ saveData(const xmlChar *xmlName, const xmlChar *xmlValue )
 				}
 			}
 			break;
-			
+		case PARSE_STATE_HEADER:
+			if ( xml_current_level == 2 )
+			{
+				if ( strcmp(xmlLevels[2].name, "author" ) == 0 )
+				{
+					snprintf(scenario->author, LONG_STRING_SIZE, "%s", value );
+				}
+				else if ( strcmp(xmlLevels[2].name, "date_created" ) == 0 )
+				{
+					snprintf(scenario->date_created, NORMAL_STRING_SIZE, "%s", value );
+				}
+				else if ( strcmp(xmlLevels[2].name, "description" ) == 0 )
+				{
+					snprintf(scenario->description, LONG_STRING_SIZE, "%s", value );
+				}
+			}
+			else if ( xml_current_level == 3 )
+			{
+				if ( strcmp(xmlLevels[3].name, "title" ) == 0 )
+				{
+					snprintf(scenario->title, LONG_STRING_SIZE, "%s", value );
+				}
+			}
 		default:
-			if ( verbose && strcmp(xmlLevels[1].name, "header" ) == 0 )
+			if ( strcmp(xmlLevels[1].name, "header" ) == 0 )
 			{
 				if ( xml_current_level == 2 )
 				{
@@ -1139,17 +1213,9 @@ saveData(const xmlChar *xmlName, const xmlChar *xmlValue )
 							printf("Author: %s\n", scenario->author );
 						}
 					}
-					else if ( strcmp(name, "title" ) == 0 )
-					{
-						sprintf(scenario->title, "%s", value );
-						if ( verbose )
-						{
-							printf("Title: %s\n", scenario->title );
-						}
-					}
 					else if ( strcmp(name, "date_of_creation" ) == 0 )
 					{
-						sprintf(scenario->date_created, "%s", value );
+						snprintf(scenario->date_created, NORMAL_STRING_SIZE, "%s", value );
 						if ( verbose )
 						{
 							printf("Created: %s\n", scenario->date_created );
@@ -1157,7 +1223,7 @@ saveData(const xmlChar *xmlName, const xmlChar *xmlValue )
 					}
 					else if ( strcmp(name, "description" ) == 0 )
 					{
-						sprintf(scenario->description, "%s", value );
+						snprintf(scenario->description, LONG_STRING_SIZE, "%s", value );
 						if ( verbose )
 						{
 							printf("Description: %s\n", scenario->description );
@@ -1168,6 +1234,18 @@ saveData(const xmlChar *xmlName, const xmlChar *xmlValue )
 						if ( verbose)
 						{
 							printf("In Header, Unhandled: Name is %s, Value, %s\n", xmlLevels[xml_current_level].name, value );
+						}
+					}
+				}
+				else if ( xml_current_level == 3 )
+				{
+					name = xmlLevels[3].name;
+					if ( strcmp( name, "name" ) == 0 )
+					{
+						snprintf(scenario->title, LONG_STRING_SIZE, "%s", value );
+						if ( verbose )
+						{
+							printf("Title: %s\n", scenario->title );
 						}
 					}
 				}
@@ -1215,7 +1293,7 @@ startParseState(int lvl, char *name )
 		case 0:		// Top level - no actions
 			break;
 			
-		case 1:	// header, profile, media, events have no action
+		case 1:	// profile, media, events have no action
 			if ( strcmp(name, "init" ) == 0 )
 			{
 				parse_state = PARSE_STATE_INIT;
@@ -1235,6 +1313,12 @@ startParseState(int lvl, char *name )
 			else if ( strcmp(name, "events" ) == 0 )
 			{
 				parse_state = PARSE_STATE_EVENTS;
+				sprintf(current_event_catagory, "%s", "" );
+				sprintf(current_event_title, "%s", "" );
+			}
+			else if ( strcmp(name, "header" ) == 0 )
+			{
+				parse_state = PARSE_STATE_HEADER;
 				sprintf(current_event_catagory, "%s", "" );
 				sprintf(current_event_title, "%s", "" );
 			}
@@ -1298,6 +1382,25 @@ startParseState(int lvl, char *name )
 					else
 					{
 						parse_scene_state = PARSE_SCENE_STATE_NONE;
+					}
+					break;
+					
+				case PARSE_STATE_HEADER:
+					if ( strcmp(name, "author" ) == 0 )
+					{
+						parse_header_state = PARSE_HEADER_STATE_AUTHOR;
+					}
+					else if ( strcmp(name, "title" ) == 0 )
+					{
+						parse_header_state = PARSE_HEADER_STATE_TITLE;
+					}
+					else if ( strcmp(name, "date_of_creation" ) == 0 )
+					{
+						parse_header_state = PARSE_HEADER_STATE_DATE_OF_CREATION;
+					}
+					else if ( strcmp(name, "description" ) == 0 )
+					{
+						parse_header_state = PARSE_HEADER_STATE_DESCRIPTION;
 					}
 					break;
 					
@@ -1366,7 +1469,7 @@ startParseState(int lvl, char *name )
 						}
 					}
 					break;
-					
+				case PARSE_STATE_HEADER:
 				case PARSE_STATE_INIT:
 				case PARSE_STATE_NONE:
 					break;
@@ -1389,6 +1492,12 @@ startParseState(int lvl, char *name )
 		{
 			printf(" %s", parse_scene_states[parse_scene_state] );
 		}
+		/*
+		else if ( parse_state == PARSE_STATE_HEADER )
+		{
+			printf(" %s", parse_header_states[parse_header_state] );
+		}
+		*/
 		printf("\n" );
 	}
 }
@@ -1527,7 +1636,7 @@ processNode(xmlTextReaderPtr reader)
 		default:
 			if ( verbose )
 			{
-				printf("%d %d %s %d %d", 
+				printf("Node: %d %d %s %d %d", 
 					xmlTextReaderDepth(reader),
 					xmlTextReaderNodeType(reader),
 					name,

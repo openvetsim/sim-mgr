@@ -73,6 +73,7 @@ simlog_create()
 {
 	struct tm tm;
 	char timeStr[MAX_TIME_STR];
+	char msgBuf[MAX_LINE_LEN];
 	
 	// Format from status.scenario.start: "Thu Jun 16 09:31:53 2016"
 	strptime(simmgr_shm->status.scenario.start, "%c", &tm);
@@ -84,6 +85,7 @@ simlog_create()
 	{
 		simlog_line = 0;
 		simmgr_shm->logfile.active = 1;
+		snprintf(msgBuf, MAX_LINE_LEN, "Scenario: '%s' Date: %s", simmgr_shm->status.scenario.active, simmgr_shm->status.scenario.start );
 		simlog_write((char *)"Start" );
 		simlog_close();
 		sprintf(simmgr_shm->logfile.filename, "%s_%s.log", timeStr, simmgr_shm->status.scenario.active );
@@ -222,7 +224,11 @@ simlog_write(char *msg )
 		log_message("", "simlog_write empty string" );
 		return ( -1 );
 	}
-	fprintf(simlog_fd, "%s %s\n", simmgr_shm->status.scenario.runtime, msg );
+	fprintf(simlog_fd, "%s %s %s %s\n", 
+		simmgr_shm->status.scenario.runtimeAbsolute,
+		simmgr_shm->status.scenario.runtimeScenario,
+		simmgr_shm->status.scenario.runtimeScene, 
+		msg );
 
 	simlog_line++;
 	simmgr_shm->logfile.lines_written = simlog_line;
