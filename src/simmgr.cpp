@@ -727,7 +727,8 @@ time_update(void )
 	struct tm tm;
 	int hour;
 	int min;
-	int seconds;
+	int elapsedTimeSeconds;
+	int seconds;	
 	int sec;
 	
 	the_time = time(NULL );
@@ -737,17 +738,17 @@ time_update(void )
 	sprintf(simmgr_shm->server.server_time, "%s", buf );
 	
 	now = std::time(nullptr );
-	seconds = (int)difftime(now, scenario_start_time );
+	elapsedTimeSeconds = (int)difftime(now, scenario_start_time );
 	
 	if ( ( scenario_state == ScenarioRunning ) || 
 		 ( scenario_state == ScenarioPaused ) )
 	{
-		sec = seconds;
+		sec = elapsedTimeSeconds;
 		min = (sec / 60);
 		hour = min / 60;
 		sprintf(simmgr_shm->status.scenario.runtimeAbsolute, "%02d:%02d:%02d", hour, min%60, sec%60);
 	}
-	if ( ( seconds > MAX_SCENARIO_RUNTIME ) &&
+	if ( ( elapsedTimeSeconds > MAX_SCENARIO_RUNTIME ) &&
 		 ( ( scenario_state == ScenarioRunning ) || 
 		   ( scenario_state == ScenarioPaused ) ) )
 	{
@@ -770,6 +771,7 @@ time_update(void )
 		hour = min / 60;
 		sprintf(simmgr_shm->status.scenario.runtimeScene, "%02d:%02d:%02d", hour, min%60, sec%60);
 		
+		seconds = elapsedTimeSeconds % 60;
 		if ( ( seconds == 0 ) && ( last_time_sec != 0 ) )
 		{
 			// Do periodic Stats update every minute
