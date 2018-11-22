@@ -17,6 +17,7 @@
 //
 #define SIMMGR_VERSION		1
 #define STR_SIZE			64
+#define FILENAME_SIZE		256
 #define COMMENT_SIZE		1024
 #define SIMMGR_SHM_NAME			"/simmgr_shm"
 #define SIMMGR_SHM_DEMO_NAME	"/simdemo_shm"	// Will have Session ID appended
@@ -204,12 +205,12 @@ struct general
 };
 struct media
 {
-	char filename[STR_SIZE];
+	char filename[FILENAME_SIZE];
 	int play;
 };
 struct vocals
 {
-	char filename[STR_SIZE];
+	char filename[FILENAME_SIZE];
 	int repeat;
 	int volume;
 	int play;
@@ -220,8 +221,8 @@ struct logfile
 	sem_t	sema;	// Mutex lock - Used to allow multiple writers
 	int		active;
 	int		lines_written;
-	char	filename[STR_SIZE];
-	char	vfilename[STR_SIZE];
+	char	filename[FILENAME_SIZE];
+	char	vfilename[FILENAME_SIZE];
 };
 struct status
 {
@@ -290,6 +291,8 @@ struct simmgr_shm
 
 	// Log file status
 	struct logfile logfile;
+	
+	int eventListBuffer;
 	
 	// Event List - Used to post multiple messages to the various listeners
 	// Must only be written when instructor.sema is held

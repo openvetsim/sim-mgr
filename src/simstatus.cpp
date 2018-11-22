@@ -703,10 +703,10 @@ sendStatus(void )
 	cout << ",\n";
 	makejson(cout, "state", simmgr_shm->status.scenario.state );
 	cout << "\n},\n";
-	
 	cout << " \"logfile\" : {\n";
 	makejson(cout, "active", itoa(simmgr_shm->logfile.active, buffer, 10 ) );
 	cout << ",\n";
+	
 	makejson(cout, "filename", simmgr_shm->logfile.filename );
 	cout << ",\n";
 	makejson(cout, "lines_written", itoa(simmgr_shm->logfile.lines_written, buffer, 10 ) );

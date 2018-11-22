@@ -725,7 +725,6 @@ scene_check(void )
 	// Event checks 
 	while ( simmgr_shm->eventListNext != eventLast )
 	{
-		eventLast++;
 		snode = current_scene->trigger_list.next;
 		while ( snode )
 		{
@@ -740,6 +739,11 @@ scene_check(void )
 				}
 			}
 			snode = get_next_llist(snode );
+		}
+		eventLast++;
+		if ( eventLast >= EVENT_LIST_SIZE )
+		{
+			eventLast = 0;
 		}
 	}
 	

@@ -586,12 +586,12 @@ addEvent(char *str )
 
 	// Event: add to event list at end and increment eventListNext
 	eventNext = simmgr_shm->eventListNext;
-	if ( eventNext >= EVENT_LIST_SIZE )
-	{
-		eventNext = 0;
-	}
 	
 	sprintf(simmgr_shm->eventList[eventNext].eventName, "%s", str );
+	
+	snprintf(msg_buf, 2048, "Event %d: %s", eventNext, str );
+	log_message("", msg_buf );
+	
 	eventNext += 1;
 	if ( eventNext >= EVENT_LIST_SIZE )
 	{
@@ -612,10 +612,7 @@ addComment(char *str )
 	int commentNext;
 	
 	commentNext = simmgr_shm->commentListNext;
-	if ( commentNext >= COMMENT_LIST_SIZE )
-	{
-		commentNext = 0;
-	}
+
 	// Event: add to Comment list at end and increment commentListNext
 	sprintf(simmgr_shm->commentList[commentNext].comment, "%s", str );
 	

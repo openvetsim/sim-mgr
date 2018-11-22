@@ -62,7 +62,8 @@ int msec_time_update(void );
 void awrr_check(void );
 int iiLockTaken = 0;
 char buf[1024];
-char msgbuf[2048];
+#define MSGBUF_LENGTH	2048
+char msgbuf[MSGBUF_LENGTH];
 
 // Time values, to track start time and elapsed time
 // This is the "absolute" time
