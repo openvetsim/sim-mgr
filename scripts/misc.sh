@@ -43,4 +43,6 @@ git clone https://github.com/tkelleher/scenarios.git
 cd /var/www/html/
 git clone https://github.com/tkelleher/sim-player.git
 
-# update permissions 
+# update permissions for scenarios
+cd /var/www/html
+chmod -R 777 ./scenarios
