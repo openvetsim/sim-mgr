@@ -356,6 +356,7 @@ int takeInstructorLock();
 void releaseInstructorLock();
 void addEvent(char *str );
 void addComment(char *str );
+void lockAndComment(char *str );
 
 // Shared Parse functions
 int cardiac_parse(const char *elem, const char *value, struct cardiac *card );

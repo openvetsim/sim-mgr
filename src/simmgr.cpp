@@ -1541,8 +1541,10 @@ scan_commands(void )
 					// Manual Start - Go to Running for the run delay time
 					nibp_run_complete_time = now + NIBP_RUN_TIME;
 					nibp_state = NibpRunning;
-					sprintf(msgbuf, "NibpState Change: Idle to Running (%ld to %ld)", now, nibp_run_complete_time );
-					log_message("", msgbuf ); 
+					//sprintf(msgbuf, "NibpState Change: Idle to Running (%ld to %ld)", now, nibp_run_complete_time );
+					//log_message("", msgbuf );
+					snprintf(msgbuf, MSGBUF_LENGTH, "NIBP Read Manual" );
+					lockAndComment(msgbuf );
 				}
 				else if ( simmgr_shm->status.cardiac.nibp_freq != 0 )
 				{
@@ -1550,8 +1552,8 @@ scan_commands(void )
 					nibp_next_time = now + (simmgr_shm->status.cardiac.nibp_freq * 60);
 					nibp_state = NibpWaiting;
 					
-					sprintf(msgbuf, "NibpState Change: Idle to Waiting" );
-					log_message("", msgbuf ); 
+					//sprintf(msgbuf, "NibpState Change: Idle to Waiting" );
+					//log_message("", msgbuf ); 
 				}
 			}
 			break;
@@ -1572,8 +1574,8 @@ scan_commands(void )
 					nibp_run_complete_time = now + NIBP_RUN_TIME;
 					nibp_state = NibpRunning;
 					
-					sprintf(msgbuf, "NibpState Change: Waiting to Running" );
-					log_message("", msgbuf ); 
+					snprintf(msgbuf, MSGBUF_LENGTH, "NIBP Read Periodic" );
+					lockAndComment(msgbuf );
 					simmgr_shm->status.cardiac.nibp_read = 1;
 				}
 			}
@@ -1583,14 +1585,25 @@ scan_commands(void )
 			{
 				nibp_state = NibpIdle;
 				
-				sprintf(msgbuf, "NibpState Change: Running to Idle (cuff removed)" );
-				log_message("", msgbuf ); 
+				snprintf(msgbuf, MSGBUF_LENGTH, "NIBP Cuff while running" );
+				lockAndComment(msgbuf );
 			}
 			else 
 			{
 				if ( nibp_run_complete_time <= now )
 				{
+					int meanValue;
+					
 					simmgr_shm->status.cardiac.nibp_read = 0;
+					
+					meanValue = ((simmgr_shm->status.cardiac.bps_sys - simmgr_shm->status.cardiac.bps_dia) / 3) + simmgr_shm->status.cardiac.bps_dia;
+					snprintf(msgbuf, MSGBUF_LENGTH, "NIBP %d/%d (%d)mmHg %d bpm",
+						simmgr_shm->status.cardiac.bps_sys,
+						simmgr_shm->status.cardiac.bps_dia,
+						meanValue,
+						simmgr_shm->status.cardiac.nibp_rate );
+					lockAndComment(msgbuf );
+				
 					if ( simmgr_shm->status.cardiac.nibp_freq != 0 )
 					{
 						// Frequency set

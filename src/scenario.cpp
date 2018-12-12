@@ -111,6 +111,7 @@ int eventLast;	// Index of last processed event_callback
 struct timespec cprStart; // Time of first CPR detected
 int cprActive = 0;				// Flag to indicate CPR is active
 int cprCumulative = 0;		// Cumulative time for CPR active in this scene
+struct pulse puseStatus = { 0, 0, 0, 0 };
 
 const char *parse_states[] =
 {
@@ -308,7 +309,7 @@ main(int argc, char **argv)
 		current_scene_id = -1;
 		if ( !checkOnly )
 		{
-			addComment(msgbuf );
+			lockAndComment(msgbuf );
 		}
 		if ( verbose )
 		{
@@ -340,8 +341,8 @@ main(int argc, char **argv)
 	{
 		printf("Calling processInit for scenario\n" );
 	}
-	snprintf(msgbuf, MAX_MSGBUF_SIZE, "scenario: Calling processInit for scenario" );
-	log_message("", msgbuf );
+	///snprintf(msgbuf, MAX_MSGBUF_SIZE, "scenario: Calling processInit for scenario" );
+	//log_message("", msgbuf );
 	simmgr_shm->status.cpr.compression = 0;
 	simmgr_shm->status.cpr.duration = 0;
 	simmgr_shm->status.cardiac.bp_cuff = 0;
@@ -357,13 +358,15 @@ main(int argc, char **argv)
 	
 	// Log the Scenario Name
 	snprintf(msgbuf, MAX_MSGBUF_SIZE, "Title: %s", scenario->title );
-	addComment(msgbuf );
+	lockAndComment(msgbuf );
+	/*
 	snprintf(msgbuf, MAX_MSGBUF_SIZE, "Author: %s", scenario->author );
-	addComment(msgbuf );
+	lockAndComment(msgbuf );
 	snprintf(msgbuf, MAX_MSGBUF_SIZE, "Created: %s", scenario->date_created );
-	addComment(msgbuf );
+	lockAndComment(msgbuf );
 	snprintf(msgbuf, MAX_MSGBUF_SIZE, "Description: %s", scenario->description );
-	addComment(msgbuf );
+	lockAndComment(msgbuf );
+	*/
 	
 	// Apply initialization parameters
 	processInit(&scenario->initParams );
@@ -409,10 +412,11 @@ main(int argc, char **argv)
 				// After setting state to Stopped, the simmgr will kill the scenario process
 				snprintf(msgbuf, MAX_MSGBUF_SIZE, "scenario: Terminate" );
 				//log_message("", msgbuf );
-				addComment(msgbuf );
+				
 				sts = takeInstructorLock();
 				if ( !sts )
 				{
+					addComment(msgbuf );
 					scenario_state = ScenarioTerminate;
 					sprintf(simmgr_shm->instructor.scenario.state, "Stopped" );
 					releaseInstructorLock();
@@ -425,7 +429,7 @@ main(int argc, char **argv)
 			{
 				snprintf(msgbuf, MAX_MSGBUF_SIZE, "scenario: Stopped" );
 				//log_message("", msgbuf );
-				addComment(msgbuf );
+				lockAndComment(msgbuf );
 				scenario_state = ScenarioStopped;
 			}
 		}
@@ -483,7 +487,7 @@ findScene(int scene_id )
 			printf("findScene Limit reached\n" );
 			sprintf(msgbuf, "scenario: findScene Limit reached" );
 			log_message("", msgbuf );
-			addComment(msgbuf );
+			lockAndComment(msgbuf );
 			exit ( -2 );
 		}
 		*/
@@ -664,8 +668,6 @@ showScenes()
 void
 logTrigger(struct scenario_trigger *trig, int time )
 {
-	int sts;
-	
 	if ( trig )
 	{
 		switch ( trig->test )
@@ -699,13 +701,68 @@ logTrigger(struct scenario_trigger *trig, int time )
 		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Scene Trigger: unknown" );
 	}
 		
-	sts = takeInstructorLock();
-	if ( sts == 0 )
+	lockAndComment(msgbuf );
+}
+
+/**
+* pulse_check
+*
+* Check for start/stop palpations
+*/
+static void pulse_check(void )
+{
+	if ( ! puseStatus.right_dorsal && simmgr_shm->status.pulse.right_dorsal )
 	{
-		addComment(msgbuf );
-		releaseInstructorLock();
+		simmgr_shm->status.pulse.right_dorsal = true;
+		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Start Pulse Palpation Right Dorsal " );
+		lockAndComment(msgbuf);
 	}
-}			
+	else if ( puseStatus.right_dorsal && ! simmgr_shm->status.pulse.right_dorsal )
+	{
+		simmgr_shm->status.pulse.right_dorsal = false;
+		snprintf(msgbuf, MAX_MSGBUF_SIZE, "End Pulse Palpation Right Dorsal " );
+		lockAndComment(msgbuf);
+	}
+	
+	if ( ! puseStatus.left_dorsal && simmgr_shm->status.pulse.left_dorsal )
+	{
+		simmgr_shm->status.pulse.left_dorsal = true;
+		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Start Pulse Palpation Left Dorsal " );
+		lockAndComment(msgbuf);
+	}
+	else if ( puseStatus.left_dorsal && ! simmgr_shm->status.pulse.left_dorsal )
+	{
+		simmgr_shm->status.pulse.left_dorsal = false;
+		snprintf(msgbuf, MAX_MSGBUF_SIZE, "End Pulse Palpation Left Dorsal " );
+		lockAndComment(msgbuf);
+	}
+	
+	if ( ! puseStatus.right_femoral && simmgr_shm->status.pulse.right_femoral )
+	{
+		simmgr_shm->status.pulse.right_femoral = true;
+		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Start Pulse Palpation Right Femoral " );
+		lockAndComment(msgbuf);
+	}
+	else if ( puseStatus.right_femoral && ! simmgr_shm->status.pulse.right_femoral )
+	{
+		simmgr_shm->status.pulse.right_femoral = false;
+		snprintf(msgbuf, MAX_MSGBUF_SIZE, "End Pulse Palpation Right Femoral " );
+		lockAndComment(msgbuf);
+	}
+	
+	if ( ! puseStatus.left_femoral && simmgr_shm->status.pulse.left_femoral )
+	{
+		simmgr_shm->status.pulse.left_femoral = true;
+		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Start Pulse Palpation Left Femoral " );
+		lockAndComment(msgbuf);
+	}
+	else if ( puseStatus.left_femoral && ! simmgr_shm->status.pulse.left_femoral )
+	{
+		simmgr_shm->status.pulse.left_femoral = false;
+		snprintf(msgbuf, MAX_MSGBUF_SIZE, "End Pulse Palpation Left Femoral " );
+		lockAndComment(msgbuf);
+	}
+}
 /**
 * scene_check
 *
@@ -752,6 +809,8 @@ scene_check(void )
 		if ( simmgr_shm->status.cpr.compression == 0 )
 		{
 			cprActive = 0;
+			snprintf(msgbuf, MAX_MSGBUF_SIZE, "Stopping Compressions: Cumulative %d seconds", cprCumulative );
+			lockAndComment(msgbuf );
 		}
 		else
 		{
@@ -767,8 +826,14 @@ scene_check(void )
 		{
 			clock_gettime( CLOCK_REALTIME, &cprStart );
 			cprActive = 1;
+			snprintf(msgbuf, MAX_MSGBUF_SIZE, "Starting Compressions" );
+			lockAndComment(msgbuf );
 		}
 	}
+	
+	// Pulse Palpation Checks
+	pulse_check();
+	
 	// Trigger Checks
 	snode = current_scene->trigger_list.next;
 	while ( snode )
@@ -860,8 +925,8 @@ startScene(int sceneId )
 	{
 		fprintf(stderr, "Scene %d not found", sceneId );
 		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Scene %d not found. Terminating.", sceneId );
-		addComment(msgbuf );
 		takeInstructorLock();
+		addComment(msgbuf );
 		sprintf(simmgr_shm->instructor.scenario.state, "%s", "Terminate" );
 		sprintf(simmgr_shm->status.scenario.scene_name, "%s", "" );
 		releaseInstructorLock();
@@ -882,8 +947,8 @@ startScene(int sceneId )
 			printf("End scene %s\n", current_scene->name );
 		}
 		snprintf(msgbuf, MAX_MSGBUF_SIZE, "End Scene %d %s", sceneId, current_scene->name );
-		addComment(msgbuf );
 		takeInstructorLock();
+		addComment(msgbuf );
 		sprintf(simmgr_shm->instructor.scenario.state, "%s", "Terminate" );
 		releaseInstructorLock();
 	}
@@ -894,7 +959,7 @@ startScene(int sceneId )
 			printf("New scene %s\n", current_scene->name );
 		}
 		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Start Scene %d: %s", sceneId, current_scene->name );
-		addComment(msgbuf );
+		lockAndComment(msgbuf );
 		processInit(&current_scene->initParams );
 	}
 }

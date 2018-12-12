@@ -623,3 +623,23 @@ addComment(char *str )
 	}
 	simmgr_shm->commentListNext = commentNext;
 }
+
+/*
+ * lockAndComment
+ * @str - pointer to comment to add
+ *
+ * Take Instructor Lock and and comment
+ */	
+void
+lockAndComment(char *str )
+{
+	int commentNext;
+	int sts;
+	
+	sts = takeInstructorLock();
+	if ( !sts )
+	{
+		addComment(str );
+		releaseInstructorLock();
+	}
+}
