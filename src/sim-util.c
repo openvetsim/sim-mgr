@@ -633,7 +633,6 @@ addComment(char *str )
 void
 lockAndComment(char *str )
 {
-	int commentNext;
 	int sts;
 	
 	sts = takeInstructorLock();

@@ -112,7 +112,7 @@ simlog_entry(char *msg )
 	}
 	else
 	{
-		if ( ( strlen(simlog_file ) > 0 ) && ( simmgr_shm->logfile.active  ) );
+		if ( ( strlen(simlog_file ) > 0 ) && ( simmgr_shm->logfile.active  ) )
 		{
 			sts = simlog_open(SIMLOG_MODE_WRITE );
 			if ( sts ==0 )
