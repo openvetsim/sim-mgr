@@ -713,52 +713,52 @@ static void pulse_check(void )
 {
 	if ( ! puseStatus.right_dorsal && simmgr_shm->status.pulse.right_dorsal )
 	{
-		simmgr_shm->status.pulse.right_dorsal = true;
+		puseStatus.right_dorsal = true;
 		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Start Pulse Palpation Right Dorsal " );
 		lockAndComment(msgbuf);
 	}
 	else if ( puseStatus.right_dorsal && ! simmgr_shm->status.pulse.right_dorsal )
 	{
-		simmgr_shm->status.pulse.right_dorsal = false;
+		puseStatus.right_dorsal = false;
 		snprintf(msgbuf, MAX_MSGBUF_SIZE, "End Pulse Palpation Right Dorsal " );
 		lockAndComment(msgbuf);
 	}
 	
 	if ( ! puseStatus.left_dorsal && simmgr_shm->status.pulse.left_dorsal )
 	{
-		simmgr_shm->status.pulse.left_dorsal = true;
+		puseStatus.left_dorsal = true;
 		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Start Pulse Palpation Left Dorsal " );
 		lockAndComment(msgbuf);
 	}
 	else if ( puseStatus.left_dorsal && ! simmgr_shm->status.pulse.left_dorsal )
 	{
-		simmgr_shm->status.pulse.left_dorsal = false;
+		puseStatus.left_dorsal = false;
 		snprintf(msgbuf, MAX_MSGBUF_SIZE, "End Pulse Palpation Left Dorsal " );
 		lockAndComment(msgbuf);
 	}
 	
 	if ( ! puseStatus.right_femoral && simmgr_shm->status.pulse.right_femoral )
 	{
-		simmgr_shm->status.pulse.right_femoral = true;
+		puseStatus.right_femoral = true;
 		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Start Pulse Palpation Right Femoral " );
 		lockAndComment(msgbuf);
 	}
 	else if ( puseStatus.right_femoral && ! simmgr_shm->status.pulse.right_femoral )
 	{
-		simmgr_shm->status.pulse.right_femoral = false;
+		puseStatus.right_femoral = false;
 		snprintf(msgbuf, MAX_MSGBUF_SIZE, "End Pulse Palpation Right Femoral " );
 		lockAndComment(msgbuf);
 	}
 	
 	if ( ! puseStatus.left_femoral && simmgr_shm->status.pulse.left_femoral )
 	{
-		simmgr_shm->status.pulse.left_femoral = true;
+		puseStatus.left_femoral = true;
 		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Start Pulse Palpation Left Femoral " );
 		lockAndComment(msgbuf);
 	}
 	else if ( puseStatus.left_femoral && ! simmgr_shm->status.pulse.left_femoral )
 	{
-		simmgr_shm->status.pulse.left_femoral = false;
+		puseStatus.left_femoral = false;
 		snprintf(msgbuf, MAX_MSGBUF_SIZE, "End Pulse Palpation Left Femoral " );
 		lockAndComment(msgbuf);
 	}
