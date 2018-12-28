@@ -63,6 +63,8 @@ int msec_time_update(void );
 void awrr_check(void );
 int iiLockTaken = 0;
 char buf[1024];
+char sesid[1024];
+
 #define MSGBUF_LENGTH	2048
 char msgbuf[MSGBUF_LENGTH];
 
@@ -122,7 +124,6 @@ main(int argc, char *argv[] )
 	int sts;
 	char *ptr;
 	int scenarioCount;
-	char *sesid;
 	//char sesid[512] = { 0, };
 	char rbuf[512] = { 0, };
 	char cmd[512];
@@ -139,7 +140,7 @@ main(int argc, char *argv[] )
 	
 	if ( argc > 1 )
 	{
-		sesid = argv[1];
+		snprintf(sesid, 1024, "%s", argv[1] );
 		pid   = getpid();
 		ppid  = getppid();
 		
@@ -189,7 +190,7 @@ main(int argc, char *argv[] )
 	}
 	else
 	{
-		sesid = NULL;
+		snprintf(sesid, 1024, "%s", "" );
 	}
 	daemonize();
 	
@@ -1700,11 +1701,19 @@ int
 start_scenario(const char *name )
 {
 	char timeBuf[64];
-	char fname[128];
+	char fname[1024];
 	sprintf(msgbuf, "Start Scenario Request: %s", name );
 	log_message("", msgbuf ); 
-	sprintf(fname, "%s/%s/main.xml", "/var/www/html/scenarios", name );
-
+	
+	// Need to set name based on demo path, if runningAsDemo
+	if ( runningAsDemo )
+	{
+		snprintf(fname, 1024, "%s/%s/%s/main.xml", "/var/www/html/demo", sesid, name );
+	}
+	else
+	{
+		snprintf(fname, 1024, "%s/%s/main.xml", "/var/www/html/scenarios", name );
+	}
 	resetAllParameters();
 	
 	scenario_start_time = std::time(nullptr );
@@ -1717,11 +1726,18 @@ start_scenario(const char *name )
 	if ( scenarioPid == 0 )
 	{
 		// Child
-		
-		sprintf(msgbuf, "Start Scenario: execl %s  %s", "/usr/local/bin/scenario", fname );
-		log_message("", msgbuf ); 
-		
-		execl("/usr/local/bin/scenario", "scenario", fname, (char *)0 );
+		if ( runningAsDemo )
+		{
+			sprintf(msgbuf, "Start Scenario: execl %s  -S %s %s", "/usr/local/bin/scenario", sesid, fname );
+			log_message("", msgbuf );
+			execl("/usr/local/bin/scenario", "scenario", "-S", sesid, fname, (char *)0 );
+		}
+		else
+		{
+			sprintf(msgbuf, "Start Scenario: execl %s  %s", "/usr/local/bin/scenario", fname );
+			log_message("", msgbuf );
+			execl("/usr/local/bin/scenario", "scenario", fname, (char *)0 );
+		}
 		// execl does not return on success 
 		sprintf(msgbuf, "Start Scenario: execl fails for %s :%s", name, strerror(errno ) );
 		log_message("", msgbuf ); 
