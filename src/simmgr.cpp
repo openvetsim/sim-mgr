@@ -193,8 +193,9 @@ main(int argc, char *argv[] )
 	simmgr_shm->instructor.cpr.duration = -1;
 	
 	// instructor/defibrillation
-	simmgr_shm->status.defibrillation.last = -1;
-	simmgr_shm->status.defibrillation.energy = -1;
+	simmgr_shm->instructor.defibrillation.last = -1;
+	simmgr_shm->instructor.defibrillation.energy = -1;
+	simmgr_shm->instructor.defibrillation.shock = -1;
 	
 	clearAllTrends();
 
@@ -1517,7 +1518,10 @@ scan_commands(void )
 	// Defribbrilation
 	if ( simmgr_shm->instructor.defibrillation.shock >= 0 )
 	{
-		simmgr_shm->status.defibrillation.shock = simmgr_shm->instructor.defibrillation.shock;
+		if ( simmgr_shm->instructor.defibrillation.shock > 0 )
+		{
+			simmgr_shm->status.defibrillation.last += 1;
+		}
 		simmgr_shm->instructor.defibrillation.shock = -1;
 	}
 	if ( simmgr_shm->instructor.defibrillation.energy >= 0 )

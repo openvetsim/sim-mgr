@@ -598,6 +598,10 @@ addEvent(char *str )
 		eventNext = 0;
 	}
 	simmgr_shm->eventListNext = eventNext;
+	if ( strcmp(str, "aed" ) == 0 )
+	{
+		simmgr_shm->instructor.defibrillation.shock = 1;
+	}
 }
 
 /*

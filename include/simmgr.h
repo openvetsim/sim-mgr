@@ -255,6 +255,7 @@ struct instructor
 	struct vocals		vocals;
 	struct media		media;
 	struct cpr			cpr;
+	struct defibrillation	defibrillation;
 	char	eventName[STR_SIZE];
 };
 
