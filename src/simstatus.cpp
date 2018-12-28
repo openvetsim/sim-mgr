@@ -154,7 +154,7 @@ main( int argc, const char* argv[] )
 		Cgicc cgi;
 		const CgiEnvironment& env = cgi.getEnvironment();
 		for(c_iter = env.getCookieList().begin(); 
-			c_iter != env.getCookieList().end(); 
+		c_iter != env.getCookieList().end(); 
 			++c_iter ) 
 		{
 			key = c_iter->getName();
@@ -190,7 +190,7 @@ main( int argc, const char* argv[] )
 		releaseLock( iiLockTaken );
 		return ( 0 );
 	}	
-	if ( userid != -1 )
+	if ( userid == 5 )
 	{
 		runningAsDemo = 1;
 	}

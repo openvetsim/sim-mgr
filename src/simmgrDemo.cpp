@@ -24,6 +24,9 @@
 #include <arpa/inet.h>
 //#include <sys/timeb.h>
 #include <sys/time.h>
+#include <libgen.h>
+#include <dirent.h>
+#include <sys/stat.h>
 #include <math.h>
 
 #include <iostream>
@@ -43,7 +46,6 @@ void pulseDemoTimerInit(void );
 void pulseTimerRun(void );
 
 int start_scenario(const char *name );
-void recordStartStop(int record );
 void checkEvents(void );
 void clearAllTrends(void );
 void resetAllParameters(void );
@@ -61,9 +63,11 @@ int msec_time_update(void );
 void awrr_check(void );
 int iiLockTaken = 0;
 char buf[1024];
-char msgbuf[2048];
+#define MSGBUF_LENGTH	2048
+char msgbuf[MSGBUF_LENGTH];
 
 // Time values, to track start time and elapsed time
+// This is the "absolute" time
 std::time_t scenario_start_time;
 std::time_t now;
 std::time_t scenario_run_time;
@@ -218,7 +222,7 @@ main(int argc, char *argv[] )
 	// status/scenario
 	sprintf(simmgr_shm->status.scenario.active, "%s", "default" );
 	sprintf(simmgr_shm->status.scenario.state, "%s", "Stopped" );
-	simmgr_shm->instructor.scenario.record = 0;
+	simmgr_shm->status.scenario.record = 0;
 	
 	// instructor/sema
 	sem_init(&simmgr_shm->instructor.sema, 1, 1 ); // pshared =1, value =1
@@ -247,6 +251,10 @@ main(int argc, char *argv[] )
 	simmgr_shm->instructor.cpr.last = -1;
 	simmgr_shm->instructor.cpr.release = -1;
 	simmgr_shm->instructor.cpr.duration = -1;
+	// instructor/defibrillation
+	simmgr_shm->instructor.defibrillation.last = -1;
+	simmgr_shm->instructor.defibrillation.energy = -1;
+	simmgr_shm->instructor.defibrillation.shock = -1;
 	
 	clearAllTrends();
 
@@ -300,11 +308,11 @@ main(int argc, char *argv[] )
 	pulseDemoTimerInit();
 	
 	scenarioCount = 0;
-#define SCENARIO_LOOP_COUNT		39	// Run the scenario every SCENARIO_LOOP_COUNT iterations of the 5 msec loop
-#define SCENARIO_COMMCHECK  	10
-#define SCENARIO_EVENTCHECK		20
-#define SCENARIO_AWRRCHECK		30
-#define SCENARIO_TIMECHECK		36
+#define SCENARIO_LOOP_COUNT		19	// Run the scenario every SCENARIO_LOOP_COUNT iterations of the 10 msec loop
+#define SCENARIO_COMMCHECK  	5
+#define SCENARIO_EVENTCHECK		10
+#define SCENARIO_AWRRCHECK		15
+#define SCENARIO_TIMECHECK		18
 
 	while ( 1 )
 	{
@@ -330,11 +338,9 @@ main(int argc, char *argv[] )
 			default:
 				break;
 		}
-		usleep(5000);	// Sleep for 5 msec
+		usleep(10000);	// Sleep for 10 msec
 		
 		pulseTimerRun();
-		//simmgr_shm->status.respiration.awRR = simmgr_shm->status.respiration.rate;
-		//simmgr_shm->status.cardiac.avg_rate = simmgr_shm->status.cardiac.rate;
 	}
 }
 
@@ -342,14 +348,15 @@ int
 updateScenarioState(ScenarioState new_state)
 {
 	int rval = true;
-	
-	if ( new_state != scenario_state )
+	ScenarioState old_state;
+	old_state = scenario_state;
+	if ( new_state != old_state )
 	{
-		if ( ( new_state == ScenarioTerminate ) && ( ( scenario_state != ScenarioRunning ) && ( scenario_state != ScenarioPaused )) )
+		if ( ( new_state == ScenarioTerminate ) && ( ( old_state != ScenarioRunning ) && ( old_state != ScenarioPaused )) )
 		{
 			rval = false;
 		}
-		else if ( ( new_state == ScenarioPaused ) && ( ( scenario_state != ScenarioRunning ) && ( scenario_state != ScenarioPaused )) )
+		else if ( ( new_state == ScenarioPaused ) && ( ( old_state != ScenarioRunning ) && ( old_state != ScenarioPaused )) )
 		{
 			rval = false;
 		}
@@ -365,9 +372,16 @@ updateScenarioState(ScenarioState new_state)
 					(void)resetAllParameters();
 					break;
 				case ScenarioRunning:
+					if ( old_state == ScenarioPaused )
+					{
+						sprintf(msgbuf, "Resume" );
+						simlog_entry(msgbuf );
+					}
 					sprintf(simmgr_shm->status.scenario.state, "Running" );
 					break;
 				case ScenarioPaused:
+					sprintf(msgbuf, "Pause" );
+					simlog_entry(msgbuf );
 					sprintf(simmgr_shm->status.scenario.state, "Paused" );
 					break;
 				case ScenarioTerminate:	// Request from SIM II
@@ -394,7 +408,7 @@ updateScenarioState(ScenarioState new_state)
  * 3 - Calculate AWRR based on the average time of the recorded breaths within the past 90 seconds, excluding the past 2 seconds
  *
 */
-#define BREATH_CALC_LIMIT		3		// Max number of recorded breaths to count in calculation
+#define BREATH_CALC_LIMIT		4		// Max number of recorded breaths to count in calculation
 #define BREATH_LOG_LEN	128
 unsigned int breathLog[BREATH_LOG_LEN] = { 0, };
 unsigned int breathLogNext = 0;
@@ -472,7 +486,7 @@ awrr_check(void)
 		}
 	}
 	
-	// AWRR Calculation - Look at no more than 10 breaths - Skip if no breaths within 20 seconds
+	// AWRR Calculation - Look at no more than BREATH_CALC_LIMIT breaths - Skip if no breaths within 20 seconds
 	lastTime = 0;
 	firstTime = 0;
 	prev = breathLogNext - 1;
@@ -554,7 +568,7 @@ awrr_check(void)
 		if ( breathLogReportLoops++ == BREATH_LOG_CHANGE_LOOPS )
 		{
 			breathLogReportLoops = 0;
-			newRate = round(awRR );
+			newRate = roundf(awRR );
 			if ( oldRate != newRate )
 			{
 				// setRespirationPeriods(oldRate, newRate );
@@ -590,9 +604,6 @@ int hrLogReportLoops = 0;
 static void 
 hrcheck_handler(int sig, siginfo_t *si, void *uc)
 {
-#if 0
-	simmgr_shm->status.cardiac.avg_rate = simmgr_shm->status.cardiac.rate;
-#else
 	int now; // Current msec time
 	int prev;
 	int beats;
@@ -728,7 +739,6 @@ hrcheck_handler(int sig, siginfo_t *si, void *uc)
 			simmgr_shm->status.cardiac.avg_rate = round(avg_rate );
 		}
 	}
-#endif
 }
 /*
  * msec_timer_update
@@ -766,6 +776,7 @@ time_update(void )
 	struct tm tm;
 	int hour;
 	int min;
+	int elapsedTimeSeconds;
 	int seconds;
 	int sec;
 	
@@ -775,8 +786,17 @@ time_update(void )
 	strtok(buf, "\n");		// Remove Line Feed
 	sprintf(simmgr_shm->server.server_time, "%s", buf );
 	now = std::time(nullptr );
-	seconds = (int)difftime(now, scenario_start_time );
-	if ( ( seconds > MAX_SCENARIO_RUNTIME ) &&
+	elapsedTimeSeconds = (int)difftime(now, scenario_start_time );
+	
+	if ( ( scenario_state == ScenarioRunning ) || 
+		 ( scenario_state == ScenarioPaused ) )
+	{
+		sec = elapsedTimeSeconds;
+		min = (sec / 60);
+		hour = min / 60;
+		sprintf(simmgr_shm->status.scenario.runtimeAbsolute, "%02d:%02d:%02d", hour, min%60, sec%60);
+	}
+	if ( ( elapsedTimeSeconds > MAX_SCENARIO_RUNTIME ) &&
 		 ( ( scenario_state == ScenarioRunning ) || 
 		   ( scenario_state == ScenarioPaused ) ) )
 	{
@@ -789,11 +809,6 @@ time_update(void )
 	}
 	else if ( scenario_state == ScenarioRunning )
 	{
-		sec = seconds;
-		min = (sec / 60);
-		hour = min / 60;
-		sprintf(simmgr_shm->status.scenario.runtimeAbsolute, "%02d:%02d:%02d", hour, min%60, sec%60);
-		
 		sec = simmgr_shm->status.scenario.elapsed_msec_scenario / 1000;
 		min = (sec / 60);
 		hour = min / 60;
@@ -803,7 +818,7 @@ time_update(void )
 		min = (sec / 60);
 		hour = min / 60;
 		sprintf(simmgr_shm->status.scenario.runtimeScene, "%02d:%02d:%02d", hour, min%60, sec%60);
-		
+		seconds = elapsedTimeSeconds % 60;
 		if ( ( seconds == 0 ) && ( last_time_sec != 0 ) )
 		{
 			// Do periodic Stats update every minute
@@ -967,7 +982,7 @@ setRespirationPeriods(int oldRate, int newRate )
 {
 	int period;
 	
-	if ( oldRate != newRate )
+	//if ( oldRate != newRate )
 	{
 		if ( newRate > 0 )
 		{
@@ -1005,7 +1020,6 @@ scan_commands(void )
 	int trycount;
 	int oldRate;
 	int newRate;
-	int doRecord = -1;
 	int currentIsPulsed;
 	int newIsPulsed;
 	// Lock the command interface before processing commands
@@ -1026,7 +1040,7 @@ scan_commands(void )
 	// Scenario
 	if ( simmgr_shm->instructor.scenario.record >= 0 )
 	{
-		doRecord = simmgr_shm->instructor.scenario.record;
+		simmgr_shm->status.scenario.record = simmgr_shm->instructor.scenario.record;
 		simmgr_shm->instructor.scenario.record = -1;
 	}
 	
@@ -1403,17 +1417,18 @@ scan_commands(void )
 	}
 	if ( simmgr_shm->instructor.respiration.rate >= 0 )
 	{
-		sprintf(msgbuf, "Set Resp Rate = %d : %d", simmgr_shm->instructor.respiration.rate, simmgr_shm->instructor.respiration.transfer_time );
+		sprintf(msgbuf, "Set Resp Rate = %d -> %d : %d", simmgr_shm->status.respiration.rate, simmgr_shm->instructor.respiration.rate, simmgr_shm->instructor.respiration.transfer_time );
 		log_message("", msgbuf);
-		if ( simmgr_shm->instructor.respiration.transfer_time <= 0 )
+		simmgr_shm->status.respiration.rate = setTrend(&respirationTrend, 
+												simmgr_shm->instructor.respiration.rate,
+												simmgr_shm->status.respiration.rate,
+												simmgr_shm->instructor.respiration.transfer_time );
+		if ( simmgr_shm->instructor.respiration.transfer_time == 0 )
 		{
 			setRespirationPeriods(simmgr_shm->status.respiration.rate, simmgr_shm->instructor.respiration.rate );
 		}
-		simmgr_shm->status.respiration.rate = setTrend(&respirationTrend, 
-											simmgr_shm->instructor.respiration.rate,
-											simmgr_shm->status.respiration.rate,
-											simmgr_shm->instructor.respiration.transfer_time );
 		simmgr_shm->instructor.respiration.rate = -1;
+		simmgr_shm->instructor.respiration.transfer_time = -1;
 	}
 	
 	if ( simmgr_shm->instructor.respiration.spo2 >= 0 )
@@ -1535,7 +1550,20 @@ scan_commands(void )
 		simmgr_shm->status.cpr.compression = simmgr_shm->instructor.cpr.compression;
 		simmgr_shm->instructor.cpr.compression = -1;
 	}
-	
+	// Defibbrilation
+	if ( simmgr_shm->instructor.defibrillation.shock >= 0 )
+	{
+		if ( simmgr_shm->instructor.defibrillation.shock > 0 )
+		{
+			simmgr_shm->status.defibrillation.last += 1;
+		}
+		simmgr_shm->instructor.defibrillation.shock = -1;
+	}
+	if ( simmgr_shm->instructor.defibrillation.energy >= 0 )
+	{
+		simmgr_shm->status.defibrillation.energy = simmgr_shm->instructor.defibrillation.energy;
+		simmgr_shm->instructor.defibrillation.energy = -1;
+	}
 	// Release the MUTEX
 	sem_post(&simmgr_shm->instructor.sema);
 	iiLockTaken = 0;
@@ -1566,17 +1594,14 @@ scan_commands(void )
 					// Manual Start - Go to Running for the run delay time
 					nibp_run_complete_time = now + NIBP_RUN_TIME;
 					nibp_state = NibpRunning;
-					sprintf(msgbuf, "NibpState Change: Idle to Running (%ld to %ld)", now, nibp_run_complete_time );
-					log_message("", msgbuf ); 
+					snprintf(msgbuf, MSGBUF_LENGTH, "NIBP Read Manual" );
+					lockAndComment(msgbuf );
 				}
 				else if ( simmgr_shm->status.cardiac.nibp_freq != 0 )
 				{
 					// Frequency set
 					nibp_next_time = now + (simmgr_shm->status.cardiac.nibp_freq * 60);
 					nibp_state = NibpWaiting;
-					
-					sprintf(msgbuf, "NibpState Change: Idle to Waiting" );
-					log_message("", msgbuf ); 
 				}
 			}
 			break;
@@ -1597,8 +1622,8 @@ scan_commands(void )
 					nibp_run_complete_time = now + NIBP_RUN_TIME;
 					nibp_state = NibpRunning;
 					
-					sprintf(msgbuf, "NibpState Change: Waiting to Running" );
-					log_message("", msgbuf ); 
+					snprintf(msgbuf, MSGBUF_LENGTH, "NIBP Read Periodic" );
+					lockAndComment(msgbuf );
 					simmgr_shm->status.cardiac.nibp_read = 1;
 				}
 			}
@@ -1608,14 +1633,25 @@ scan_commands(void )
 			{
 				nibp_state = NibpIdle;
 				
-				sprintf(msgbuf, "NibpState Change: Running to Idle (cuff removed)" );
-				log_message("", msgbuf ); 
+				snprintf(msgbuf, MSGBUF_LENGTH, "NIBP Cuff removed while running" );
+				lockAndComment(msgbuf );
 			}
 			else 
 			{
 				if ( nibp_run_complete_time <= now )
 				{
+					int meanValue;
+					
 					simmgr_shm->status.cardiac.nibp_read = 0;
+					
+					meanValue = ((simmgr_shm->status.cardiac.bps_sys - simmgr_shm->status.cardiac.bps_dia) / 3) + simmgr_shm->status.cardiac.bps_dia;
+					snprintf(msgbuf, MSGBUF_LENGTH, "NIBP %d/%d (%d)mmHg %d bpm",
+						simmgr_shm->status.cardiac.bps_sys,
+						simmgr_shm->status.cardiac.bps_dia,
+						meanValue,
+						simmgr_shm->status.cardiac.nibp_rate );
+					lockAndComment(msgbuf );
+				
 					if ( simmgr_shm->status.cardiac.nibp_freq != 0 )
 					{
 						// Frequency set
@@ -1656,68 +1692,20 @@ scan_commands(void )
 			killScenario(1, NULL );
 		}
 	}
-	// This must be done after the lock has been released as the recordStartStop process may block.
-	if ( doRecord >= 0 )
-	{
-		recordStartStop(doRecord );
-	}
 	
 	return ( 0 );
 }
 
-/**
- * recordStartStop
- * @record - Start if 1, Stop if 0
- *
- * Fork and then process start with external server
- */
- 
-void
-recordStartStop(int record )
-{
-	//char fname[128];
-	int pid;
-	sprintf(msgbuf, "Start/Stop Record: %d", record );
-	log_message("", msgbuf ); 
-	
-	pid = fork();
-	
-	if ( pid < 0 )
-	{
-		sprintf(msgbuf, "Start/Stop Record: Fork Failed %s", strerror(errno )  );
-		log_message("", msgbuf ); 
-	}
-	else if ( pid == 0 )
-	{
-		// Child
-		sprintf(msgbuf, "Start/Stop Record: %d  %p", record, simmgr_shm  );
-		log_message("", msgbuf ); 
-		// Sleep to simluate comm with server (until we get the server code functioning)
-		sleep(7 );
-		if ( record )
-		{
-			// Start Record
-			simmgr_shm->status.scenario.record = 1;
-		}
-		else
-		{
-			// Stop Record
-			simmgr_shm->status.scenario.record = 0;
-		}
-		// Stop the child
-		exit ( 0 );
-	}
-	
-}
 int
 start_scenario(const char *name )
 {
 	char timeBuf[64];
 	char fname[128];
-
 	sprintf(msgbuf, "Start Scenario Request: %s", name );
 	log_message("", msgbuf ); 
 	sprintf(fname, "%s/%s/main.xml", "/var/www/html/scenarios", name );
+
+	resetAllParameters();
 	
 	scenario_start_time = std::time(nullptr );
 	std::strftime(timeBuf, 60, "%c", std::localtime(&scenario_start_time ));
@@ -1781,22 +1769,31 @@ checkEvents(void )
 		takeInstructorLock();
 		while ( lastEventLogged != simmgr_shm->eventListNext )
 		{
-			lastEventLogged++;
+					 
 			sprintf(msgbuf, "Event: %s", simmgr_shm->eventList[lastEventLogged].eventName );
 			simlog_entry(msgbuf );
+			lastEventLogged++;
+			if ( lastEventLogged >= EVENT_LIST_SIZE )
+			{
+				lastEventLogged = 0;
+			}
 		}
 		while ( lastCommentLogged != simmgr_shm->commentListNext )
 		{
-			lastCommentLogged++;
 			if ( strlen(simmgr_shm->commentList[lastCommentLogged].comment ) == 0 )
 			{
 				sprintf(msgbuf, "Null Comment: lastCommentLogged is %d simmgr_shm->commentListNext is %d State is %d\n",
 					lastCommentLogged, simmgr_shm->commentListNext, scenario_state );
-				lastCommentLogged = simmgr_shm->commentListNext;
+				log_message("Error", msgbuf );
 			}
 			else
 			{
 				simlog_entry(simmgr_shm->commentList[lastCommentLogged].comment );
+			}
+			lastCommentLogged++;
+			if ( lastCommentLogged >= COMMENT_LIST_SIZE )
+			{
+				lastCommentLogged = 0;
 			}
 		}
 		releaseInstructorLock();
@@ -1884,7 +1881,8 @@ resetAllParameters(void )
 	
 	// status/defibrillation
 	simmgr_shm->status.defibrillation.last = 0;
-	simmgr_shm->status.defibrillation.energy = 0;
+	simmgr_shm->status.defibrillation.energy = 100;
+	simmgr_shm->status.defibrillation.shock = 0;											 
 	
 	// status/general
 	simmgr_shm->status.general.temperature = 1017;
@@ -1960,6 +1958,11 @@ resetAllParameters(void )
 	simmgr_shm->instructor.vocals.volume = -1;
 	simmgr_shm->instructor.vocals.play = -1;
 	simmgr_shm->instructor.vocals.mute = -1;
+	
+	// instructor/defibrillation
+	simmgr_shm->instructor.defibrillation.last = -1;
+	simmgr_shm->instructor.defibrillation.energy = -1;
+	simmgr_shm->instructor.defibrillation.shock = -1;
 	
 	clearAllTrends();
 }

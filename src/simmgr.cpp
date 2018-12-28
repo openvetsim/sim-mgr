@@ -23,7 +23,7 @@
 #include <sys/mman.h>
 #include <arpa/inet.h>
 //#include <sys/timeb.h>
-#include <sys/time.h> 
+#include <sys/time.h>
 #include <libgen.h>
 #include <dirent.h>
 #include <sys/stat.h>
@@ -734,7 +734,7 @@ time_update(void )
 	int hour;
 	int min;
 	int elapsedTimeSeconds;
-	int seconds;	
+	int seconds;
 	int sec;
 	
 	the_time = time(NULL );
@@ -954,11 +954,6 @@ setRespirationPeriods(int oldRate, int newRate )
 			period = (period * 7) / 10;	// Use 70% of the period for duration calculations
 			simmgr_shm->status.respiration.inhalation_duration = period / 2;
 			simmgr_shm->status.respiration.exhalation_duration = period - simmgr_shm->status.respiration.inhalation_duration;
-			//sprintf(msgbuf, "setRespirationPeriods = %d %d:%d",
-			//	simmgr_shm->status.respiration.rate,
-			//	simmgr_shm->status.respiration.inhalation_duration,
-			//	simmgr_shm->status.respiration.exhalation_duration );
-			//log_message("", msgbuf);
 		}
 		else
 		{
@@ -1515,7 +1510,7 @@ scan_commands(void )
 		simmgr_shm->status.cpr.compression = simmgr_shm->instructor.cpr.compression;
 		simmgr_shm->instructor.cpr.compression = -1;
 	}
-	// Defribbrilation
+	// Defibbrilation
 	if ( simmgr_shm->instructor.defibrillation.shock >= 0 )
 	{
 		if ( simmgr_shm->instructor.defibrillation.shock > 0 )
@@ -1559,8 +1554,6 @@ scan_commands(void )
 					// Manual Start - Go to Running for the run delay time
 					nibp_run_complete_time = now + NIBP_RUN_TIME;
 					nibp_state = NibpRunning;
-					//sprintf(msgbuf, "NibpState Change: Idle to Running (%ld to %ld)", now, nibp_run_complete_time );
-					//log_message("", msgbuf );
 					snprintf(msgbuf, MSGBUF_LENGTH, "NIBP Read Manual" );
 					lockAndComment(msgbuf );
 				}
@@ -1569,9 +1562,6 @@ scan_commands(void )
 					// Frequency set
 					nibp_next_time = now + (simmgr_shm->status.cardiac.nibp_freq * 60);
 					nibp_state = NibpWaiting;
-					
-					//sprintf(msgbuf, "NibpState Change: Idle to Waiting" );
-					//log_message("", msgbuf ); 
 				}
 			}
 			break;
@@ -1603,7 +1593,7 @@ scan_commands(void )
 			{
 				nibp_state = NibpIdle;
 				
-				snprintf(msgbuf, MSGBUF_LENGTH, "NIBP Cuff while running" );
+				snprintf(msgbuf, MSGBUF_LENGTH, "NIBP Cuff removed while running" );
 				lockAndComment(msgbuf );
 			}
 			else 
@@ -1745,11 +1735,11 @@ initOBSSHM(int create )
 				obsShm->next_write = 0;
 				obsShm->next_read = 0;
 				obsShm->obsRunning = 0;
-				sprintf(msgbuf, "OBS SHM file(%d) \"%s\": Create Success  \"%s\"", obsShmFp, shmFileName, strerror(errno) );
+				sprintf(msgbuf, "OBS SHM file(%d) \"%s\": Create Success  ", obsShmFp, shmFileName );
 			}
 			else
 			{
-				sprintf(msgbuf, "OBS SHM file(%d) \"%s\": Open Success  \"%s\"", obsShmFp, shmFileName, strerror(errno) );
+				sprintf(msgbuf, "OBS SHM file(%d) \"%s\": Open Success  ", obsShmFp, shmFileName );
 			}
 			log_message("", msgbuf ); 
 		}
@@ -2077,6 +2067,11 @@ resetAllParameters(void )
 	simmgr_shm->instructor.vocals.volume = -1;
 	simmgr_shm->instructor.vocals.play = -1;
 	simmgr_shm->instructor.vocals.mute = -1;
+	
+	// instructor/defibrillation
+	simmgr_shm->instructor.defibrillation.last = -1;
+	simmgr_shm->instructor.defibrillation.energy = -1;
+	simmgr_shm->instructor.defibrillation.shock = -1;
 	
 	clearAllTrends();
 }

@@ -4,13 +4,11 @@
  * Time clock for the Cardiac and Respiratory systems. This application monitors the shared
  * memory to get the rate parameters and issues sync signals to the various systems.
  *
- * Teh demo version is integrated with SimMgr. It does not have any listen functions.
+ * The demo version is integrated with SimMgr. It does not have any listen functions.
  *
  * It has two timers; one for the heart rate (pulse) and
  * one for the breath rate (respiration). 
- *
- * Listen for a connections on Port 50200 (SimMgr Event Port)
- *
+																									   
  * Copyright (C) 2016-2018 Terence Kelleher. All rights reserved.
  *
  */
@@ -131,7 +129,7 @@ beat_handler(int sig, siginfo_t *si, void *uc)
 					}
 				}
 				else
-				{	
+				{
 					// Normal Cycle
 					simmgr_shm->status.cardiac.pulseCount++;
 					if ( afibActive )
@@ -513,7 +511,7 @@ int checkCount = 0;
 void
 pulseTimerRun(void )
 {
-	// Call every 5 msec
+	// Call every 10 msec
 	
 	
 	if ( scenarioRunning )
@@ -541,7 +539,7 @@ pulseTimerRun(void )
 		}
 	}
 	checkCount++;
-	if ( checkCount == 2 ) // This runs every 50 ms.
+	if ( checkCount == 1 ) // This runs every 50 ms.
 	{
 		if ( strcmp(simmgr_shm->status.scenario.state, "Running" ) == 0 )
 		{
@@ -552,7 +550,7 @@ pulseTimerRun(void )
 			scenarioRunning = false;
 		}
 	}
-	if ( checkCount == 5 )	
+	if ( checkCount == 2 )	
 	{
 		// If the pulse rate has changed, then reset the timer
 		
@@ -566,7 +564,7 @@ pulseTimerRun(void )
 #endif
 		}
 	}
-	else if ( checkCount == 6 )	
+	else if ( checkCount == 3 )	
 	{
 		if ( currentVpcFreq != simmgr_shm->status.cardiac.vpc_freq ||
 		 vpcType != simmgr_shm->status.cardiac.vpc_type )
@@ -576,7 +574,7 @@ pulseTimerRun(void )
 			calculateVPCFreq();
 		}
 	}
-	else if ( checkCount == 7 )	
+	else if ( checkCount == 4 )	
 	{
 		if ( strncmp(simmgr_shm->status.cardiac.rhythm, "afib", 4 ) == 0 )
 		{
@@ -587,7 +585,7 @@ pulseTimerRun(void )
 			afibActive = 0;
 		}
 	}
-	else if ( checkCount == 10 )
+	else if ( checkCount == 5 )
 	{
 		// If the breath rate has changed, then reset the timer
 		if ( currentBreathRate != simmgr_shm->status.respiration.rate )
