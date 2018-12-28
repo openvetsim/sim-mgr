@@ -111,6 +111,7 @@ int eventLast;	// Index of last processed event_callback
 struct timespec cprStart; // Time of first CPR detected
 int cprActive = 0;				// Flag to indicate CPR is active
 int cprCumulative = 0;		// Cumulative time for CPR active in this scene
+int shockActive = 0;	// Flag to indicate Defibrillation is active
 struct pulse puseStatus = { 0, 0, 0, 0 };
 
 const char *parse_states[] =
@@ -345,6 +346,7 @@ main(int argc, char **argv)
 	//log_message("", msgbuf );
 	simmgr_shm->status.cpr.compression = 0;
 	simmgr_shm->status.cpr.duration = 0;
+	simmgr_shm->status.defibrillation.energy = 100;
 	simmgr_shm->status.cardiac.bp_cuff = 0;
 	simmgr_shm->status.cardiac.ecg_indicator = 0;
 	simmgr_shm->status.cardiac.pea = 0;
@@ -393,6 +395,7 @@ main(int argc, char **argv)
 	
 	cprActive = 0;
 	cprCumulative = 0;
+	shockActive = 0;
 	
 	// Continue scenario execution
 	loopCount = 0;
@@ -803,7 +806,9 @@ scene_check(void )
 			eventLast = 0;
 		}
 	}
-	
+	if ( shockActive )
+	{
+	}
 	if ( cprActive )
 	{
 		if ( simmgr_shm->status.cpr.compression == 0 )

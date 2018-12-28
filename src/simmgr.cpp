@@ -192,6 +192,10 @@ main(int argc, char *argv[] )
 	simmgr_shm->instructor.cpr.release = -1;
 	simmgr_shm->instructor.cpr.duration = -1;
 	
+	// instructor/defibrillation
+	simmgr_shm->status.defibrillation.last = -1;
+	simmgr_shm->status.defibrillation.energy = -1;
+	
 	clearAllTrends();
 
 	// Use a timer for HR checks
@@ -1510,7 +1514,17 @@ scan_commands(void )
 		simmgr_shm->status.cpr.compression = simmgr_shm->instructor.cpr.compression;
 		simmgr_shm->instructor.cpr.compression = -1;
 	}
-	
+	// Defribbrilation
+	if ( simmgr_shm->instructor.defibrillation.shock >= 0 )
+	{
+		simmgr_shm->status.defibrillation.shock = simmgr_shm->instructor.defibrillation.shock;
+		simmgr_shm->instructor.defibrillation.shock = -1;
+	}
+	if ( simmgr_shm->instructor.defibrillation.energy >= 0 )
+	{
+		simmgr_shm->status.defibrillation.energy = simmgr_shm->instructor.defibrillation.energy;
+		simmgr_shm->instructor.defibrillation.energy = -1;
+	}
 	// Release the MUTEX
 	sem_post(&simmgr_shm->instructor.sema);
 	iiLockTaken = 0;
@@ -1982,7 +1996,8 @@ resetAllParameters(void )
 	
 	// status/defibrillation
 	simmgr_shm->status.defibrillation.last = 0;
-	simmgr_shm->status.defibrillation.energy = 0;
+	simmgr_shm->status.defibrillation.energy = 100;
+	simmgr_shm->status.defibrillation.shock = 0;
 	
 	// status/general
 	simmgr_shm->status.general.temperature = 1017;

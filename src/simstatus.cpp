@@ -929,6 +929,8 @@ sendStatus(void )
 	cout << " \"defibrillation\" : {\n";
 	makejson(cout, "last", itoa(simmgr_shm->status.defibrillation.last, buffer, 10 ) );
 	cout << ",\n";
+	makejson(cout, "shock", itoa(simmgr_shm->status.defibrillation.shock, buffer, 10 ) );
+	cout << ",\n";
 	makejson(cout, "energy", itoa(simmgr_shm->status.defibrillation.energy, buffer, 10 ) );
 	cout << "\n},\n";
 	

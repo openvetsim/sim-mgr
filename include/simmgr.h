@@ -178,7 +178,8 @@ struct cpr
 struct defibrillation
 {
 	int last;			// msec time of last shock
-	int energy;			// Energy in Joules of last shock
+	int energy;			// Energy in Joules of shock
+	int shock;			// Request a shock event
 };
 
 struct hdr
