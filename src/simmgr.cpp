@@ -60,6 +60,7 @@ void comm_check(void );
 void time_update(void );
 int msec_time_update(void );
 void awrr_check(void );
+void shock_check(void);
 int iiLockTaken = 0;
 char buf[1024];
 #define MSGBUF_LENGTH	2048
@@ -251,6 +252,7 @@ main(int argc, char *argv[] )
 #define SCENARIO_LOOP_COUNT		19	// Run the scenario every SCENARIO_LOOP_COUNT iterations of the 10 msec loop
 #define SCENARIO_COMMCHECK  	5
 #define SCENARIO_EVENTCHECK		10
+#define SCENARIO_SHOCKCHECK		14
 #define SCENARIO_AWRRCHECK		15
 #define SCENARIO_TIMECHECK		18
 	while ( 1 )
@@ -263,6 +265,9 @@ main(int argc, char *argv[] )
 				break;
 			case SCENARIO_EVENTCHECK:
 				checkEvents();
+				break;
+			case SCENARIO_SHOCKCHECK:
+				shock_check();
 				break;
 			case SCENARIO_AWRRCHECK:
 				awrr_check();
@@ -375,9 +380,6 @@ int breathLogReportLoops = 0;
 void
 awrr_check(void)
 {
-#if 0
-	simmgr_shm->status.respiration.awRR = simmgr_shm->status.respiration.rate;
-#else
 	int now = simmgr_shm->server.msec_time; //  time(NULL);	// Current sec time
 	int prev;
 	int breaths;
@@ -484,11 +486,6 @@ awrr_check(void)
 				}
 			}
 		}
-		/*
-		simmgr_shm->server.dbg1 = lastTime;
-		simmgr_shm->server.dbg2 = firstTime;
-		simmgr_shm->server.dbg3 = intervals;
-		*/
 		if ( intervals > 0 )
 		{
 			totalTime = lastTime - firstTime;
@@ -524,7 +521,34 @@ awrr_check(void)
 			}
 		}
 	}
-#endif
+}
+
+int shockLast = 0;
+int shockStartTime = 0;
+int shockDuration = 5000;
+
+void
+shock_check(void)
+{
+	int now = simmgr_shm->server.msec_time; 
+	int shockCurrent = simmgr_shm->status.defibrillation.last;
+	
+	if ( shockCurrent != shockLast )
+	{
+		shockStartTime = now;
+		simmgr_shm->status.defibrillation.shock = 1;
+		shockLast = shockCurrent;
+	}
+	if ( simmgr_shm->status.defibrillation.shock > 0 )
+	{
+		if ( ( shockStartTime + shockDuration ) < now )
+		{
+			simmgr_shm->status.defibrillation.shock = 0;
+		}
+	}
+	simmgr_shm->server.dbg1 = shockLast;
+	simmgr_shm->server.dbg2 = shockStartTime;
+	simmgr_shm->server.dbg3 = now;
 }
 /*
  * hrcheck_handler
@@ -619,12 +643,10 @@ hrcheck_handler(int sig, siginfo_t *si, void *uc)
 		if ( lastTime < 0 )  // Don't look at empty logs
 		{
 			simmgr_shm->status.cardiac.avg_rate = 0;
-			simmgr_shm->server.dbg3 = 1;
 		}
 		else if ( lastTime == 0 )  // Don't look at empty logs
 		{
 			simmgr_shm->status.cardiac.avg_rate = 0;
-			simmgr_shm->server.dbg3 = 2;
 		}
 		else
 		{
@@ -660,11 +682,6 @@ hrcheck_handler(int sig, siginfo_t *si, void *uc)
 					}
 				}
 			}
-			simmgr_shm->server.dbg1 = lastTime;
-			simmgr_shm->server.dbg2 = firstTime;
-			//simmgr_shm->server.dbg3 = intervals;
-			
-			simmgr_shm->server.dbg3 = 3000 + intervals;
 			
 			if ( intervals > 0 )
 			{
