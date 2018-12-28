@@ -179,6 +179,7 @@ struct defibrillation
 {
 	int last;			// msec time of last shock
 	int energy;			// Energy in Joules of last shock
+	int shock;
 };
 
 struct hdr
@@ -254,6 +255,7 @@ struct instructor
 	struct vocals		vocals;
 	struct media		media;
 	struct cpr			cpr;
+	struct defibrillation	defibrillation;
 	char	eventName[STR_SIZE];
 };
 
