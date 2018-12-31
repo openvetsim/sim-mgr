@@ -977,6 +977,10 @@ sendQuickStatus(void )
 	makejson(cout, "manual_count", itoa(simmgr_shm->status.respiration.manual_count, buffer, 10 ) );
 	cout << "\n},\n";
 	
+	cout << " \"defibrillation\" : {\n";
+	makejson(cout, "shock", itoa(simmgr_shm->status.defibrillation.shock, buffer, 10 ) );
+	cout << "\n},\n";
+	
 	cout << " \"debug\" : {\n";
 	makejson(cout, "msec", itoa(simmgr_shm->server.msec_time, buffer, 10 ) );
 	cout << ",\n";
