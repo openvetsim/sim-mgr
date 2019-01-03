@@ -60,6 +60,7 @@ void comm_check(void );
 void time_update(void );
 int msec_time_update(void );
 void awrr_check(void );
+void cpr_check(void);
 void shock_check(void);
 int iiLockTaken = 0;
 char buf[1024];
@@ -252,6 +253,7 @@ main(int argc, char *argv[] )
 #define SCENARIO_LOOP_COUNT		19	// Run the scenario every SCENARIO_LOOP_COUNT iterations of the 10 msec loop
 #define SCENARIO_COMMCHECK  	5
 #define SCENARIO_EVENTCHECK		10
+#define SCENARIO_CPRCHECK		13
 #define SCENARIO_SHOCKCHECK		14
 #define SCENARIO_AWRRCHECK		15
 #define SCENARIO_TIMECHECK		18
@@ -265,6 +267,9 @@ main(int argc, char *argv[] )
 				break;
 			case SCENARIO_EVENTCHECK:
 				checkEvents();
+				break;
+			case SCENARIO_CPRCHECK:
+				cpr_check();
 				break;
 			case SCENARIO_SHOCKCHECK:
 				shock_check();
@@ -523,6 +528,30 @@ awrr_check(void)
 	}
 }
 
+int cprLast = 0;
+int cprStartTime = 0;
+int cprDuration = 5000;
+
+void
+cpr_check(void)
+{
+	int now = simmgr_shm->server.msec_time; 
+	int cprCurrent = simmgr_shm->status.cpr.last;
+	
+	if ( cprCurrent != cprLast )
+	{
+		cprStartTime = now;
+		simmgr_shm->status.cpr.running = 1;
+		cprLast = cprCurrent;
+	}
+	if ( simmgr_shm->status.cpr.running > 0 )
+	{
+		if ( ( cprStartTime + cprDuration ) < now )
+		{
+			simmgr_shm->status.cpr.running = 0;
+		}
+	}
+}
 int shockLast = 0;
 int shockStartTime = 0;
 int shockDuration = 5000;
@@ -546,9 +575,6 @@ shock_check(void)
 			simmgr_shm->status.defibrillation.shock = 0;
 		}
 	}
-	simmgr_shm->server.dbg1 = shockLast;
-	simmgr_shm->server.dbg2 = shockStartTime;
-	simmgr_shm->server.dbg3 = now;
 }
 /*
  * hrcheck_handler
@@ -1525,6 +1551,11 @@ scan_commands(void )
 	if ( simmgr_shm->instructor.cpr.compression >= 0 )
 	{
 		simmgr_shm->status.cpr.compression = simmgr_shm->instructor.cpr.compression;
+		if ( simmgr_shm->status.cpr.compression )
+		{
+			simmgr_shm->status.cpr.last = simmgr_shm->server.msec_time;
+			simmgr_shm->status.cpr.running = 1;
+		}
 		simmgr_shm->instructor.cpr.compression = -1;
 	}
 	// Defibbrilation

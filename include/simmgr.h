@@ -174,6 +174,7 @@ struct cpr
 	int	compression;	// 0 to 100%
 	int release;		// 0 to 100%
 	int duration;
+	int running;
 };
 struct defibrillation
 {

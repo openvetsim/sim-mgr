@@ -651,6 +651,14 @@ sendSimctrData(void )
 	makejson(cout, "rhythm", simmgr_shm->status.cardiac.rhythm );
 	cout << "\n},\n";
 	
+	cout << " \"defibrillation\" : {\n";
+	makejson(cout, "shock", itoa(simmgr_shm->status.defibrillation.shock, buffer, 10 ) );
+	cout << "\n},\n";
+	
+	cout << " \"cpr\" : {\n";
+	makejson(cout, "running", itoa(simmgr_shm->status.cpr.running, buffer, 10 ) );
+	cout << "\n},\n";
+	
 	cout << " \"respiration\" : {\n";
 	makejson(cout, "left_lung_sound", simmgr_shm->status.respiration.left_lung_sound );
 	cout << ",\n";
@@ -921,6 +929,8 @@ sendStatus(void )
 	cout << " \"cpr\" : {\n";
 	makejson(cout, "last", itoa(simmgr_shm->status.cpr.last, buffer, 10 ) );
 	cout << ",\n";
+	makejson(cout, "running", itoa(simmgr_shm->status.cpr.running, buffer, 10 ) );
+	cout << ",\n";
 	makejson(cout, "compression", itoa(simmgr_shm->status.cpr.compression, buffer, 10 ) );
 	cout << ",\n";
 	makejson(cout, "release", itoa(simmgr_shm->status.cpr.release, buffer, 10 ) );
@@ -979,6 +989,10 @@ sendQuickStatus(void )
 	
 	cout << " \"defibrillation\" : {\n";
 	makejson(cout, "shock", itoa(simmgr_shm->status.defibrillation.shock, buffer, 10 ) );
+	cout << "\n},\n";
+	
+	cout << " \"cpr\" : {\n";
+	makejson(cout, "running", itoa(simmgr_shm->status.cpr.running, buffer, 10 ) );
 	cout << "\n},\n";
 	
 	cout << " \"debug\" : {\n";
