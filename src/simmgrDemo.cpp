@@ -601,9 +601,17 @@ cpr_check(void)
 	
 	if ( cprCurrent != cprLast )
 	{
-		cprStartTime = now;
-		simmgr_shm->status.cpr.running = 1;
-		cprLast = cprCurrent;
+		if ( cprCurrent == 0 )
+		{
+			simmgr_shm->status.cpr.running = 0;
+			cprLast = cprCurrent;
+		}
+		else
+		{
+			cprStartTime = now;
+			simmgr_shm->status.cpr.running = 1;
+			cprLast = cprCurrent;
+		}
 	}
 	if ( simmgr_shm->status.cpr.running > 0 )
 	{
@@ -625,9 +633,17 @@ shock_check(void)
 	
 	if ( shockCurrent != shockLast )
 	{
-		shockStartTime = now;
-		simmgr_shm->status.defibrillation.shock = 1;
-		shockLast = shockCurrent;
+		if ( shockCurrent == 0 )
+		{
+			simmgr_shm->status.defibrillation.shock = 0;
+			shockLast = shockCurrent;
+		}
+		else
+		{
+			shockStartTime = now;
+			simmgr_shm->status.defibrillation.shock = 1;
+			shockLast = shockCurrent;
+		}
 	}
 	if ( simmgr_shm->status.defibrillation.shock > 0 )
 	{
