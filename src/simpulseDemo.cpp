@@ -90,15 +90,20 @@ beat_handler(int sig, siginfo_t *si, void *uc)
 	time_t t;
 	
 	/* Intializes random number generator */
-   srand((unsigned) time(&t));
+    srand((unsigned) time(&t));
    
-	if ( simmgr_shm->status.defibrillation.shock || 
-		 simmgr_shm->status.cpr.running )
+	if ( simmgr_shm->status.cpr.running )
 	{
 		return;
 	}
+		
 	if ( sig == PULSE_TIMER_SIG )
 	{
+		if ( simmgr_shm->status.defibrillation.shock )
+		{
+			return;
+		}
+		 
 		rate = currentPulseRate;
 
 		if ( rate > 0 )
@@ -169,10 +174,10 @@ beat_handler(int sig, siginfo_t *si, void *uc)
 	}
 	else if ( sig == BREATH_TIMER_SIG )
 	{
-			if ( simmgr_shm->status.respiration.rate > 0 )
-			{
-				simmgr_shm->status.respiration.breathCount++;
-			}
+		if ( simmgr_shm->status.respiration.rate > 0 )
+		{
+			simmgr_shm->status.respiration.breathCount++;
+		}
 	}	
 }
 

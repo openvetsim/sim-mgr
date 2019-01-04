@@ -623,7 +623,7 @@ cpr_check(void)
 }
 int shockLast = 0;
 int shockStartTime = 0;
-int shockDuration = 5000;
+int shockDuration = 2000;
 
 void
 shock_check(void)
