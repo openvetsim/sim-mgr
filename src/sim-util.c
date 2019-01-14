@@ -561,6 +561,7 @@ takeInstructorLock()
 	return ( 0 );
 }
 
+
 /*
  * releaseInstructorLock
  * @
@@ -645,4 +646,15 @@ lockAndComment(char *str )
 		addComment(str );
 		releaseInstructorLock();
 	}
+}
+
+void
+forceInstructorLock(void )
+{
+	while ( takeInstructorLock() )
+	{
+		// Force Release until we can take the lock
+		releaseInstructorLock();
+	}
+	releaseInstructorLock();
 }

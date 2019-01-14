@@ -208,10 +208,10 @@ calculateVPCFreq(void )
 				count++;
 			}
 		}
-//#ifdef DEBUG
+#ifdef DEBUG
 		sprintf(msgbuf, "calculateVPCFreq: request %d: result %d", currentVpcFreq, count );
 		log_message("", msgbuf );
-//#endif
+#endif
 		vpcFrequencyIndex = 0;
 	}
 }
@@ -305,8 +305,10 @@ set_pulse_rate(int bpm )
 	struct itimerspec its;
 	struct itimerspec itsRemaining;	
 	int sts;
+#ifdef DEBUG
 	long int msec;
-	
+#endif
+
 	// When the BPM is zero, we set the timer based on 60, to allow it to continue running.
 	// No beats are sent when this occurs, but the timer still runs.
 	if ( bpm == 0 )
@@ -328,17 +330,20 @@ set_pulse_rate(int bpm )
 	
 	if (timer_settime(pulse_timer, 0, &its, NULL) == -1)
 	{
-		perror("set_pulse_rate: timer_settime");
+		//perror("set_pulse_rate: timer_settime");
 		sprintf(msgbuf, "set_pulse_rate(%d): timer_settime: %s", bpm, strerror(errno) );
 		log_message("", msgbuf );
 		exit ( -1 );
 	}
+#ifdef DEBUG
 	else
 	{
 		msec = its.it_interval.tv_nsec / 1000 / 1000;
+
 		sprintf(msgbuf, "set_pulse_rate(%d): %ld.%ld", bpm, its.it_interval.tv_sec, msec );
 		log_message("", msgbuf );
 	}
+#endif
 }
 
 void
@@ -367,7 +372,7 @@ set_breath_rate(int bpm )
 	
 	if (timer_settime(breath_timer, 0, &its, NULL) == -1)
 	{
-		perror("set_breath_rate: timer_settime");
+		//perror("set_breath_rate: timer_settime");
 		sprintf(msgbuf, "set_breath_rate(%d): timer_settime %s", bpm, strerror(errno)  );
 		log_message("", msgbuf );
 		exit ( -1 );

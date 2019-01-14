@@ -51,19 +51,26 @@ obj/sim-log.o: src/sim-log.c include/simmgr.h
 
 obj/llist.o: src/llist.c include/llist.h
 	g++ $(CPPFLAGS) $(CXXFLAGS) -g -c -o obj/llist.o src/llist.c
+
+obj/simmgrCommon.o: src/simmgrCommon.cpp  include/simmgr.h
+	g++ $(CPPFLAGS) $(CXXFLAGS) -g -c -o obj/simmgrCommon.o src/simmgrCommon.cpp
 	
+obj/simmgrVideo.o: src/simmgrVideo.cpp  include/simmgr.h
+	g++ $(CPPFLAGS) $(CXXFLAGS)  -g -c -o obj/simmgrVideo.o src/simmgrVideo.cpp
+		
 obj/simstatus.cgi: src/simstatus.cpp obj/sim-util.o obj/sim-parse.o obj/sim-log.o include/simmgr.h
 	g++ $(CPPFLAGS) $(CXXFLAGS) -o obj/simstatus.cgi src/simstatus.cpp obj/sim-util.o obj/sim-parse.o obj/sim-log.o $(LDFLAGS) -lcgicc
 
 obj/cookie.cgi: src/cookie.cpp 
 	g++ $(CPPFLAGS) $(CXXFLAGS) -o obj/cookie.cgi src/cookie.cpp -lcgicc
 	
-obj/simmgr: src/simmgr.cpp obj/sim-log.o obj/sim-util.o include/simmgr.h
-	g++ $(CPPFLAGS) $(CXXFLAGS)  -lcgicc -o obj/simmgr src/simmgr.cpp  obj/sim-log.o obj/sim-util.o $(LDFLAGS)
+obj/simmgr: src/simmgr.cpp obj/sim-log.o obj/sim-util.o obj/simmgrCommon.o obj/simmgrVideo.o include/simmgr.h
+	g++ $(CPPFLAGS) $(CXXFLAGS)  -lcgicc -o obj/simmgr src/simmgr.cpp  obj/simmgrCommon.o obj/simmgrVideo.o obj/sim-log.o obj/sim-util.o $(LDFLAGS)
 	
-obj/simmgrDemo: src/simmgrDemo.cpp obj/sim-log.o obj/sim-util.o obj/simpulseDemo.o include/simmgr.h
-	g++ $(CPPFLAGS) $(CXXFLAGS)  -lcgicc -o obj/simmgrDemo src/simmgrDemo.cpp  obj/sim-log.o obj/sim-util.o obj/simpulseDemo.o $(LDFLAGS)
+obj/simmgrDemo: src/simmgrDemo.cpp obj/sim-log.o obj/sim-util.o obj/simpulseDemo.o obj/simmgrCommon.o obj/simmgrVideo.o include/simmgr.h
+	g++ $(CPPFLAGS) $(CXXFLAGS)  -lcgicc -o obj/simmgrDemo src/simmgrDemo.cpp  obj/simmgrCommon.o obj/simmgrVideo.o obj/sim-log.o obj/sim-util.o obj/simpulseDemo.o $(LDFLAGS)
 	
+
 obj/simpulse: src/simpulse.cpp obj/sim-util.o include/simmgr.h
 	g++ $(CPPFLAGS) $(CXXFLAGS)  -lcgicc -o obj/simpulse src/simpulse.cpp  obj/sim-util.o $(LDFLAGS)
 	

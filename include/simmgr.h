@@ -3,7 +3,21 @@
  *
  * Simulation Manager
  *
- * Copyright (C) 2016 Terence Kelleher. All rights reserved.
+ *  This file is part of Open VetSim.
+ *  Copyright (C) 2019 Cornell University College of Veterinary Medicine
+ *
+ *  Open VetSim is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Open VetSim is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Open VetSim.  If not, see <https://www.gnu.org/licenses/>.
  *
  */
 
@@ -22,6 +36,7 @@
 #define SIMMGR_SHM_NAME			"/simmgr_shm"
 #define SIMMGR_SHM_DEMO_NAME	"/simdemo_shm"	// Will have Session ID appended
 #define LOG_TO_FILE			0
+#define MSGBUF_LENGTH	2048
 
 // Terminate a running scenario after the limit is reached
 #define MAX_SCENARIO_RUNTIME (1*60*60)	// 1 Hour, time in seconds
@@ -360,6 +375,7 @@ void releaseInstructorLock();
 void addEvent(char *str );
 void addComment(char *str );
 void lockAndComment(char *str );
+void forceInstructorLock(void );
 
 // Shared Parse functions
 int cardiac_parse(const char *elem, const char *value, struct cardiac *card );
