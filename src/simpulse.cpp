@@ -240,10 +240,10 @@ calculateVPCFreq(void )
 				count++;
 			}
 		}
-//#ifdef DEBUG
+#ifdef DEBUG
 		sprintf(msgbuf, "calculateVPCFreq: request %d: result %d", currentVpcFreq, count );
 		log_message("", msgbuf );
-//#endif
+#endif
 		vpcFrequencyIndex = 0;
 	}
 }
@@ -337,8 +337,10 @@ set_pulse_rate(int bpm )
 	struct itimerspec its;
 	struct itimerspec itsRemaining;	
 	int sts;
+#ifdef DEBUG
 	long int msec;
-	
+#endif
+
 	// When the BPM is zero, we set the timer based on 60, to allow it to continue running.
 	// No beats are sent when this occurs, but the timer still runs.
 	if ( bpm == 0 )
@@ -365,12 +367,14 @@ set_pulse_rate(int bpm )
 		log_message("", msgbuf );
 		exit ( -1 );
 	}
+#ifdef DEBUG
 	else
 	{
 		msec = its.it_interval.tv_nsec / 1000 / 1000;
 		sprintf(msgbuf, "set_pulse_rate(%d): %ld.%ld", bpm, its.it_interval.tv_sec, msec );
 		log_message("", msgbuf );
 	}
+#endif
 }
 
 void
@@ -691,47 +695,48 @@ process_child(void *ptr )
 		usleep(5000 );		// 5 msec wait
 		if ( scenarioRunning )
 		{
-			if ( last_pulse != simmgr_shm->status.cardiac.pulseCount )
-			{
-				last_pulse = simmgr_shm->status.cardiac.pulseCount;
-				count = broadcast_word(pulseWord );
+			// A place for code to run only when a scenario is active
+		}
+		if ( last_pulse != simmgr_shm->status.cardiac.pulseCount )
+		{
+			last_pulse = simmgr_shm->status.cardiac.pulseCount;
+			count = broadcast_word(pulseWord );
 
+			if ( count )
+			{
+#ifdef DEBUG
+				printf("Pulse sent to %d listeners\n", count );
+#endif
+			}
+		}
+		if ( last_pulseVpc != simmgr_shm->status.cardiac.pulseCountVpc )
+		{
+			last_pulseVpc = simmgr_shm->status.cardiac.pulseCountVpc;
+			count = broadcast_word(pulseWordVPC );
+			if ( count )
+			{
+#ifdef DEBUG
+				printf("PulseVPC sent to %d listeners\n", count );
+#endif
+			}
+		}
+	
+		if ( last_breath != simmgr_shm->status.respiration.breathCount )
+		{
+			last_breath = simmgr_shm->status.respiration.breathCount;
+			count = 0;
+			if ( last_manual_breath != simmgr_shm->status.respiration.manual_count )
+			{
+				last_manual_breath = simmgr_shm->status.respiration.manual_count;
+			}
+			else
+			{
+				count = broadcast_word(breathWord );
 				if ( count )
 				{
 #ifdef DEBUG
-					printf("Pulse sent to %d listeners\n", count );
+					printf("Breath sent to %d listeners\n", count );
 #endif
-				}
-			}
-			if ( last_pulseVpc != simmgr_shm->status.cardiac.pulseCountVpc )
-			{
-				last_pulseVpc = simmgr_shm->status.cardiac.pulseCountVpc;
-				count = broadcast_word(pulseWordVPC );
-				if ( count )
-				{
-#ifdef DEBUG
-					printf("PulseVPC sent to %d listeners\n", count );
-#endif
-				}
-			}
-		
-			if ( last_breath != simmgr_shm->status.respiration.breathCount )
-			{
-				last_breath = simmgr_shm->status.respiration.breathCount;
-				count = 0;
-				if ( last_manual_breath != simmgr_shm->status.respiration.manual_count )
-				{
-					last_manual_breath = simmgr_shm->status.respiration.manual_count;
-				}
-				else
-				{
-					count = broadcast_word(breathWord );
-					if ( count )
-					{
-#ifdef DEBUG
-						printf("Breath sent to %d listeners\n", count );
-#endif
-					}
 				}
 			}
 		}
