@@ -188,6 +188,10 @@ main(int argc, char *argv[] )
 	{	
 		simmgrRun();
 		pulseTimerRun();
+		if ( strcmp(simmgr_shm->instructor.scenario.state, "running") == 0 )
+		{
+			demoEndLimit = simmgr_shm->server.msec_time + DEMO_MAX_RUNTIME;
+		}
 		usleep(10000);	// Sleep for 10 msec
 	}
 	snprintf(msgbuf, MSGBUF_LENGTH, "Demo Limit Exceeded: %d %d", simmgr_shm->server.msec_time, demoEndLimit );

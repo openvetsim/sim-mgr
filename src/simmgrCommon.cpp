@@ -521,7 +521,7 @@ awrr_check(void)
 
 int cprLast = 0;
 int cprStartTime = 0;
-int cprDuration = 5000;
+int cprDuration = 2000;
 
 void
 cpr_check(void)
