@@ -384,15 +384,16 @@ main( int argc, const char* argv[] )
 					{
 						if ( value.length() != 0 )
 						{
+							sprintf(buf, "Comment: %s", (char *)value.c_str() );
 							if ( strcmp(simmgr_shm->status.scenario.state, "Running" ) == 0 ||
 								  strcmp(simmgr_shm->status.scenario.state, "Paused" ) == 0 )
 							{
-								addComment((char *)value.c_str() );
+								addComment(buf );
 								sts = 0;
 							}
 							else
 							{
-								addComment((char *)value.c_str() );
+								addComment(buf );
 								sts = 5;
 							}
 						}
