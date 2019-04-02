@@ -1,3 +1,21 @@
+#
+# This file is part of the sim-mgr distribution (https://github.com/OpenVetSimDevelopers/sim-mgr).
+# 
+# Copyright (c) 2019 VetSim, Cornell University College of Veterinary Medicine Ithaca, NY
+# 
+# This program is free software: you can redistribute it and/or modify  
+# it under the terms of the GNU General Public License as published by  
+# the Free Software Foundation, version 3.
+#
+# This program is distributed in the hope that it will be useful, but 
+# WITHOUT ANY WARRANTY; without even the implied warranty of 
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License 
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+
 OBJDIR := obj
 TARGETS= $(OBJDIR) obj/simmgr obj/simmgrDemo obj/simpulse obj/simstatus.cgi obj/scenario obj/obscmd obj/obsmon
 
@@ -12,7 +30,7 @@ LDFLAGS=-lrt
 CGIBIN=/var/lib/cgi-bin
 BIN=/usr/local/bin
 
-default: $(OBJDIR) obj/simstatus.cgi obj/simmgr obj/simmgrDemo obj/simpulse obj/scenario obj/obscmd obj/obsmon vpnconf
+default: $(OBJDIR) obj/simstatus.cgi obj/simmgr obj/simmgrDemo obj/simpulse obj/scenario obj/obscmd obj/obsmon 
 
 $(OBJDIR):
 	mkdir -p $(OBJDIR)
@@ -21,9 +39,6 @@ demo: obj/simmgrDemo
 	sudo cp -u obj/simmgrDemo $(BIN)
 	sudo chown simmgr:simmgr $(BIN)/simmgrDemo
 	sudo chmod u+s $(BIN)/simmgrDemo
-
-vpnconf: src/vpnconf.c
-	g++ -Wall -o vpnconf src/vpnconf.c
 
 obj/obscmd: src/obscmd.c  include/obsmon.h
 	g++ -Wall -o obj/obscmd src/obscmd.c $(LDFLAGS)

@@ -3,12 +3,22 @@
  *
  * Monitor requests for Open Broadcaster Studio commands
  *
- * Copyright (c) 2018 Terence Kelleher. All rights reserved.
+ * This file is part of the sim-mgr distribution (https://github.com/OpenVetSimDevelopers/sim-mgr).
+ * 
+ * Copyright (c) 2019 VetSim, Cornell University College of Veterinary Medicine Ithaca, NY
+ * 
+ * This program is free software: you can redistribute it and/or modify  
+ * it under the terms of the GNU General Public License as published by  
+ * the Free Software Foundation, version 3.
  *
- * This program needs to execute as "vitals" on the console window, to allow capture of the 
- * "vitals" monitor, a Firefox session running on that window. Signals will be sent from
- * simmgr to control the recordings.
- */
+ * This program is distributed in the hope that it will be useful, but 
+ * WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License 
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+*/
 
 #include "../include/obsmon.h"
 #include <dirent.h>
