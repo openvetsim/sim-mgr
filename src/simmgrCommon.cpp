@@ -292,13 +292,13 @@ updateScenarioState(ScenarioState new_state)
 		if ( ( new_state == ScenarioTerminate ) && ( ( old_state != ScenarioRunning ) && ( old_state != ScenarioPaused )) )
 		{
 			rval = false;
-			sprintf(msgbuf, "Terminate requested while in state %d", old_state );
+			sprintf(msgbuf, "Scenario: Terminate requested while in state %d", old_state );
 			simlog_entry(msgbuf );
 		}
 		else if ( ( new_state == ScenarioPaused ) && ( ( old_state != ScenarioRunning ) && ( old_state != ScenarioPaused )) )
 		{
 			rval = false;
-			sprintf(msgbuf, "Pause requested while in state %d", old_state );
+			sprintf(msgbuf, "Scenario: Pause requested while in state %d", old_state );
 			simlog_entry(msgbuf );
 		}
 		else 
@@ -319,13 +319,13 @@ updateScenarioState(ScenarioState new_state)
 				case ScenarioRunning:
 					if ( old_state == ScenarioPaused )
 					{
-						sprintf(msgbuf, "Resume" );
+						sprintf(msgbuf, "Scenario: Resume" );
 						simlog_entry(msgbuf );
 					}
 					sprintf(simmgr_shm->status.scenario.state, "Running" );
 					break;
 				case ScenarioPaused:
-					sprintf(msgbuf, "Pause" );
+					sprintf(msgbuf, "Scenario: Pause" );
 					simlog_entry(msgbuf );
 					sprintf(simmgr_shm->status.scenario.state, "Paused" );
 					break;
@@ -808,7 +808,7 @@ time_update(void )
 		 ( ( scenario_state == ScenarioRunning ) || 
 		   ( scenario_state == ScenarioPaused ) ) )
 	{
-		sprintf(buf, "MAX Scenario Runtime exceeded. Terminating." );
+		sprintf(buf, "Scenario: MAX Scenario Runtime exceeded. Terminating." );
 		simlog_entry(buf );
 		
 		takeInstructorLock();
@@ -1142,7 +1142,7 @@ scan_commands(void )
 				}
 			}
 			sprintf(simmgr_shm->status.cardiac.rhythm, "%s", simmgr_shm->instructor.cardiac.rhythm );
-			sprintf(buf, "%s: %s", "Cardiac Rhythm", simmgr_shm->instructor.cardiac.rhythm );
+			sprintf(buf, "Setting: %s: %s", "Cardiac Rhythm", simmgr_shm->instructor.cardiac.rhythm );
 			simlog_entry(buf );
 		}
 		sprintf(simmgr_shm->instructor.cardiac.rhythm, "%s", "" );
@@ -1161,11 +1161,11 @@ scan_commands(void )
 												simmgr_shm->instructor.cardiac.transfer_time );
 				if ( simmgr_shm->instructor.cardiac.transfer_time >= 0 )
 				{
-					sprintf(buf, "%s: %d time %d", "Cardiac Rate", simmgr_shm->instructor.cardiac.rate, simmgr_shm->instructor.cardiac.transfer_time );
+					sprintf(buf, "Setting: %s: %d time %d", "Cardiac Rate", simmgr_shm->instructor.cardiac.rate, simmgr_shm->instructor.cardiac.transfer_time );
 				}
 				else
 				{
-					sprintf(buf, "%s: %d", "Cardiac Rate", simmgr_shm->instructor.cardiac.rate );
+					sprintf(buf, "Setting: %s: %d", "Cardiac Rate", simmgr_shm->instructor.cardiac.rate );
 				}
 				simlog_entry(buf );
 			}
@@ -1174,7 +1174,7 @@ scan_commands(void )
 		{
 			if ( simmgr_shm->instructor.cardiac.rate > 0 )
 			{
-				sprintf(buf, "%s: %d", "Cardiac Rate cannot be set while in pulseless rhythm", simmgr_shm->instructor.cardiac.rate );
+				sprintf(buf, "Setting: %s: %d", "Cardiac Rate cannot be set while in pulseless rhythm", simmgr_shm->instructor.cardiac.rate );
 				simlog_entry(buf );
 			}
 			else
@@ -1192,7 +1192,7 @@ scan_commands(void )
 		if ( simmgr_shm->status.cardiac.nibp_rate != simmgr_shm->instructor.cardiac.nibp_rate )
 		{
 			simmgr_shm->status.cardiac.nibp_rate = simmgr_shm->instructor.cardiac.nibp_rate;
-			sprintf(buf, "%s: %d", "NIBP Rate", simmgr_shm->instructor.cardiac.rate );
+			sprintf(buf, "Setting: %s: %d", "NIBP Rate", simmgr_shm->instructor.cardiac.rate );
 			simlog_entry(buf );
 		}
 		simmgr_shm->instructor.cardiac.nibp_rate = -1;
@@ -1357,7 +1357,7 @@ scan_commands(void )
 		if ( simmgr_shm->status.cardiac.ecg_indicator != simmgr_shm->instructor.cardiac.ecg_indicator )
 		{
 			simmgr_shm->status.cardiac.ecg_indicator = simmgr_shm->instructor.cardiac.ecg_indicator;
-			sprintf(buf, "%s %s", "ECG Probe", (simmgr_shm->status.cardiac.ecg_indicator == 1 ? "Attached": "Removed") );
+			sprintf(buf, "Probe: %s %s", "ECG", (simmgr_shm->status.cardiac.ecg_indicator == 1 ? "Attached": "Removed") );
 			simlog_entry(buf );
 		}
 		simmgr_shm->instructor.cardiac.ecg_indicator = -1;
@@ -1367,7 +1367,7 @@ scan_commands(void )
 		if ( simmgr_shm->status.cardiac.bp_cuff != simmgr_shm->instructor.cardiac.bp_cuff )
 		{
 			simmgr_shm->status.cardiac.bp_cuff = simmgr_shm->instructor.cardiac.bp_cuff;
-			sprintf(buf, "%s %s", "BP Cuff", (simmgr_shm->status.cardiac.bp_cuff == 1 ? "Attached": "Removed") );
+			sprintf(buf, "Probe: %s %s", "BP Cuff", (simmgr_shm->status.cardiac.bp_cuff == 1 ? "Attached": "Removed") );
 			simlog_entry(buf );
 		}
 		simmgr_shm->instructor.cardiac.bp_cuff = -1;
@@ -1377,7 +1377,7 @@ scan_commands(void )
 		if ( simmgr_shm->status.cardiac.arrest != simmgr_shm->instructor.cardiac.arrest )
 		{
 			simmgr_shm->status.cardiac.arrest = simmgr_shm->instructor.cardiac.arrest;
-			sprintf(buf, "%s %s", "Arrest", (simmgr_shm->status.cardiac.arrest == 1 ? "Start": "Stop") );
+			sprintf(buf, "Setting: %s %s", "Arrest", (simmgr_shm->status.cardiac.arrest == 1 ? "Start": "Stop") );
 			simlog_entry(buf );
 		}
 		simmgr_shm->instructor.cardiac.arrest = -1;
@@ -1429,7 +1429,7 @@ scan_commands(void )
 	}
 	if ( simmgr_shm->instructor.respiration.rate >= 0 )
 	{
-		sprintf(msgbuf, "Set Resp Rate = %d -> %d : %d", simmgr_shm->status.respiration.rate, simmgr_shm->instructor.respiration.rate, simmgr_shm->instructor.respiration.transfer_time );
+		sprintf(msgbuf, "Setting: Resp Rate = %d -> %d : %d", simmgr_shm->status.respiration.rate, simmgr_shm->instructor.respiration.rate, simmgr_shm->instructor.respiration.transfer_time );
 		log_message("", msgbuf);
 		simmgr_shm->status.respiration.rate = setTrend(&respirationTrend, 
 												simmgr_shm->instructor.respiration.rate,
@@ -1465,7 +1465,7 @@ scan_commands(void )
 		if ( simmgr_shm->status.respiration.etco2_indicator != simmgr_shm->instructor.respiration.etco2_indicator )
 		{
 			simmgr_shm->status.respiration.etco2_indicator = simmgr_shm->instructor.respiration.etco2_indicator;
-			sprintf(buf, "%s %s", "ETCO2 Probe", (simmgr_shm->status.respiration.etco2_indicator == 1 ? "Attached": "Removed") );
+			sprintf(buf, "Probe: %s %s", "ETCO2", (simmgr_shm->status.respiration.etco2_indicator == 1 ? "Attached": "Removed") );
 			simlog_entry(buf );
 		}
 		
@@ -1476,7 +1476,7 @@ scan_commands(void )
 		if ( simmgr_shm->status.respiration.spo2_indicator != simmgr_shm->instructor.respiration.spo2_indicator )
 		{
 			simmgr_shm->status.respiration.spo2_indicator = simmgr_shm->instructor.respiration.spo2_indicator;
-			sprintf(buf, "%s %s", "SPO2 Probe", (simmgr_shm->status.respiration.spo2_indicator == 1 ? "Attached": "Removed") );
+			sprintf(buf, "Probe: %s %s", "SPO2", (simmgr_shm->status.respiration.spo2_indicator == 1 ? "Attached": "Removed") );
 			simlog_entry(buf );
 		}
 		simmgr_shm->instructor.respiration.spo2_indicator = -1;
@@ -1510,7 +1510,7 @@ scan_commands(void )
 		if ( simmgr_shm->status.general.temperature_enable != simmgr_shm->instructor.general.temperature_enable )
 		{
 			simmgr_shm->status.general.temperature_enable = simmgr_shm->instructor.general.temperature_enable;
-			sprintf(buf, "%s %s", "Temp Probe", (simmgr_shm->status.general.temperature_enable == 1 ? "Attached": "Removed") );
+			sprintf(buf, "Probe: %s %s", "Temp", (simmgr_shm->status.general.temperature_enable == 1 ? "Attached": "Removed") );
 			simlog_entry(buf );
 		}
 		simmgr_shm->instructor.general.temperature_enable = -1;
@@ -1611,7 +1611,7 @@ scan_commands(void )
 					// Manual Start - Go to Running for the run delay time
 					nibp_run_complete_time = now + NIBP_RUN_TIME;
 					nibp_state = NibpRunning;
-					snprintf(msgbuf, MSGBUF_LENGTH, "NIBP Read Manual" );
+					snprintf(msgbuf, MSGBUF_LENGTH, "Action: NIBP Read Manual" );
 					lockAndComment(msgbuf );
 				}
 				else if ( simmgr_shm->status.cardiac.nibp_freq != 0 )

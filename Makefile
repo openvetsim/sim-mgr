@@ -89,7 +89,9 @@ obj/simmgrDemo: src/simmgrDemo.cpp obj/sim-log.o obj/sim-util.o obj/simpulseDemo
 obj/simpulse: src/simpulse.cpp obj/sim-util.o include/simmgr.h
 	g++ $(CPPFLAGS) $(CXXFLAGS)  -lcgicc -o obj/simpulse src/simpulse.cpp  obj/sim-util.o $(LDFLAGS)
 	
-install: check $(TARGETS) installDaemon
+install: check $(TARGETS) installBase installDaemon installDemo
+
+installBase:
 	sudo cp -u obj/simstatus.cgi $(CGIBIN)
 	sudo chown simmgr:simmgr $(CGIBIN)/simstatus.cgi
 	sudo chmod u+s $(CGIBIN)/simstatus.cgi
@@ -97,9 +99,6 @@ install: check $(TARGETS) installDaemon
 	sudo chown simmgr:simmgr $(BIN)/simmgr
 	sudo chmod u+s $(BIN)/simmgr
 	sudo cp -u obj/obsmon $(BIN)
-	sudo cp -u obj/simmgrDemo $(BIN)
-	sudo chown simmgr:simmgr $(BIN)/simmgrDemo
-	sudo chmod u+s $(BIN)/simmgrDemo
 	sudo cp -u obj/simpulse $(BIN)
 	sudo chown simmgr:simmgr $(BIN)/simpulse
 	sudo chmod u+s $(BIN)/simpulse
@@ -116,6 +115,11 @@ installDaemon:
 removeDaemon:
 	sudo update-rc.d -f simmgr remove
 
+installDemo:
+	@sudo cp -u obj/simmgrDemo $(BIN)
+	@sudo chown simmgr:simmgr $(BIN)/simmgrDemo
+	@sudo chmod u+s $(BIN)/simmgrDemo
+	
 clean:
 	rm obj/*
 

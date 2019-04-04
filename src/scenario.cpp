@@ -322,7 +322,7 @@ main(int argc, char **argv)
 	current_scene = findScene(current_scene_id );
 	if ( ! current_scene )
 	{
-		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Starting scene not found in XML file" );
+		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Scenario: Starting scene not found in XML file" );
 		current_scene_id = -1;
 		if ( !checkOnly )
 		{
@@ -429,7 +429,7 @@ main(int argc, char **argv)
 				// If the scenario needs to do any cleanup, this is the place.
 				
 				// After setting state to Stopped, the simmgr will kill the scenario process
-				snprintf(msgbuf, MAX_MSGBUF_SIZE, "scenario: Terminate" );
+				snprintf(msgbuf, MAX_MSGBUF_SIZE, "Scenario: Terminate" );
 				//log_message("", msgbuf );
 				
 				sts = takeInstructorLock();
@@ -446,7 +446,7 @@ main(int argc, char **argv)
 		{
 			if ( scenario_state != ScenarioStopped )
 			{
-				snprintf(msgbuf, MAX_MSGBUF_SIZE, "scenario: Stopped" );
+				snprintf(msgbuf, MAX_MSGBUF_SIZE, "Scenario: Stopped" );
 				//log_message("", msgbuf );
 				lockAndComment(msgbuf );
 				scenario_state = ScenarioStopped;
@@ -504,7 +504,7 @@ findScene(int scene_id )
 		if ( limit-- == 0 )
 		{
 			printf("findScene Limit reached\n" );
-			sprintf(msgbuf, "scenario: findScene Limit reached" );
+			sprintf(msgbuf, "Scenario: findScene Limit reached" );
 			log_message("", msgbuf );
 			lockAndComment(msgbuf );
 			exit ( -2 );
@@ -692,32 +692,32 @@ logTrigger(struct scenario_trigger *trig, int time )
 		switch ( trig->test )
 		{
 			case TRIGGER_TEST_EVENT:
-				snprintf(msgbuf, MAX_MSGBUF_SIZE, "Scene Trigger Event: %s", trig->param_element );
+				snprintf(msgbuf, MAX_MSGBUF_SIZE, "Trigger: Event %s", trig->param_element );
 				break;
 		
 			case TRIGGER_TEST_INSIDE:
-				snprintf(msgbuf, MAX_MSGBUF_SIZE, "Scene Trigger: %d < %s:%s < %d", 
+				snprintf(msgbuf, MAX_MSGBUF_SIZE, "Trigger: %d < %s:%s < %d", 
 					trig->value, trig->param_class, trig->param_element, trig->value2 );
 				break;
 		
 			case TRIGGER_TEST_OUTSIDE:
-				snprintf(msgbuf, MAX_MSGBUF_SIZE, "Scene Trigger: %d > %s:%s > %d", 
+				snprintf(msgbuf, MAX_MSGBUF_SIZE, "Trigger: %d > %s:%s > %d", 
 					trig->value, trig->param_class, trig->param_element, trig->value2 );
 				break;
 				
 			default:
-				snprintf(msgbuf, MAX_MSGBUF_SIZE, "Scene Trigger: %s:%s %s %d", 
+				snprintf(msgbuf, MAX_MSGBUF_SIZE, "Trigger: %s:%s %s %d", 
 					trig->param_class, trig->param_element, trigger_tests_sym[trig->test], trig->value );
 				break;
 		}
 	}
 	else if ( time )
 	{
-		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Scene Trigger: Timeout %d seconds", time );
+		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Trigger: Timeout %d seconds", time );
 	}
 	else
 	{
-		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Scene Trigger: unknown" );
+		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Trigger: unknown" );
 	}
 		
 	lockAndComment(msgbuf );
@@ -733,52 +733,52 @@ static void pulse_check(void )
 	if ( ! puseStatus.right_dorsal && simmgr_shm->status.pulse.right_dorsal )
 	{
 		puseStatus.right_dorsal = true;
-		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Start Pulse Palpation Right Dorsal " );
+		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Action: Start Pulse Palpation Right Dorsal " );
 		lockAndComment(msgbuf);
 	}
 	else if ( puseStatus.right_dorsal && ! simmgr_shm->status.pulse.right_dorsal )
 	{
 		puseStatus.right_dorsal = false;
-		snprintf(msgbuf, MAX_MSGBUF_SIZE, "End Pulse Palpation Right Dorsal " );
+		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Action: End Pulse Palpation Right Dorsal " );
 		lockAndComment(msgbuf);
 	}
 	
 	if ( ! puseStatus.left_dorsal && simmgr_shm->status.pulse.left_dorsal )
 	{
 		puseStatus.left_dorsal = true;
-		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Start Pulse Palpation Left Dorsal " );
+		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Action: Start Pulse Palpation Left Dorsal " );
 		lockAndComment(msgbuf);
 	}
 	else if ( puseStatus.left_dorsal && ! simmgr_shm->status.pulse.left_dorsal )
 	{
 		puseStatus.left_dorsal = false;
-		snprintf(msgbuf, MAX_MSGBUF_SIZE, "End Pulse Palpation Left Dorsal " );
+		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Action: End Pulse Palpation Left Dorsal " );
 		lockAndComment(msgbuf);
 	}
 	
 	if ( ! puseStatus.right_femoral && simmgr_shm->status.pulse.right_femoral )
 	{
 		puseStatus.right_femoral = true;
-		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Start Pulse Palpation Right Femoral " );
+		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Action: Start Pulse Palpation Right Femoral " );
 		lockAndComment(msgbuf);
 	}
 	else if ( puseStatus.right_femoral && ! simmgr_shm->status.pulse.right_femoral )
 	{
 		puseStatus.right_femoral = false;
-		snprintf(msgbuf, MAX_MSGBUF_SIZE, "End Pulse Palpation Right Femoral " );
+		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Action: End Pulse Palpation Right Femoral " );
 		lockAndComment(msgbuf);
 	}
 	
 	if ( ! puseStatus.left_femoral && simmgr_shm->status.pulse.left_femoral )
 	{
 		puseStatus.left_femoral = true;
-		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Start Pulse Palpation Left Femoral " );
+		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Action: Start Pulse Palpation Left Femoral " );
 		lockAndComment(msgbuf);
 	}
 	else if ( puseStatus.left_femoral && ! simmgr_shm->status.pulse.left_femoral )
 	{
 		puseStatus.left_femoral = false;
-		snprintf(msgbuf, MAX_MSGBUF_SIZE, "End Pulse Palpation Left Femoral " );
+		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Action: End Pulse Palpation Left Femoral " );
 		lockAndComment(msgbuf);
 	}
 }
@@ -830,7 +830,7 @@ scene_check(void )
 		if ( simmgr_shm->status.cpr.compression == 0 )
 		{
 			cprActive = 0;
-			snprintf(msgbuf, MAX_MSGBUF_SIZE, "Stopping Compressions: Cumulative %d seconds", cprCumulative );
+			snprintf(msgbuf, MAX_MSGBUF_SIZE, "Action: Stopping Compressions: Cumulative %d seconds", cprCumulative );
 			lockAndComment(msgbuf );
 		}
 		else
@@ -847,7 +847,7 @@ scene_check(void )
 		{
 			clock_gettime( CLOCK_REALTIME, &cprStart );
 			cprActive = 1;
-			snprintf(msgbuf, MAX_MSGBUF_SIZE, "Starting Compressions" );
+			snprintf(msgbuf, MAX_MSGBUF_SIZE, "Action: Starting Compressions" );
 			lockAndComment(msgbuf );
 		}
 	}
@@ -945,7 +945,7 @@ startScene(int sceneId )
 	if ( ! new_scene )
 	{
 		fprintf(stderr, "Scene %d not found", sceneId );
-		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Scene %d not found. Terminating.", sceneId );
+		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Scenario: Scene %d not found. Terminating.", sceneId );
 		takeInstructorLock();
 		addComment(msgbuf );
 		sprintf(simmgr_shm->instructor.scenario.state, "%s", "Terminate" );
@@ -967,7 +967,7 @@ startScene(int sceneId )
 		{
 			printf("End scene %s\n", current_scene->name );
 		}
-		snprintf(msgbuf, MAX_MSGBUF_SIZE, "End Scene %d %s", sceneId, current_scene->name );
+		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Scenario: End Scene %d %s", sceneId, current_scene->name );
 		takeInstructorLock();
 		addComment(msgbuf );
 		sprintf(simmgr_shm->instructor.scenario.state, "%s", "Terminate" );
@@ -979,7 +979,7 @@ startScene(int sceneId )
 		{
 			printf("New scene %s\n", current_scene->name );
 		}
-		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Start Scene %d: %s", sceneId, current_scene->name );
+		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Scenario: Start Scene %d: %s", sceneId, current_scene->name );
 		lockAndComment(msgbuf );
 		processInit(&current_scene->initParams );
 	}
