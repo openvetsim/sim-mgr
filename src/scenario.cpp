@@ -830,7 +830,7 @@ scene_check(void )
 		if ( simmgr_shm->status.cpr.compression == 0 )
 		{
 			cprActive = 0;
-			snprintf(msgbuf, MAX_MSGBUF_SIZE, "Action: Stopping Compressions: Cumulative %d seconds", cprCumulative );
+			snprintf(msgbuf, MAX_MSGBUF_SIZE, "CPR: Stopping Compressions: Cumulative %d seconds", cprCumulative );
 			lockAndComment(msgbuf );
 		}
 		else
@@ -847,7 +847,7 @@ scene_check(void )
 		{
 			clock_gettime( CLOCK_REALTIME, &cprStart );
 			cprActive = 1;
-			snprintf(msgbuf, MAX_MSGBUF_SIZE, "Action: Starting Compressions" );
+			snprintf(msgbuf, MAX_MSGBUF_SIZE, "CPR: Starting Compressions" );
 			lockAndComment(msgbuf );
 		}
 	}
