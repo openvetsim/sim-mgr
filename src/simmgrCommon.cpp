@@ -374,6 +374,16 @@ int breathLogDelay = 0;
 int breathLogReportLoops = 0;
 
 void
+awrr_restart(void )
+{
+	breathLogLastNatural = 0;
+	breathLogLastManual = 0;
+	breathLogNext = 0;
+	breathLogLast = 0;
+	breathLogDelay = 0;
+	breathLogReportLoops = 0;
+}
+void
 awrr_check(void)
 {
 	int now = simmgr_shm->server.msec_time; //  time(NULL);	// Current sec time
@@ -1895,6 +1905,7 @@ resetAllParameters(void )
 	simmgr_shm->status.respiration.chest_movement = 0;
 	simmgr_shm->status.respiration.manual_breath = 0;
 	simmgr_shm->status.respiration.manual_count = 0;
+	awrr_restart();
 	
 	// status/vocals
 	sprintf(simmgr_shm->status.vocals.filename, "%s", "" );
