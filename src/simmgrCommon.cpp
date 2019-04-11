@@ -482,7 +482,7 @@ awrr_check(void)
 			for ( i = 0 ; i < BREATH_CALC_LIMIT ; i++ )
 			{
 				diff = now - breathLog[prev];
-				if ( diff > 35000 ) // Over Limit seconds since this recorded breath
+				if ( diff > 47000 ) // Over Limit seconds since this recorded breath
 				{
 					break;
 				}
