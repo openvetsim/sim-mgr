@@ -382,6 +382,13 @@ awrr_restart(void )
 	breathLogLast = 0;
 	breathLogDelay = 0;
 	breathLogReportLoops = 0;
+	int now = simmgr_shm->server.msec_time; //  time(NULL);	// Current sec time
+	breathLog[breathLogNext] = now - 40000;
+	breathLogNext += 1;
+	breathLog[breathLogNext] = now - 39000;
+	breathLogNext += 1;
+	breathLog[breathLogNext] = now - 38000;
+	breathLogNext += 1;
 }
 void
 awrr_check(void)
@@ -475,7 +482,7 @@ awrr_check(void)
 			for ( i = 0 ; i < BREATH_CALC_LIMIT ; i++ )
 			{
 				diff = now - breathLog[prev];
-				if ( diff > 20000 ) // Over Limit seconds since this recorded breath
+				if ( diff > 35000 ) // Over Limit seconds since this recorded breath
 				{
 					break;
 				}
