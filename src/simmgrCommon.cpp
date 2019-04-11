@@ -492,7 +492,7 @@ awrr_check(void)
 				}
 			}
 		}
-		if ( intervals > 0 )
+		if ( intervals > 2 )
 		{
 			totalTime = lastTime - firstTime;
 			if ( totalTime == 0 )
