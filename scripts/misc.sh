@@ -50,14 +50,14 @@ chmod g+sw /var/www/html/simlogs/video
 
 # clone the sim-ii
 cd /var/www/html
-git clone https://github.com/tkelleher/sim-ii.git
+git clone https://github.com/openvetsim/sim-ii.git
 
 cd /var/www/html
-git clone https://github.com/tkelleher/scenarios.git
+git clone https://github.com/openvetsim/scenarios.git
 
 # clone sim-player
 cd /var/www/html/
-git clone https://github.com/tkelleher/sim-player.git
+git clone https://github.com/openvetsim/sim-player.git
 
 # update permissions for scenarios
 cd /var/www/html
