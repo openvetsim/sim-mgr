@@ -35,18 +35,18 @@ sudo apt-get install -y obs-studio
 ./updateVitals.sh
 
 # update permissions
-chown www-data:www-data /var/www
-chmod 0755 /var/www/html
-chown -R www-data:www-data /var/www/html
+sudo chown www-data:www-data /var/www
+sudo chmod 0755 /var/www/html
+sudo chown -R www-data:www-data /var/www/html
 
 sudo mkdir /var/www/html/simlogs
 sudo chown www-data:www-data /var/www/html/simlogs
 sudo chmod 2777 /var/www/html/simlogs
-chmod g+s /var/www/html/simlogs
+sudo chmod g+s /var/www/html/simlogs
 
 # create video directory for OBS
 sudo mkdir /var/www/html/simlogs/video
-chmod g+sw /var/www/html/simlogs/video
+sudo chmod g+sw /var/www/html/simlogs/video
 
 # clone the sim-ii
 cd /var/www/html
