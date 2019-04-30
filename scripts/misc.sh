@@ -64,4 +64,4 @@ sudo chown -R www-data:www-data /var/www/html
 
 # update permissions for scenarios
 cd /var/www/html
-chmod -R 777 ./scenarios
+sudo chmod -R 777 ./scenarios
