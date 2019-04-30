@@ -45,19 +45,22 @@ sudo chmod 2777 /var/www/html/simlogs
 chmod g+s /var/www/html/simlogs
 
 # create video directory for OBS
-mkdir /var/www/html/simlogs/video
+sudo mkdir /var/www/html/simlogs/video
 chmod g+sw /var/www/html/simlogs/video
 
 # clone the sim-ii
 cd /var/www/html
-git clone https://github.com/openvetsim/sim-ii.git
+sudo git clone https://github.com/openvetsim/sim-ii.git
 
 cd /var/www/html
-git clone https://github.com/openvetsim/scenarios.git
+sudo git clone https://github.com/openvetsim/scenarios.git
 
 # clone sim-player
 cd /var/www/html/
-git clone https://github.com/openvetsim/sim-player.git
+sudo git clone https://github.com/openvetsim/sim-player.git
+
+# update ownership for all files....again
+sudo chown -R www-data:www-data /var/www/html
 
 # update permissions for scenarios
 cd /var/www/html
