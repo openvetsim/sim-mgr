@@ -35,30 +35,33 @@ sudo apt-get install -y obs-studio
 ./updateVitals.sh
 
 # update permissions
-chown www-data:www-data /var/www
-chmod 0755 /var/www/html
-chown -R www-data:www-data /var/www/html
+sudo chown www-data:www-data /var/www
+sudo chmod 0755 /var/www/html
+sudo chown -R www-data:www-data /var/www/html
 
 sudo mkdir /var/www/html/simlogs
 sudo chown www-data:www-data /var/www/html/simlogs
 sudo chmod 2777 /var/www/html/simlogs
-chmod g+s /var/www/html/simlogs
+sudo chmod g+s /var/www/html/simlogs
 
 # create video directory for OBS
-mkdir /var/www/html/simlogs/video
-chmod g+sw /var/www/html/simlogs/video
+sudo mkdir /var/www/html/simlogs/video
+sudo chmod g+sw /var/www/html/simlogs/video
 
 # clone the sim-ii
 cd /var/www/html
-git clone https://github.com/tkelleher/sim-ii.git
+sudo git clone https://github.com/openvetsim/sim-ii.git
 
 cd /var/www/html
-git clone https://github.com/tkelleher/scenarios.git
+sudo git clone https://github.com/openvetsim/scenarios.git
 
 # clone sim-player
 cd /var/www/html/
-git clone https://github.com/tkelleher/sim-player.git
+sudo git clone https://github.com/openvetsim/sim-player.git
+
+# update ownership for all files....again
+sudo chown -R www-data:www-data /var/www/html
 
 # update permissions for scenarios
 cd /var/www/html
-chmod -R 777 ./scenarios
+sudo chmod -R 777 ./scenarios
