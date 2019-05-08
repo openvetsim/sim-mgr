@@ -1457,9 +1457,7 @@ scan_commands(void )
 			setRespirationPeriods(simmgr_shm->status.respiration.rate, simmgr_shm->instructor.respiration.rate );
 		}
 		simmgr_shm->instructor.respiration.rate = -1;
-		simmgr_shm->instructor.respiration.transfer_time = -1;
 	}
-	
 	if ( simmgr_shm->instructor.respiration.spo2 >= 0 )
 	{
 		simmgr_shm->status.respiration.spo2 = setTrend(&spo2Trend, 
