@@ -68,3 +68,4 @@ sudo chmod -R 777 ./scenarios
 
 # add user vet to www-data group
 sudo usermod -a -G www-data vet
+sudo usermod -a -G www-data simmgr
