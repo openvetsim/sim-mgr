@@ -65,3 +65,7 @@ sudo chown -R www-data:www-data /var/www/html
 # update permissions for scenarios
 cd /var/www/html
 sudo chmod -R 777 ./scenarios
+
+# add user vet to www-data group
+sudo usermod -a -G www-data vet
+sudo usermod -a -G www-data simmgr
