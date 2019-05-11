@@ -24,7 +24,7 @@ obs &
 
 #echo calling xdotool
 
-xdotool search --name --sync --onlyvisible "OBS" windowfocus
+xdotool search --name --onlyvisible "OBS" windowfocus
 STATUS=$?
 if [ $STATUS -eq 0 ]; then
 	#xdotool getactivewindow windowmove 10000 10000
@@ -37,4 +37,4 @@ else
 	echo "Failed to get window focus"
 	exit $STATUS
 fi
-xdotool search --name --sync "Vet School Simulator" windowfocus
+xdotool search --name "Vet School Simulator" windowfocus

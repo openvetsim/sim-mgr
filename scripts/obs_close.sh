@@ -17,7 +17,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 export DISPLAY=:0.0
-xdotool search --name --sync --onlyvisible "OBS" windowfocus
+xdotool search --name --onlyvisible "OBS" windowfocus
 STATUS=$?
 if [ $STATUS -eq 0 ]; then
 	xdotool key alt+F4
@@ -29,4 +29,4 @@ else
 	echo "Failed to get window focus"
 	exit $STATUS
 fi
-xdotool search --name --sync "Vet School Simulator" windowfocus
+xdotool search --name "Vet School Simulator" windowfocus
