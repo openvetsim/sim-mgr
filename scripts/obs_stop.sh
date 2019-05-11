@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License 
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 export DISPLAY=:0.0
-xdotool search --name --sync --onlyvisible "obs" windowfocus
+xdotool search --name --sync --onlyvisible "OBS" windowfocus
 STATUS=$?
 if [ $STATUS -eq 0 ]; then
 	xdotool key ctrl+B

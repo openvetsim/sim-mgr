@@ -24,7 +24,7 @@ obs &
 
 #echo calling xdotool
 
-xdotool search --name --sync --onlyvisible "obs" windowfocus
+xdotool search --name --sync --onlyvisible "OBS" windowfocus
 STATUS=$?
 if [ $STATUS -eq 0 ]; then
 	#xdotool getactivewindow windowmove 10000 10000
