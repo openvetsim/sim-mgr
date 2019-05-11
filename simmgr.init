@@ -39,7 +39,8 @@ simmgr_start () {
 simmgr_stop() {
 		log_daemon_msg "Stopping Simulation Manager"
         kill  $(cat $S_PIDFILE) 
-		kill  $(cat $P_PIDFILE) 
+		kill  $(cat $P_PIDFILE)
+		killall obsmon
         log_end_msg $?
 }
 

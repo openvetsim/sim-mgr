@@ -1057,6 +1057,7 @@ scan_commands(void )
 		if ( trycount++ > 50 )
 		{
 			// Could not get lock soon enough. Try again next time.
+			fprintf(stderr, "%s", "scan_commands: Failed to take Instructor lock" );
 			return ( -1 );
 		}
 		usleep(100000 );

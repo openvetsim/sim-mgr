@@ -357,7 +357,7 @@ main( int argc, const char* argv[] )
 					else if ( v[2].compare("record" ) == 0 )
 					{
 						simmgr_shm->instructor.scenario.record = atoi(value.c_str() );
-						}
+					}
 					else
 					{
 						sts = 1;

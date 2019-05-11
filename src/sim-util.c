@@ -563,7 +563,7 @@ takeInstructorLock()
 	{
 		if ( trycount++ > 50 )
 		{
-			fprintf(stderr, "%s", "failed to take Instructor lock" );
+			//fprintf(stderr, "%s", "failed to take Instructor lock" );
 			return ( -1 );
 		}
 		usleep(1000 );

@@ -30,7 +30,7 @@ else
 	## cp .profile, add edit, then mv back and chown
 	cp /home/vitals/.profile .
 	echo -e 'if [[ $XDG_VTNR == "1" ]];\n    then\n    $HOME/vitals.sh &\n    obsmon &\nfi\n' >> .profile
-	sudo cp .profile /home/vitals/
+	sudo mv .profile /home/vitals/
 	sudo chown vitals:vitals /home/vitals/.profile
 fi
 
