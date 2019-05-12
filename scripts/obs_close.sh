@@ -16,6 +16,9 @@
 # You should have received a copy of the GNU General Public License 
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+### Skipping close. Let the obs process continue
+exit 0
+
 export DISPLAY=:0.0
 xdotool search --name --onlyvisible "OBS" windowfocus
 STATUS=$?
@@ -29,4 +32,4 @@ else
 	echo "Failed to get window focus"
 	exit $STATUS
 fi
-xdotool search --name "Vet School Simulator" windowfocus
+xdotool search --name "Vet School Simulator" windowactivate
