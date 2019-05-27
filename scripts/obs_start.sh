@@ -30,3 +30,5 @@ else
 	exit $STATUS
 fi
 xdotool search --name "Vet School Simulator" windowactivate 
+xdotool search --name --onlyvisible "OBS" windowactivate 
+xdotool getactivewindow windowminimize
