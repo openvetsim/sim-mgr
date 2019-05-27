@@ -29,7 +29,7 @@ else
 	echo "Failed to get window focus"
 	exit $STATUS
 fi
-xdotool search --name --onlyvisible "OBS" windowactivate 
+xdotool search --name "OBS" windowactivate 
 xdotool getactivewindow windowminimize
 xdotool search --name "Vet School Simulator" windowactivate 
 
