@@ -38,3 +38,9 @@ else
 	echo "Failed to get Browser focus"
 	exit $STATUS
 fi
+
+xdotool search --name "Open VetSim Instructor Interface" windowactivate
+STATUS=$?
+if [ $STATUS -eq 0 ]; then
+	xdotool getactivewindow windowfocus
+fi
