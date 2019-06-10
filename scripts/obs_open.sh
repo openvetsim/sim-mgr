@@ -16,23 +16,11 @@
 # You should have received a copy of the GNU General Public License 
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-read IPETH0  <<< $(pidof obs)
-len=${#IPETH0}
+read OBSPID  <<< $(pidof obs)
+len=${#OBSPID}
 if [ $len -eq 0 ]; then
 	export DISPLAY=:0.0
 	obs &
-
-	xdotool search --name --sync --onlyvisible "OBS" windowfocus
-	STATUS=$?
-	if [ $STATUS -eq 0 ]; then
-		xdotool getactivewindow windowminimize
-		STATUS=$?
-		if [ $STATUS -eq 0 ]; then
-			echo "Failed window move"
-		fi
-	else
-		echo "Failed to get window focus"
-		exit $STATUS
-	fi
-	xdotool search --name "Vet School Simulator" windowactivate
+	OBSWIN="$(xdotool search --sync --onlyvisible --name OBS )"
+	xdotool windowminimize  $OBSWIN
 fi
