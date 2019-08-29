@@ -17,19 +17,14 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 export DISPLAY=:0.0
-xdotool search --name --onlyvisible "OBS" windowactivate 
-STATUS=$?
-if [ $STATUS -eq 0 ]; then
-	xdotool key ctrl+A
-	STATUS=$?
-	if [ $STATUS -eq 0 ]; then
-		echo "Key Send for Start"
-	fi
-else
-	echo "Failed to get window focus"
-	exit $STATUS
-fi
-xdotool search --name "OBS" windowactivate 
-xdotool getactivewindow windowminimize
-xdotool search --name "Vet School Simulator" windowactivate 
 
+OBSWIN="$(xdotool search --onlyvisible --name OBS )"
+len=${#OBSWIN}
+if [ $len -ne 0 ]; then
+	xdotool windowactivate $OBSWIN
+	xdotool key ctrl+A $OBSWIN
+	xdotool windowminimize  $OBSWIN
+else
+	echo "Failed to find OBS."
+	exit -1
+fi
