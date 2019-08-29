@@ -401,10 +401,33 @@ void
 restart_breath_timer(void )
 {
 	struct itimerspec its;
+	long int intpart;
 	
 	resetTimer(simmgr_shm->status.respiration.rate, &its, NULL, NOT_CARDIAC );
-	// Add 2 seconds to the next time. 
-	its.it_value.tv_sec += 2;
+	
+	 
+	intpart = its.it_value.tv_sec;
+	
+	// For very slow cycles (less than 15 BPM), set initial timer to half the cycle plus add 2 seconds.
+	if ( intpart > 2 )
+	{
+		intpart = (intpart /2);
+	}
+	else if ( intpart == 2 )
+	{
+		//Leave it
+	}
+	else if ( intpart == 1 )
+	{
+		// Add a second
+		intpart = intpart + 1;
+	}
+	else
+	{
+		// Add 2 seconds
+		intpart = intpart + 2;
+	}
+	its.it_value.tv_sec = intpart;
 	timer_settime(breath_timer, 0, &its, NULL);
 }
 
