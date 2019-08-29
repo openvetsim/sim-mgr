@@ -408,12 +408,13 @@ restart_breath_timer(void )
 	 
 	intpart = its.it_value.tv_sec;
 	
-	// For very slow cycles (less than 15 BPM), set initial timer to half the cycle plus add 2 seconds.
-	if ( intpart > 2 )
+	// For very slow cycles (less than 15 BPM), set initial timer to half the cycle plus add 1 seconds.
+	
+	if ( intpart > 3 )
 	{
-		intpart = (intpart /2);
+		intpart = (intpart /2) + 1;
 	}
-	else if ( intpart == 2 )
+	else if ( intpart > 1 ) // 
 	{
 		//Leave it
 	}
