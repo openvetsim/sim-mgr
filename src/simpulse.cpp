@@ -77,6 +77,7 @@ int currentPulseRate = 0;
 int currentVpcFreq = 0;
 
 int currentBreathRate = 0;
+int lastManualBreath = 0;
 int runningAsDemo = 0;
 
 void set_beat_time(int bpm );
@@ -395,6 +396,18 @@ set_pulse_rate(int bpm )
 #endif
 }
 
+// restart_breath_timer is called when a manual respiration is flagged. 
+void
+restart_breath_timer(void )
+{
+	struct itimerspec its;
+	
+	resetTimer(simmgr_shm->status.respiration.rate, &its, NULL, NOT_CARDIAC );
+	// Add 2 seconds to the next time. 
+	its.it_value.tv_sec += 2;
+	timer_settime(breath_timer, 0, &its, NULL);
+}
+
 void
 set_breath_rate(int bpm )
 {
@@ -708,6 +721,8 @@ process_child(void *ptr )
 	int checkCount = 0;
 	int scenarioRunning = false;
 	
+	lastManualBreath = simmgr_shm->status.respiration.manual_count;
+				
 	while ( 1 )
 	{
 		usleep(5000 );		// 5 msec wait
@@ -805,6 +820,17 @@ process_child(void *ptr )
 			else
 			{
 				afibActive = 0;
+			}
+		}
+		else if ( checkCount == 9 )
+		{
+			if ( lastManualBreath != simmgr_shm->status.respiration.manual_count )
+			{
+				// Manual Breath has started. Reset timer to run based on this breath
+				lastManualBreath = simmgr_shm->status.respiration.manual_count;
+				sem_wait(&breathSema );
+				restart_breath_timer();
+				sem_post(&breathSema );
 			}
 		}
 		else if ( checkCount == 10 )
