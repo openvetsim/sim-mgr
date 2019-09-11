@@ -143,11 +143,11 @@ beat_handler(int sig, siginfo_t *si, void *uc)
    
 	if ( sig == PULSE_TIMER_SIG )
 	{
-		if ( simmgr_shm->status.defibrillation.shock )
+		//if ( simmgr_shm->status.defibrillation.shock )
 			// ||  simmgr_shm->status.cpr.running )
-		{
-			return;
-		}
+		//{
+		//	return;
+		//}
 		sts = sem_wait(&pulseSema );
 		rate = currentPulseRate;
 		sem_post(&pulseSema );
