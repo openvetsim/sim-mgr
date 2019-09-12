@@ -16,20 +16,15 @@
 # You should have received a copy of the GNU General Public License 
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-### Skipping stop. Let the obs process continue
-exit 0
-
 export DISPLAY=:0.0
-xdotool search --name --onlyvisible "OBS" windowfocus
-STATUS=$?
-if [ $STATUS -eq 0 ]; then
+
+OBSWIN="$(xdotool search --onlyvisible --name OBS )"
+len=${#OBSWIN}
+if [ $len -ne 0 ]; then
+	xdotool windowactivate $OBSWIN
 	xdotool key ctrl+B
-	STATUS=$?
-	if [ $STATUS -eq 0 ]; then
-		echo "Key Send for Stop"
-	fi
+	xdotool windowminimize $OBSWIN
 else
-	echo "Failed to get window focus"
-	exit $STATUS
+	echo "Failed to find OBS"
+	exit -1
 fi
-xdotool search --name "Vet School Simulator" windowfocus

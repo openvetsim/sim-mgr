@@ -15,21 +15,16 @@
 #
 # You should have received a copy of the GNU General Public License 
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
-read IPETH0  <<< $(pidof obs)
-len=${#IPETH0}
-if [ $len -eq 0 ]; then
-	export DISPLAY=:0.0
-	xdotool search --name --sync --onlyvisible "OBS" windowactivate 
-	STATUS=$?
-	if [ $STATUS -eq 0 ]; then
-		xdotool key ctrl+A
-		STATUS=$?
-		if [ $STATUS -eq 0 ]; then
-			echo "Key Send for Start"
-		fi
-	else
-		echo "Failed to get window focus"
-		exit $STATUS
-	fi
-	xdotool search --name "Vet School Simulator" windowactivate 
+
+export DISPLAY=:0.0
+
+OBSWIN="$(xdotool search --onlyvisible --name OBS )"
+len=${#OBSWIN}
+if [ $len -ne 0 ]; then
+	xdotool windowactivate $OBSWIN
+	xdotool key ctrl+A $OBSWIN
+	xdotool windowminimize  $OBSWIN
+else
+	echo "Failed to find OBS."
+	exit -1
 fi

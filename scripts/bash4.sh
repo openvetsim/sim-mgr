@@ -20,6 +20,9 @@ sudo cp ~/sim-mgr/000-default.conf /etc/apache2/sites-available/
 sudo a2enmod cgi
 sudo service apache2 restart
 
+# For compiling CGI binaries.
+sudo apt-get install -y libcgicc-dev
+
 cd ~/sim-mgr
 make
 make install

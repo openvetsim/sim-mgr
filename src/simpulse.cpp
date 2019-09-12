@@ -77,6 +77,7 @@ int currentPulseRate = 0;
 int currentVpcFreq = 0;
 
 int currentBreathRate = 0;
+int lastManualBreath = 0;
 int runningAsDemo = 0;
 
 void set_beat_time(int bpm );
@@ -142,11 +143,11 @@ beat_handler(int sig, siginfo_t *si, void *uc)
    
 	if ( sig == PULSE_TIMER_SIG )
 	{
-		if ( simmgr_shm->status.defibrillation.shock || 
-			 simmgr_shm->status.cpr.running )
-		{
-			return;
-		}
+		//if ( simmgr_shm->status.defibrillation.shock )
+			// ||  simmgr_shm->status.cpr.running )
+		//{
+		//	return;
+		//}
 		sts = sem_wait(&pulseSema );
 		rate = currentPulseRate;
 		sem_post(&pulseSema );
@@ -393,6 +394,42 @@ set_pulse_rate(int bpm )
 		log_message("", msgbuf );
 	}
 #endif
+}
+
+// restart_breath_timer is called when a manual respiration is flagged. 
+void
+restart_breath_timer(void )
+{
+	struct itimerspec its;
+	long int intpart;
+	
+	resetTimer(simmgr_shm->status.respiration.rate, &its, NULL, NOT_CARDIAC );
+	
+	 
+	intpart = its.it_value.tv_sec;
+	
+	// For very slow cycles (less than 15 BPM), set initial timer to half the cycle plus add 1 seconds.
+	
+	if ( intpart > 3 )
+	{
+		intpart = (intpart /2) + 1;
+	}
+	else if ( intpart > 1 ) // 
+	{
+		//Leave it
+	}
+	else if ( intpart == 1 )
+	{
+		// Add a second
+		intpart = intpart + 1;
+	}
+	else
+	{
+		// Add 2 seconds
+		intpart = intpart + 2;
+	}
+	its.it_value.tv_sec = intpart;
+	timer_settime(breath_timer, 0, &its, NULL);
 }
 
 void
@@ -708,6 +745,8 @@ process_child(void *ptr )
 	int checkCount = 0;
 	int scenarioRunning = false;
 	
+	lastManualBreath = simmgr_shm->status.respiration.manual_count;
+				
 	while ( 1 )
 	{
 		usleep(5000 );		// 5 msec wait
@@ -805,6 +844,17 @@ process_child(void *ptr )
 			else
 			{
 				afibActive = 0;
+			}
+		}
+		else if ( checkCount == 9 )
+		{
+			if ( lastManualBreath != simmgr_shm->status.respiration.manual_count )
+			{
+				// Manual Breath has started. Reset timer to run based on this breath
+				lastManualBreath = simmgr_shm->status.respiration.manual_count;
+				sem_wait(&breathSema );
+				restart_breath_timer();
+				sem_post(&breathSema );
 			}
 		}
 		else if ( checkCount == 10 )
