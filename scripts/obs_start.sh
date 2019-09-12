@@ -17,6 +17,11 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 export DISPLAY=:0.0
+read WHICH  <<< $(which obs)
+len=${#WHICH}
+if [ $len -eq 0 ]; then
+	exit
+fi
 
 OBSWIN="$(xdotool search --onlyvisible --name OBS )"
 len=${#OBSWIN}

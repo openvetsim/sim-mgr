@@ -16,6 +16,12 @@
 # You should have received a copy of the GNU General Public License 
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+read WHICH  <<< $(which obs)
+len=${#WHICH}
+if [ $len -eq 0 ]; then
+	exit
+fi
+
 read OBSPID  <<< $(pidof obs)
 len=${#OBSPID}
 if [ $len -eq 0 ]; then
