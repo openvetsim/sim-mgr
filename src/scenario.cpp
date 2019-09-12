@@ -188,7 +188,6 @@ main(int argc, char **argv)
 	int sts;
 	char *sesid = NULL;
 	int q = false;
-	int i;
 	
 	opterr = 0;
 	while ((c = getopt(argc, argv, getArgList )) != -1 )

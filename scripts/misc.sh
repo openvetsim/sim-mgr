@@ -61,6 +61,7 @@ sudo git clone https://github.com/openvetsim/sim-player.git
 
 # update ownership for all files....again
 sudo chown -R www-data:www-data /var/www/html
+sudo chmod -R g+w /var/www/html
 
 # update permissions for scenarios
 cd /var/www/html
