@@ -178,7 +178,7 @@ char logMsg[512];
 char usage[] = "[-cv] [-S sessionID] xml-file-name";
 #define MAX_MSGBUF_SIZE 1024
 char msgbuf[MAX_MSGBUF_SIZE];
-char getArgList[] = "cvS:q";
+char getArgList[] = "cvS:qh";
 
 int 
 main(int argc, char **argv)
@@ -207,6 +207,13 @@ main(int argc, char **argv)
 				break;
 			case 'q':
 				q = true;
+				break;
+			case 'h':
+				printf("Usage: %s %s\nRun Scenario for Simulation Manager\n\n", argv[0], usage );
+				printf(" -c\tRun Check of file\n" );
+				printf(" -v\tVerbose\n" );
+				printf(" -S\tRun as Demo\n" );
+				
 				break;
 			case '?':
 				if (isprint (optopt))
@@ -247,6 +254,7 @@ main(int argc, char **argv)
 			sleep(10 );
 		}
 	}
+	/*
 	if ( q ) 
 	{
 		// Show Comment data
@@ -257,7 +265,7 @@ main(int argc, char **argv)
 		}
 		exit ( 0 );
 	}
-	
+	*/
 	snprintf(msgbuf, MAX_MSGBUF_SIZE, "Scenario File %s SessionID %s", argv[optind], sesid );
 	if ( !checkOnly )
 	{
@@ -652,7 +660,7 @@ showScenes()
 			}
 			t_snode = get_next_llist(t_snode );
 		}
-		if ( ( tcount == 0 ) && ( timeout == 0 ) && ( scene->id != 0 ) )
+		if ( ( scene->id != 0 ) && ( tcount == 0 ) && ( timeout == 0 ) )
 		{
 			printf("ERROR: Scene ID %d has no trigger/timeout events\n",
 				scene->id );
