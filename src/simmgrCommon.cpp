@@ -537,7 +537,7 @@ awrr_check(void)
 }
 
 int cprLast = 0;
-int cprStartTime = 0;
+int cprRunTime = 0;
 int cprDuration = 2000;
 
 void
@@ -555,14 +555,18 @@ cpr_check(void)
 		}
 		else
 		{
-			cprStartTime = now;
+			cprRunTime = now;
 			simmgr_shm->status.cpr.running = 1;
 			cprLast = cprCurrent;
 		}
 	}
 	if ( simmgr_shm->status.cpr.running > 0 )
 	{
-		if ( ( cprStartTime + cprDuration ) < now )
+		if (  simmgr_shm->status.cpr.compression > 0 )
+		{
+			cprRunTime = now;
+		}
+		else if ( ( cprRunTime + cprDuration ) < now )
 		{
 			simmgr_shm->status.cpr.running = 0;
 		}
