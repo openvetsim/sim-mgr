@@ -631,9 +631,6 @@ int hrLogReportLoops = 0;
 static void 
 hrcheck_handler(int sig, siginfo_t *si, void *uc)
 {
-#if 0
-	simmgr_shm->status.cardiac.avg_rate = simmgr_shm->status.cardiac.rate;
-#else
 	int now; // Current msec time
 	int prev;
 	int beats;
@@ -654,7 +651,19 @@ hrcheck_handler(int sig, siginfo_t *si, void *uc)
 	
 	now = msec_time_update();
 	
-	if ( hrLogLastNatural != simmgr_shm->status.cardiac.pulseCount )
+	if ( simmgr_shm->status.cpr.running )
+	{
+		hrLogLastNatural = simmgr_shm->status.cardiac.pulseCount;
+		hrLogLastVPC = simmgr_shm->status.cardiac.pulseCountVpc;
+		simmgr_shm->status.cardiac.avg_rate = 0;
+		firstTime = now - 30000;
+		for ( i = 0 ; i < HR_LOG_LEN ; i++ )
+		{
+			hrLog[i] = firstTime;
+		}
+		return;
+	}
+	else if ( hrLogLastNatural != simmgr_shm->status.cardiac.pulseCount )
 	{
 		hrLogLastNatural = simmgr_shm->status.cardiac.pulseCount;
 		newBeat = 1;
@@ -766,7 +775,6 @@ hrcheck_handler(int sig, siginfo_t *si, void *uc)
 			simmgr_shm->status.cardiac.avg_rate = round(avg_rate );
 		}
 	}
-#endif
 }
 /*
  * msec_timer_update
