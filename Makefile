@@ -89,7 +89,7 @@ obj/simmgrDemo: src/simmgrDemo.cpp obj/sim-log.o obj/sim-util.o obj/simpulseDemo
 obj/simpulse: src/simpulse.cpp obj/sim-util.o include/simmgr.h
 	g++ $(CPPFLAGS) $(CXXFLAGS)  -lcgicc -o obj/simpulse src/simpulse.cpp  obj/sim-util.o $(LDFLAGS)
 	
-install: check $(TARGETS) installBase installDaemon installDemo
+install: $(TARGETS) installBase installDaemon installDemo
 
 installBase:
 	sudo cp -u obj/simstatus.cgi $(CGIBIN)
@@ -122,8 +122,3 @@ installDemo:
 	
 clean:
 	rm obj/*
-
-## Check for the installed tools we require
-check:
-	@if [ ! -e /usr/bin/g++ ]; then echo "GNU C++ Compiler (g++) is not found in /usr/bin\n"; exit ; fi;
-	@if [ ! -e /usr/lib/libcgicc.so ]; then echo "CGICC Library libcgicc.so is not found in /usr/lib\n"; exit ; fi;
