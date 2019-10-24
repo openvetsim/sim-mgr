@@ -27,7 +27,7 @@ OBSWIN="$(xdotool search --onlyvisible --name OBS )"
 len=${#OBSWIN}
 if [ $len -ne 0 ]; then
 	xdotool windowactivate $OBSWIN
-	xdotool key ctrl+A $OBSWIN
+	xdotool key ctrl+A
 	xdotool windowminimize  $OBSWIN
 else
 	echo "Failed to find OBS."
