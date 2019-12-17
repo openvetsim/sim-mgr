@@ -77,7 +77,7 @@ int currentPulseRate = 0;
 int currentVpcFreq = 0;
 
 int currentBreathRate = 0;
-int lastManualBreath = 0;
+unsigned int lastManualBreath = 0;
 int runningAsDemo = 0;
 
 void set_beat_time(int bpm );
@@ -741,7 +741,7 @@ process_child(void *ptr )
 	unsigned int last_pulse = simmgr_shm->status.cardiac.pulseCount;
 	unsigned int last_pulseVpc = simmgr_shm->status.cardiac.pulseCountVpc;
 	unsigned int last_breath = simmgr_shm->status.respiration.breathCount;
-	int last_manual_breath = simmgr_shm->status.respiration.manual_count;
+	unsigned int last_manual_breath = simmgr_shm->status.respiration.manual_count;
 	int checkCount = 0;
 	int scenarioRunning = false;
 	
@@ -777,7 +777,11 @@ process_child(void *ptr )
 #endif
 			}
 		}
-	
+		if ( last_manual_breath != simmgr_shm->status.respiration.manual_count )
+		{
+			last_manual_breath = simmgr_shm->status.respiration.manual_count;
+			simmgr_shm->status.respiration.breathCount++;
+		}
 		if ( last_breath != simmgr_shm->status.respiration.breathCount )
 		{
 			last_breath = simmgr_shm->status.respiration.breathCount;
@@ -786,16 +790,13 @@ process_child(void *ptr )
 			{
 				last_manual_breath = simmgr_shm->status.respiration.manual_count;
 			}
-			else
-			{
-				count = broadcast_word(breathWord );
-				if ( count )
-				{
+			count = broadcast_word(breathWord );
 #ifdef DEBUG
-					printf("Breath sent to %d listeners\n", count );
-#endif
-				}
+			if ( count )
+			{
+				printf("Breath sent to %d listeners\n", count );
 			}
+#endif
 		}
 		checkCount++;
 		if ( checkCount == 2 ) // This runs every 50 ms.

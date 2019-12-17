@@ -364,7 +364,7 @@ unsigned int breathLogNext = 0;
 int breathLogState = BREATH_LOG_STATE_IDLE;
 
 unsigned int breathLogLastNatural = 0;	// breathCount, last natural
-int breathLogLastManual = 0;	// manual_count, last manual
+unsigned int breathLogLastManual = 0;	// manual_count, last manual
 unsigned int breathLogLast = 0;			// Time of last breath
 
 #define BREATH_LOG_DELAY	(2)
