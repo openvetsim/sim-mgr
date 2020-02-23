@@ -815,6 +815,7 @@ time_update(void )
 	int elapsedTimeSeconds;
 	int seconds;
 	int sec;
+	float temperature;
 	
 	the_time = time(NULL );
 	(void)localtime_r(&the_time, &tm );
@@ -859,9 +860,14 @@ time_update(void )
 		seconds = elapsedTimeSeconds % 60;
 		if ( ( seconds == 0 ) && ( last_time_sec != 0 ) )
 		{
+			temperature = (float)simmgr_shm->status.general.temperature / 10;
+			if ( simmgr_shm->status.general.temperature_units[0] == 'C' )
+			{
+				temperature = (temperature - 32) * 0.556;
+			}
 			// Do periodic Stats update every minute
-			sprintf(buf, "VS: Temp: %0.1f; RR: %d; awRR: %d; HR: %d; %s; BP: %d/%d; SPO2: %d; etCO2: %d mmHg; Probes: ECG: %s; BP: %s; SPO2: %s; ETCO2: %s; Temp %s",
-				((double)simmgr_shm->status.general.temperature) / 10,
+			sprintf(buf, "VS: Temp: %0.1f %s; RR: %d; awRR: %d; HR: %d; %s; BP: %d/%d; SPO2: %d; etCO2: %d mmHg; Probes: ECG: %s; BP: %s; SPO2: %s; ETCO2: %s; Temp %s",
+				temperature,  simmgr_shm->status.general.temperature_units,
 				simmgr_shm->status.respiration.rate,
 				simmgr_shm->status.respiration.awRR,
 				simmgr_shm->status.cardiac.rate,
@@ -1533,6 +1539,19 @@ scan_commands(void )
 											simmgr_shm->instructor.general.transfer_time );
 		simmgr_shm->instructor.general.temperature = -1;
 	}
+	if ( strlen(simmgr_shm->instructor.general.temperature_units ) > 0 )
+	{
+		if ( simmgr_shm->instructor.general.temperature_units[0] != simmgr_shm->status.general.temperature_units[0] )
+		{
+			if ( simmgr_shm->instructor.general.temperature_units[0] == 'F' || 
+				 simmgr_shm->instructor.general.temperature_units[0] == 'C' )
+			{
+				sprintf(simmgr_shm->status.general.temperature_units, "%s",
+					simmgr_shm->instructor.general.temperature_units );
+			}
+			sprintf(simmgr_shm->instructor.general.temperature_units, "%s", "" );
+		}
+	}	
 	if ( simmgr_shm->instructor.general.temperature_enable >= 0 )
 	{
 		if ( simmgr_shm->status.general.temperature_enable != simmgr_shm->instructor.general.temperature_enable )
@@ -1957,6 +1976,7 @@ resetAllParameters(void )
 	// status/general
 	simmgr_shm->status.general.temperature = 1017;
 	simmgr_shm->status.general.temperature_enable = 0;
+	//sprintf(simmgr_shm->status.general.temperature_units, "%s", "F" ); 
 	
 	// status/media
 	sprintf(simmgr_shm->status.media.filename, "%s", "" );
@@ -2021,7 +2041,8 @@ resetAllParameters(void )
 	// instructor/general
 	simmgr_shm->instructor.general.temperature = -1;
 	simmgr_shm->instructor.general.temperature_enable = -1;
-
+	sprintf(simmgr_shm->instructor.general.temperature_units, "%s", "" );
+	
 	// instructor/vocals
 	sprintf(simmgr_shm->instructor.vocals.filename, "%s", "" );
 	simmgr_shm->instructor.vocals.repeat = -1;
