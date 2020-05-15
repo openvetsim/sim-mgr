@@ -334,6 +334,10 @@ general_parse(const char *elem,  const char *value, struct general *gen )
 	{
 		gen->temperature_enable = atoi(value );
 	}
+	else if ( strcmp(elem, "temperature_units" ) == 0 )
+	{
+		sprintf(gen->temperature_units, "%s", value );
+	}
 	else if ( strcmp(elem, "temperature" ) == 0 )
 	{
 		gen->temperature = atoi(value );

@@ -150,7 +150,7 @@ struct respiration
 	int spo2_indicator;
 	int chest_movement;
 	int manual_breath;			// Set to inject manual breath.		
-	int manual_count;			// Total of Manual Breaths injected (From II or detected bagging)
+	unsigned int manual_count;			// Total of Manual Breaths injected (From II or detected bagging)
 	
 	unsigned int breathCount;
 };
@@ -218,6 +218,7 @@ struct general
 	int temperature;			// degrees * 10, (eg 96.8 is 968)
 	int transfer_time;			// Trend length
 	int temperature_enable;		// 0 : No Probe, 1 : Probe Attached
+	char temperature_units[4];	// F or C are valid
 };
 struct media
 {

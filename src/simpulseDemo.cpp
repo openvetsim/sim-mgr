@@ -414,7 +414,7 @@ termination_handler (int signum)
 unsigned int last_pulse = 0;
 unsigned int last_pulseVpc = 0;
 unsigned int last_breath = 0;
-int last_manual_breath = 0;
+unsigned int last_manual_breath = 0;
 int scenarioRunning = false;
 
 void
