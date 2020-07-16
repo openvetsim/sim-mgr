@@ -24,8 +24,7 @@ if [ $len -eq 0 ]; then
 fi
 
 read OBSPID  <<< $(pidof -s obs)
-OBSLIST="$(xdotool search --onlyvisible --pid $OBSPID --name OBS )"
-OBSWIN="$(echo $OBSLIST | awk '{print $1;}')"
+OBSWIN="$(xdotool search --all --onlyvisible --pid $OBSPID --name OBS  )"
 
 len=${#OBSWIN}
 if [ $len -ne 0 ]; then
