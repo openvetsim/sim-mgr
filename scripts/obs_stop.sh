@@ -22,7 +22,11 @@ len=${#WHICH}
 if [ $len -eq 0 ]; then
 	exit
 fi
-OBSWIN="$(xdotool search --onlyvisible --name OBS )"
+
+read OBSPID  <<< $(pidof -s obs)
+OBSLIST="$(xdotool search --onlyvisible --pid $OBSPID --name OBS )"
+OBSWIN="$(echo $OBSLIST | awk '{print $1;}')"
+
 len=${#OBSWIN}
 if [ $len -ne 0 ]; then
 	export DISPLAY=:0.0
