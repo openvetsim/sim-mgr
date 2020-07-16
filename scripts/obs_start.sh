@@ -26,6 +26,7 @@ fi
 OBSWIN="$(xdotool search --onlyvisible --name OBS )"
 len=${#OBSWIN}
 if [ $len -ne 0 ]; then
+	export DISPLAY=:0.0
 	xdotool windowactivate $OBSWIN
 	xdotool key ctrl+A
 	xdotool windowminimize  $OBSWIN
