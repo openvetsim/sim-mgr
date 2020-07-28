@@ -22,11 +22,11 @@ if [ $len -eq 0 ]; then
 	exit
 fi
 
-read OBSPID  <<< $(pidof obs)
+read OBSPID  <<< $(pidof -s obs)
 len=${#OBSPID}
 if [ $len -eq 0 ]; then
 	export DISPLAY=:0.0
 	obs &
-	OBSWIN="$(xdotool search --sync --onlyvisible --name OBS )"
+	OBSWIN="$(xdotool search --all --sync --onlyvisible --name OBS )"
 	xdotool windowminimize  $OBSWIN
 fi

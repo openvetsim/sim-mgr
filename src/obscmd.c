@@ -116,38 +116,40 @@ main( int argc, char **argv )
 	{
 		exit ( -1 );
 	}
-	
-	c = getopt(argc, argv, getArgList );
 	sts = 0;
-	switch (c)
+		
+	while ((c = getopt(argc, argv, getArgList )) != -1 )
 	{
-		case 's': // start
-			printf("Start\n");
-			obsShm->buff[obsShm->next_write] = OBSMON_START;
-			break;
-		case 'S': // stop
-			printf("Stop\n" );
-			obsShm->buff[obsShm->next_write] = OBSMON_STOP;
-			break;
-		case 'o': // open
-			printf("Open\n");
-			obsShm->buff[obsShm->next_write] = OBSMON_OPEN;
-			break;
-		case 'c': // close
-			printf("Close\n");
-			obsShm->buff[obsShm->next_write] = OBSMON_CLOSE;
-			break;
-		default:
-			if ( c == -1 )
-			{
-				printf("No option found\n" );
-			}
-			else if ( c == '?' )
-			{
-				printf("Invalid Option\n" );
-			}
-			sts = 1;
-			break;
+		switch (c)
+		{
+			case 's': // start
+				printf("Start\n");
+				obsShm->buff[obsShm->next_write] = OBSMON_START;
+				break;
+			case 'S': // stop
+				printf("Stop\n" );
+				obsShm->buff[obsShm->next_write] = OBSMON_STOP;
+				break;
+			case 'o': // open
+				printf("Open\n");
+				obsShm->buff[obsShm->next_write] = OBSMON_OPEN;
+				break;
+			case 'c': // close
+				printf("Close\n");
+				obsShm->buff[obsShm->next_write] = OBSMON_CLOSE;
+				break;
+			default:
+				if ( c == -1 )
+				{
+					printf("No option found\n" );
+				}
+				else if ( c == '?' )
+				{
+					printf("Invalid Option\n" );
+				}
+				sts = 1;
+				break;
+		}
 	}
 	if ( sts == 0 )
 	{
