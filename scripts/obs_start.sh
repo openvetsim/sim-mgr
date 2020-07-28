@@ -23,9 +23,12 @@ if [ $len -eq 0 ]; then
 	exit
 fi
 
-OBSWIN="$(xdotool search --onlyvisible --name OBS )"
+read OBSPID  <<< $(pidof -s obs)
+OBSWIN="$(xdotool search --all --onlyvisible --pid $OBSPID --name OBS )"
+
 len=${#OBSWIN}
 if [ $len -ne 0 ]; then
+	export DISPLAY=:0.0
 	xdotool windowactivate $OBSWIN
 	xdotool key ctrl+A
 	xdotool windowminimize  $OBSWIN
