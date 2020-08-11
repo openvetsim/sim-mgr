@@ -30,7 +30,7 @@ len=${#OBSWIN}
 if [ $len -ne 0 ]; then
 	export DISPLAY=:0.0
 	xdotool windowactivate $OBSWIN
-	xdotool key ctrl+B
+	xdotool key --window $OBSWIN ctrl+B
 	xdotool windowminimize $OBSWIN
 else
 	echo "Failed to find OBS"

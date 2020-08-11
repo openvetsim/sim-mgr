@@ -705,6 +705,7 @@ void
 sendStatus(void )
 {
     char buffer[256];
+	int i;
 	
 	cout << " \"scenario\" : {\n";
 	makejson(cout, "active", simmgr_shm->status.scenario.active );
@@ -912,6 +913,8 @@ sendStatus(void )
 	makejson(cout, "temperature_units", simmgr_shm->status.general.temperature_units );
 	cout << ",\n";
 	makejson(cout, "temperature_enable", itoa(simmgr_shm->status.general.temperature_enable, buffer, 10 ) );
+	cout << ",\n";
+	makejson(cout, "display_mode", itoa(simmgr_shm->status.general.display_mode, buffer, 10 ) );
 	cout << "\n},\n";
 	
 	cout << " \"vocals\" : {\n";
@@ -970,6 +973,26 @@ sendStatus(void )
 	makejson(cout, "debug2", itoa(simmgr_shm->server.dbg2, buffer, 10 ) );
 	cout << ",\n";
 	makejson(cout, "debug3", itoa(simmgr_shm->server.dbg3, buffer, 10 ) );
+	cout << "\n},\n";
+	
+	cout << "\"controllers\" : {\n";
+	int ctrlCount = 0;
+	for ( i = 0 ; i < MAX_CONTROLLERS ; i++ )
+	{
+		if ( simmgr_shm->simControllers[i].allocated )
+		{
+			if ( ctrlCount > 0 )
+			{
+				cout << ",\n";
+			}
+			ctrlCount++;
+			makejson(cout, itoa(1, buffer, 10), simmgr_shm->simControllers[i].ipAddr );
+		}
+	}
+	if ( ctrlCount > 0 )
+	{
+		cout << "\n";
+	}
 	cout << "\n}\n";
 }
 

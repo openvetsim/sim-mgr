@@ -61,6 +61,8 @@
 #include <sys/ipc.h>
 #include <sys/sem.h>
 #include <semaphore.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
 
 // #define DEBUG
 
@@ -92,6 +94,7 @@ struct listener
     int allocated;
 	int thread_no;
 	int cfd;
+	char ipAddr[32];
 };
 #define MAX_LISTENERS 20
 
@@ -485,7 +488,7 @@ main(int argc, char *argv[] )
 	int port = PORT;
 	socklen_t socklen;
 	struct sockaddr_in server_addr;
-	struct sockaddr_in client_addr;
+	struct sockaddr client_addr;
 	int optval;
 	int sfd;
 	int cfd;
@@ -493,11 +496,6 @@ main(int argc, char *argv[] )
 	sigset_t mask;
 	int i;
 	char *sesid = NULL;
-	
-	for ( i = 0 ; i < MAX_LISTENERS ; i++ )
-	{
-		listeners[i].allocated = 0;
-	}
 	
 //#ifndef DEBUG
 	daemonize();
@@ -517,6 +515,11 @@ main(int argc, char *argv[] )
 		sprintf(msgbuf, "pulse: SHM Failed - waiting" );
 		log_message("", msgbuf );
 		sleep(10 );
+	}
+	for ( i = 0 ; i < MAX_LISTENERS ; i++ )
+	{
+		listeners[i].allocated = 0;
+		simmgr_shm->simControllers[i].allocated = 0;
 	}
 	
 	sfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -662,7 +665,8 @@ main(int argc, char *argv[] )
 					listeners[i].allocated = 1;
 					listeners[i].cfd = cfd;
 					listeners[i].thread_no = i;
-
+					simmgr_shm->simControllers[i].allocated = 1;
+					inet_ntop(AF_INET, client_addr.sa_data, simmgr_shm->simControllers[i].ipAddr, 20 );
 					break;
 				}
 			}

@@ -202,6 +202,7 @@ struct hdr
 	int	version;
 	int size;
 };
+
 struct server
 {
 	char name[STR_SIZE]; 		// SimCtl Hostname
@@ -212,13 +213,20 @@ struct server
 	int dbg1;
 	int dbg2;
 	int dbg3;
+	
 };
+
+
+#define MODE_STANDARD	0
+#define MODE_TELESIM	1
+
 struct general
 {
 	int temperature;			// degrees * 10, (eg 96.8 is 968)
 	int transfer_time;			// Trend length
 	int temperature_enable;		// 0 : No Probe, 1 : Probe Attached
 	char temperature_units[4];	// F or C are valid
+	int display_mode;			// Standard or TeleSim
 };
 struct media
 {
@@ -292,6 +300,14 @@ struct comment_inj
 #define DECAY_SECONDS			10
 #define MS_PER_MIN				(60*1000)
 
+
+// List of attached Listeners SimControllers
+#define MAX_CONTROLLERS			20
+struct simControllers
+{
+	int allocated;
+	char ipAddr[20];
+};
 // Data Structure of Shared memory file
 struct simmgr_shm
 {
@@ -327,6 +343,8 @@ struct simmgr_shm
 	
 	int cardiacTimeList[CARDIAC_HISTORY_DEPTH];	// ms per beat
 	int cardiacTimeNextWrite;
+	
+	struct simControllers simControllers[MAX_CONTROLLERS];
 };
 
 // For generic trend processor

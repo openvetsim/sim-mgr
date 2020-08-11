@@ -346,6 +346,10 @@ general_parse(const char *elem,  const char *value, struct general *gen )
 	{
 		gen->transfer_time = atoi(value );
 	}
+	else if ( strcmp(elem, "display_mode" ) == 0 )
+	{
+		gen->display_mode = atoi(value );
+	}
 	else 
 	{
 		sts = 1;
@@ -489,6 +493,7 @@ initializeParameterStruct(struct instructor *initParams )
 	initParams->general.temperature = -1;
 	initParams->general.temperature_enable = -1;
 	initParams->general.transfer_time = -1;
+	initParams->general.display_mode = -1;
 	
 	initParams->vocals.repeat = -1;
 	initParams->vocals.volume = -1;
@@ -594,8 +599,10 @@ getValueFromName(char *param_class, char *param_element )
 	{
 		if ( strcmp(param_element, "temperature_enable" ) == 0 )
 			rval = simmgr_shm->status.general.temperature_enable;
-		if ( strcmp(param_element, "temperature" ) == 0 )
+		else if ( strcmp(param_element, "temperature" ) == 0 )
 			rval = simmgr_shm->status.general.temperature;
+		else if ( strcmp(param_element, "display_mode" ) == 0 )
+			rval = simmgr_shm->status.general.display_mode;
 	}
 	else if ( strcmp(param_class, "cpr" ) == 0 )
 	{
