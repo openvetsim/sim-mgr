@@ -1049,6 +1049,12 @@ saveData(const xmlChar *xmlName, const xmlChar *xmlValue )
 						sts = general_parse(xmlLevels[xml_current_level].name, value, &scenario->initParams.general );
 					}
 					break;
+				case PARSE_INIT_STATE_TELESIM:
+					if ( xml_current_level == 3 )
+					{
+						sts = telesim_parse(xmlLevels[xml_current_level].name, value, &scenario->initParams.telesim );
+					}
+					break;
 				case PARSE_INIT_STATE_VOCALS:
 					if ( xml_current_level == 3 )
 					{
@@ -1160,6 +1166,12 @@ saveData(const xmlChar *xmlName, const xmlChar *xmlValue )
 					if ( xml_current_level == 4 )
 					{
 						sts = general_parse(xmlLevels[4].name, value, &new_scene->initParams.general );
+					}
+					break;
+				case PARSE_SCENE_STATE_INIT_TELESIM:
+					if ( xml_current_level == 4 )
+					{
+						sts = telesim_parse(xmlLevels[4].name, value, &new_scene->initParams.telesim );
 					}
 					break;
 				case PARSE_SCENE_STATE_INIT_VOCALS:

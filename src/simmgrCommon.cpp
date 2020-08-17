@@ -1565,16 +1565,6 @@ scan_commands(void )
 		simmgr_shm->instructor.general.temperature_enable = -1;
 	}
 	simmgr_shm->instructor.general.transfer_time = -1;
-	if ( simmgr_shm->instructor.general.display_mode >= 0 )
-	{
-		if ( simmgr_shm->status.general.display_mode != simmgr_shm->instructor.general.display_mode )
-		{
-			simmgr_shm->status.general.display_mode = simmgr_shm->instructor.general.display_mode;
-			sprintf(buf, "Display Mode: %s", (simmgr_shm->status.general.display_mode == 1 ? "TeleSim": "Standard") );
-			simlog_entry(buf );
-		}
-		simmgr_shm->instructor.general.display_mode = -1;
-	}
 	
 	// vocals
 	if ( strlen(simmgr_shm->instructor.vocals.filename) > 0 )
@@ -1615,6 +1605,16 @@ scan_commands(void )
 		simmgr_shm->instructor.media.play = -1;
 	}
 	// telesim
+	if ( simmgr_shm->instructor.telesim.enable >= 0 )
+	{
+		if ( simmgr_shm->status.telesim.enable != simmgr_shm->instructor.telesim.enable )
+		{
+			simmgr_shm->status.telesim.enable = simmgr_shm->instructor.telesim.enable;
+			sprintf(buf, "TeleSim Mode: %s", (simmgr_shm->status.telesim.enable == 1 ? "Enabled": "Disabled") );
+			simlog_entry(buf );
+		}
+		simmgr_shm->instructor.telesim.enable = -1;
+	}
 	for ( v = 0 ; v < TSIM_WINDOWS ; v++ )
 	{
 		if ( strlen(simmgr_shm->instructor.telesim.vid[v].name) > 0 )
@@ -2010,6 +2010,7 @@ resetAllParameters(void )
 	simmgr_shm->status.media.play = 0;
 	
 	// status/telesim
+	simmgr_shm->status.telesim.enable = 0;
 	sprintf(simmgr_shm->status.telesim.vid[0].name, "%s", "" );
 	simmgr_shm->status.telesim.vid[0].command = 0;
 	simmgr_shm->status.telesim.vid[0].param = 0;
@@ -2076,6 +2077,7 @@ resetAllParameters(void )
 	simmgr_shm->instructor.media.play = -1;
 	
 	// instructor/telesim
+	simmgr_shm->instructor.telesim.enable = -1;
 	sprintf(simmgr_shm->instructor.telesim.vid[0].name, "%s", "" );
 	simmgr_shm->instructor.telesim.vid[0].command = -1;
 	simmgr_shm->instructor.telesim.vid[0].param = -1;
@@ -2088,7 +2090,6 @@ resetAllParameters(void )
 	// instructor/general
 	simmgr_shm->instructor.general.temperature = -1;
 	simmgr_shm->instructor.general.temperature_enable = -1;
-	simmgr_shm->instructor.general.display_mode = -1;
 	sprintf(simmgr_shm->instructor.general.temperature_units, "%s", "" );
 	
 	// instructor/vocals

@@ -371,6 +371,10 @@ main( int argc, const char* argv[] )
 				{
 					sts = general_parse(v[2].c_str(), value.c_str(), &simmgr_shm->instructor.general );
 				}
+				else if ( v[1].compare("telesim" ) == 0 )
+				{
+					sts = telesim_parse(v[2].c_str(), value.c_str(), &simmgr_shm->instructor.telesim );
+				}
 				else if ( v[1].compare("vocals" ) == 0 )
 				{
 					sts = vocals_parse(v[2].c_str(), value.c_str(), &simmgr_shm->instructor.vocals );
@@ -913,8 +917,6 @@ sendStatus(void )
 	makejson(cout, "temperature_units", simmgr_shm->status.general.temperature_units );
 	cout << ",\n";
 	makejson(cout, "temperature_enable", itoa(simmgr_shm->status.general.temperature_enable, buffer, 10 ) );
-	cout << ",\n";
-	makejson(cout, "display_mode", itoa(simmgr_shm->status.general.display_mode, buffer, 10 ) );
 	cout << "\n},\n";
 	
 	cout << " \"vocals\" : {\n";
@@ -946,6 +948,9 @@ sendStatus(void )
 	cout << "\n},\n";
 	
 	cout << " \"telesim\" : {\n";
+	
+	makejson(cout, "enable", itoa(simmgr_shm->status.telesim.enable, buffer, 10 ) );
+	cout << ",\n";
 	int vidCount = 0;
 	for ( i = 0 ; i < TSIM_WINDOWS ; i++ )
 	{
@@ -967,8 +972,6 @@ sendStatus(void )
 		cout << "\n";
 	}
 	cout << "},\n";
-	
-
 	
 	cout << " \"cpr\" : {\n";
 	makejson(cout, "last", itoa(simmgr_shm->status.cpr.last, buffer, 10 ) );

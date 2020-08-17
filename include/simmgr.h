@@ -216,17 +216,12 @@ struct server
 	
 };
 
-
-#define MODE_STANDARD	0
-#define MODE_TELESIM	1
-
 struct general
 {
 	int temperature;			// degrees * 10, (eg 96.8 is 968)
 	int transfer_time;			// Trend length
 	int temperature_enable;		// 0 : No Probe, 1 : Probe Attached
 	char temperature_units[4];	// F or C are valid
-	int display_mode;			// Standard or TeleSim
 };
 
 struct media
@@ -250,6 +245,7 @@ struct telesimVideo
 };
 struct telesim
 {
+	int enable;	// 0 off, 1 on
 	struct telesimVideo	vid[TSIM_WINDOWS];
 };
 
@@ -420,6 +416,7 @@ void forceInstructorLock(void );
 int cardiac_parse(const char *elem, const char *value, struct cardiac *card );
 int respiration_parse(const char *elem,  const char *value, struct respiration *resp );
 int general_parse(const char *elem,  const char *value, struct general *gen );
+int telesim_parse(const char *elem,  const char *value, struct telesim *ts );
 int vocals_parse(const char *elem,  const char *value, struct vocals *voc );
 int media_parse(const char *elem,  const char *value, struct media *med );
 int cpr_parse(const char *elem,  const char *value, struct cpr *cpr );

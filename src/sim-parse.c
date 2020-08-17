@@ -323,6 +323,25 @@ respiration_parse(const char *elem,  const char *value, struct respiration *resp
 	return ( sts );
 }
 int
+telesim_parse(const char *elem,  const char *value, struct telesim *ts )
+{
+	int sts = 0;
+	if ( ( ! elem ) || ( ! value) || ( ! ts ) )
+	{
+		return ( -13 );
+	}
+	if ( strcmp(elem, "enable" ) == 0 )
+	{
+		ts->enable = atoi(value );
+	}
+	else
+	{
+		sts = 1;
+	}
+	
+	return ( sts );
+}
+int
 general_parse(const char *elem,  const char *value, struct general *gen )
 {
 	int sts = 0;
@@ -345,10 +364,6 @@ general_parse(const char *elem,  const char *value, struct general *gen )
 	else if ( strcmp(elem, "transfer_time" ) == 0 )
 	{
 		gen->transfer_time = atoi(value );
-	}
-	else if ( strcmp(elem, "display_mode" ) == 0 )
-	{
-		gen->display_mode = atoi(value );
 	}
 	else 
 	{
@@ -493,7 +508,6 @@ initializeParameterStruct(struct instructor *initParams )
 	initParams->general.temperature = -1;
 	initParams->general.temperature_enable = -1;
 	initParams->general.transfer_time = -1;
-	initParams->general.display_mode = -1;
 	
 	initParams->vocals.repeat = -1;
 	initParams->vocals.volume = -1;
@@ -601,8 +615,11 @@ getValueFromName(char *param_class, char *param_element )
 			rval = simmgr_shm->status.general.temperature_enable;
 		else if ( strcmp(param_element, "temperature" ) == 0 )
 			rval = simmgr_shm->status.general.temperature;
-		else if ( strcmp(param_element, "display_mode" ) == 0 )
-			rval = simmgr_shm->status.general.display_mode;
+	}
+	else if ( strcmp(param_class, "telesim" ) == 0 )
+	{
+		if ( strcmp(param_element, "enable" ) == 0 )
+			rval = simmgr_shm->status.telesim.enable;
 	}
 	else if ( strcmp(param_class, "cpr" ) == 0 )
 	{
