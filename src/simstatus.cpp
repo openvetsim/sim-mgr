@@ -945,6 +945,31 @@ sendStatus(void )
 	makejson(cout, "play", itoa(simmgr_shm->status.media.play, buffer, 10 ) );
 	cout << "\n},\n";
 	
+	cout << " \"telesim\" : {\n";
+	int vidCount = 0;
+	for ( i = 0 ; i < TSIM_WINDOWS ; i++ )
+	{
+		if ( vidCount > 0 )
+		{
+			cout << ",\n";
+		}
+		cout << " \"" << vidCount << "\" : {\n";
+		vidCount++;
+		makejson(cout, "name", simmgr_shm->status.telesim.vid[i].name );
+		cout << ",\n";
+		makejson(cout, "command", itoa(simmgr_shm->status.telesim.vid[i].command, buffer, 10)  );
+		cout << ",\n";
+		makejson(cout, "param", itoa(simmgr_shm->status.telesim.vid[i].param, buffer, 10)  );
+		cout << "  }";
+	}
+	if ( vidCount > 0 )
+	{
+		cout << "\n";
+	}
+	cout << "},\n";
+	
+
+	
 	cout << " \"cpr\" : {\n";
 	makejson(cout, "last", itoa(simmgr_shm->status.cpr.last, buffer, 10 ) );
 	cout << ",\n";
@@ -993,7 +1018,7 @@ sendStatus(void )
 	{
 		cout << "\n";
 	}
-	cout << "\n}\n";
+	cout << "}\n";
 }
 
 void

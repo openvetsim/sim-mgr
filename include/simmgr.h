@@ -228,11 +228,31 @@ struct general
 	char temperature_units[4];	// F or C are valid
 	int display_mode;			// Standard or TeleSim
 };
+
 struct media
 {
 	char filename[FILENAME_SIZE];
 	int play;
 };
+
+#define TSIM_WINDOWS	2
+
+#define TSV_CMD_STOP	0
+#define TSV_CMD_START	1
+#define TSV_CMD_SEEK	2	// param is Time 
+
+struct telesimVideo
+{
+	char name[STR_SIZE];	// Name specifies the element within the scenario
+	int command;
+	int param;
+	int next;	// Incremented when a command is passed
+};
+struct telesim
+{
+	struct telesimVideo	vid[TSIM_WINDOWS];
+};
+
 struct vocals
 {
 	char filename[FILENAME_SIZE];
@@ -264,7 +284,7 @@ struct status
 	struct pulse			pulse;
 	struct cpr				cpr;
 	struct defibrillation	defibrillation;
-	
+	struct telesim			telesim;
 	char 	eventName[STR_SIZE];
 };
 
@@ -280,6 +300,7 @@ struct instructor
 	struct media		media;
 	struct cpr			cpr;
 	struct defibrillation	defibrillation;
+	struct telesim			telesim;
 	char	eventName[STR_SIZE];
 };
 
@@ -306,7 +327,7 @@ struct comment_inj
 struct simControllers
 {
 	int allocated;
-	char ipAddr[20];
+	char ipAddr[256];
 };
 // Data Structure of Shared memory file
 struct simmgr_shm

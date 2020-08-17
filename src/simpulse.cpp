@@ -666,7 +666,23 @@ main(int argc, char *argv[] )
 					listeners[i].cfd = cfd;
 					listeners[i].thread_no = i;
 					simmgr_shm->simControllers[i].allocated = 1;
-					inet_ntop(AF_INET, client_addr.sa_data, simmgr_shm->simControllers[i].ipAddr, 20 );
+					/*sprintf(simmgr_shm->simControllers[i].ipAddr, "%d %d %d %d %d %d %d %d %d %d %d %d %d %d", 
+						client_addr.sa_data[0] & 0xff,
+						client_addr.sa_data[1] & 0xff,
+						client_addr.sa_data[2] & 0xff,
+						client_addr.sa_data[3] & 0xff,
+						client_addr.sa_data[4] & 0xff,
+						client_addr.sa_data[5] & 0xff,
+						client_addr.sa_data[6] & 0xff,
+						client_addr.sa_data[7] & 0xff,
+						client_addr.sa_data[8] & 0xff,
+						client_addr.sa_data[9] & 0xff,
+						client_addr.sa_data[10] & 0xff,
+						client_addr.sa_data[11] & 0xff,
+						client_addr.sa_data[12] & 0xff,
+						client_addr.sa_data[13] & 0xff
+						);*/
+					inet_ntop(AF_INET, &client_addr.sa_data[2], simmgr_shm->simControllers[i].ipAddr, 20 );
 					break;
 				}
 			}

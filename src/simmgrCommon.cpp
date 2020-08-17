@@ -1068,6 +1068,8 @@ scan_commands(void )
 	int newRate;
 	int currentIsPulsed;
 	int newIsPulsed;
+	int v;
+	
 	// Lock the command interface before processing commands
 	trycount = 0;
 	while ( ( sts = sem_trywait(&simmgr_shm->instructor.sema) ) != 0 )
@@ -1612,7 +1614,22 @@ scan_commands(void )
 		simmgr_shm->status.media.play = simmgr_shm->instructor.media.play;
 		simmgr_shm->instructor.media.play = -1;
 	}
-	
+	// telesim
+	for ( v = 0 ; v < TSIM_WINDOWS ; v++ )
+	{
+		if ( strlen(simmgr_shm->instructor.telesim.vid[v].name) > 0 )
+		{
+			sprintf(simmgr_shm->status.telesim.vid[v].name, "%s", simmgr_shm->instructor.telesim.vid[v].name );
+			sprintf(simmgr_shm->instructor.telesim.vid[v].name, "%s", "" );
+		}
+		if ( simmgr_shm->instructor.telesim.vid[v].next != simmgr_shm->status.telesim.vid[v].next )
+		{
+			simmgr_shm->status.telesim.vid[v].command = simmgr_shm->instructor.telesim.vid[v].command;
+			simmgr_shm->status.telesim.vid[v].param = simmgr_shm->instructor.telesim.vid[v].param;
+			simmgr_shm->status.telesim.vid[v].next = simmgr_shm->status.telesim.vid[v].next;
+			simmgr_shm->instructor.telesim.vid[v].command = -1;
+		}
+	}
 	// CPR
 	if ( simmgr_shm->instructor.cpr.compression >= 0 )
 	{
@@ -1991,7 +2008,17 @@ resetAllParameters(void )
 	// status/media
 	sprintf(simmgr_shm->status.media.filename, "%s", "" );
 	simmgr_shm->status.media.play = 0;
-		
+	
+	// status/telesim
+	sprintf(simmgr_shm->status.telesim.vid[0].name, "%s", "" );
+	simmgr_shm->status.telesim.vid[0].command = 0;
+	simmgr_shm->status.telesim.vid[0].param = 0;
+	simmgr_shm->status.telesim.vid[0].next = 0;
+	sprintf(simmgr_shm->status.telesim.vid[1].name, "%s", "" );
+	simmgr_shm->status.telesim.vid[1].command = 0;
+	simmgr_shm->status.telesim.vid[1].param = 0;
+	simmgr_shm->status.telesim.vid[1].next = 0;
+	
 	// instructor/cardiac
 	sprintf(simmgr_shm->instructor.cardiac.rhythm, "%s", "" );
 	simmgr_shm->instructor.cardiac.rate = -1;
@@ -2047,6 +2074,16 @@ resetAllParameters(void )
 	// instructor/media
 	sprintf(simmgr_shm->instructor.media.filename, "%s", "" );
 	simmgr_shm->instructor.media.play = -1;
+	
+	// instructor/telesim
+	sprintf(simmgr_shm->instructor.telesim.vid[0].name, "%s", "" );
+	simmgr_shm->instructor.telesim.vid[0].command = -1;
+	simmgr_shm->instructor.telesim.vid[0].param = -1;
+	simmgr_shm->instructor.telesim.vid[0].next = -1;
+	sprintf(simmgr_shm->instructor.telesim.vid[1].name, "%s", "" );
+	simmgr_shm->instructor.telesim.vid[1].command = -1;
+	simmgr_shm->instructor.telesim.vid[1].param = -1;
+	simmgr_shm->instructor.telesim.vid[1].next = -1;
 	
 	// instructor/general
 	simmgr_shm->instructor.general.temperature = -1;
