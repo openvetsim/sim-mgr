@@ -1622,12 +1622,12 @@ scan_commands(void )
 			sprintf(simmgr_shm->status.telesim.vid[v].name, "%s", simmgr_shm->instructor.telesim.vid[v].name );
 			sprintf(simmgr_shm->instructor.telesim.vid[v].name, "%s", "" );
 		}
-		if ( simmgr_shm->instructor.telesim.vid[v].next != simmgr_shm->status.telesim.vid[v].next )
+		if ( simmgr_shm->instructor.telesim.vid[v].next > 0 &&
+			 simmgr_shm->instructor.telesim.vid[v].next != simmgr_shm->status.telesim.vid[v].next )
 		{
 			simmgr_shm->status.telesim.vid[v].command = simmgr_shm->instructor.telesim.vid[v].command;
 			simmgr_shm->status.telesim.vid[v].param = simmgr_shm->instructor.telesim.vid[v].param;
-			simmgr_shm->status.telesim.vid[v].next = simmgr_shm->status.telesim.vid[v].next;
-			simmgr_shm->instructor.telesim.vid[v].command = -1;
+			simmgr_shm->status.telesim.vid[v].next = simmgr_shm->instructor.telesim.vid[v].next;
 		}
 	}
 	// CPR
