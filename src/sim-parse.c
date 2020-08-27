@@ -330,8 +330,8 @@ telesim_parse(const char *elem,  const char *value, struct telesim *ts )
 	const char *arg;
 	
 	char buf[512];
-	sprintf(buf, "%s %s %s", "telesim", elem, value );
-	log_message("", buf );
+	//sprintf(buf, "%s %s %s", "telesim", elem, value );
+	//log_message("", buf );
 	
 	if ( ( ! elem ) || ( ! value) || ( ! ts ) )
 	{
@@ -347,28 +347,28 @@ telesim_parse(const char *elem,  const char *value, struct telesim *ts )
 		index = atoi(value );
 		if ( index < 0 )
 		{
-			sprintf(buf, "Index less than zero, %d", index );
-			log_message("", buf );
+			//sprintf(buf, "Index less than zero, %d", index );
+			//log_message("", buf );
 			sts = 1;
 		}
 		else if ( index > TSIM_WINDOWS )
 		{
-			sprintf(buf, "Index More than %d, %d", TSIM_WINDOWS, index );
-			log_message("", buf );
+			//sprintf(buf, "Index More than %d, %d", TSIM_WINDOWS, index );
+			//log_message("", buf );
 			sts = 1;
 		}
 		else if ( value[1] != ':' )
 		{
-			sprintf(buf, "Value not ':', \'%c\'", value[1] );
-			log_message("", buf );
+			//sprintf(buf, "Value not ':', \'%c\'", value[1] );
+			//log_message("", buf );
 			sts = 1;
 		}
 		else
 		{
 			arg = &value[2];
 			snprintf(ts->vid[index].name, STR_SIZE, "%s", arg );
-			sprintf(buf, "%s Chan %d = \'%s\'", "Set Name", index, arg );
-			log_message("", buf );
+			//sprintf(buf, "%s Chan %d = \'%s\'", "Set Name", index, arg );
+			//log_message("", buf );
 		}
 		/*else
 		{
@@ -382,28 +382,28 @@ telesim_parse(const char *elem,  const char *value, struct telesim *ts )
 		index = atoi(value );
 		if ( index < 0 )
 		{
-			sprintf(buf, "Index less than zero, %d", index );
-			log_message("", buf );
+			//sprintf(buf, "Index less than zero, %d", index );
+			//log_message("", buf );
 			sts = 1;
 		}
 		else if ( index > TSIM_WINDOWS )
 		{
-			sprintf(buf, "Index More than %d, %d", TSIM_WINDOWS, index );
-			log_message("", buf );
+			//sprintf(buf, "Index More than %d, %d", TSIM_WINDOWS, index );
+			//log_message("", buf );
 			sts = 1;
 		}
 		else if ( value[1] != ':' )
 		{
-			sprintf(buf, "Value not ':', \'%c\'", value[1] );
-			log_message("", buf );
+			//sprintf(buf, "Value not ':', \'%c\'", value[1] );
+			//log_message("", buf );
 			sts = 1;
 		}
 		else
 		{
 			arg = &value[2];
 			ts->vid[index].command = atoi(arg );
-			sprintf(buf, "%s Chan %d = %d", "Set Command", index, ts->vid[index].command );
-			log_message("", buf );
+			//sprintf(buf, "%s Chan %d = %d", "Set Command", index, ts->vid[index].command );
+			//log_message("", buf );
 		}
 	}
 	else if ( strncmp(elem, "param", 5 ) == 0 )
@@ -411,28 +411,28 @@ telesim_parse(const char *elem,  const char *value, struct telesim *ts )
 		index = atoi(value );
 		if ( index < 0 )
 		{
-			sprintf(buf, "Index less than zero, %d", index );
-			log_message("", buf );
+			//sprintf(buf, "Index less than zero, %d", index );
+			//log_message("", buf );
 			sts = 1;
 		}
 		else if ( index > TSIM_WINDOWS )
 		{
-			sprintf(buf, "Index More than %d, %d", TSIM_WINDOWS, index );
-			log_message("", buf );
+			//sprintf(buf, "Index More than %d, %d", TSIM_WINDOWS, index );
+			//log_message("", buf );
 			sts = 1;
 		}
 		else if ( value[1] != ':' )
 		{
-			sprintf(buf, "Value not ':', \'%c\'", value[1] );
-			log_message("", buf );
+			//sprintf(buf, "Value not ':', \'%c\'", value[1] );
+			//log_message("", buf );
 			sts = 1;
 		}
 		else
 		{
 			arg = &value[2];
-			ts->vid[index].param = atoi(arg );
-			sprintf(buf, "%s Chan %d = %d", "Set Param", index, ts->vid[index].param );
-			log_message("", buf );
+			ts->vid[index].param = atof (arg );
+			//sprintf(buf, "Telesim: %s Chan %d = %f", "Set Param", index, ts->vid[index].param );
+			//log_message("", buf );
 		}
 	}
 	else if ( strncmp(elem, "next", 4 ) == 0 )
@@ -440,28 +440,28 @@ telesim_parse(const char *elem,  const char *value, struct telesim *ts )
 		index = atoi(value );
 		if ( index < 0 )
 		{
-			sprintf(buf, "Index less than zero, %d", index );
-			log_message("", buf );
+			//sprintf(buf, "Index less than zero, %d", index );
+			//log_message("", buf );
 			sts = 1;
 		}
 		else if ( index > TSIM_WINDOWS )
 		{
-			sprintf(buf, "Index More than %d, %d", TSIM_WINDOWS, index );
-			log_message("", buf );
+			//sprintf(buf, "Index More than %d, %d", TSIM_WINDOWS, index );
+			//log_message("", buf );
 			sts = 1;
 		}
 		else if ( value[1] != ':' )
 		{
-			sprintf(buf, "Value not ':', \'%c\'", value[1] );
-			log_message("", buf );
+			//sprintf(buf, "Value not ':', \'%c\'", value[1] );
+			//log_message("", buf );
 			sts = 1;
 		}
 		else
 		{
 			arg = &value[2];
 			ts->vid[index].next = atoi(arg );
-			sprintf(buf, "%s Chan %d = %d", "Set Next", index, ts->vid[index].next );
-			log_message("", buf );
+			//sprintf(buf, "%s Chan %d = %d", "Set Next", index, ts->vid[index].next );
+			//log_message("", buf );
 		}
 	}
 	else

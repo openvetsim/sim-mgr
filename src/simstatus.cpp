@@ -964,7 +964,7 @@ sendStatus(void )
 		cout << ",\n";
 		makejson(cout, "command", itoa(simmgr_shm->status.telesim.vid[i].command, buffer, 10)  );
 		cout << ",\n";
-		makejson(cout, "param", itoa(simmgr_shm->status.telesim.vid[i].param, buffer, 10)  );
+		makejson(cout, "param", gcvt(simmgr_shm->status.telesim.vid[i].param, 8, buffer )  );
 		cout << ",\n";
 		makejson(cout, "next", itoa(simmgr_shm->status.telesim.vid[i].next, buffer, 10)  );
 		cout << "  }";

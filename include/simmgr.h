@@ -240,7 +240,7 @@ struct telesimVideo
 {
 	char name[STR_SIZE];	// Name specifies the element within the scenario
 	int command;
-	int param;
+	float param;
 	int next;	// Incremented when a command is passed
 };
 struct telesim
