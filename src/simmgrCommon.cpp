@@ -2010,7 +2010,7 @@ resetAllParameters(void )
 	simmgr_shm->status.media.play = 0;
 	
 	// status/telesim
-	simmgr_shm->status.telesim.enable = 0;
+	// simmgr_shm->status.telesim.enable = 0;
 	sprintf(simmgr_shm->status.telesim.vid[0].name, "%s", "" );
 	simmgr_shm->status.telesim.vid[0].command = 0;
 	simmgr_shm->status.telesim.vid[0].param = 0;
