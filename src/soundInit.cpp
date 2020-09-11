@@ -274,7 +274,7 @@ createSoundFileList(void )
 		extention = strrchr(namelist[i]->d_name, '.' );
 		if ( extention )
 		{
-			if ( strncmp(extention, ".wav", 4 ) == 0 )
+			if ( strncmp(extention, ".mp3", 4 ) == 0 )
 			{
 				index = atoi(namelist[i]->d_name );
 				if ( index > 0 )
