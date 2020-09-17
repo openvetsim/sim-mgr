@@ -115,7 +115,7 @@ struct sound
 int maxSounds = 0;
 struct sound *soundList;
 int soundIndex = 0;
-char msgbuf[1024];
+char msgbuf[2048];
 
 int
 addSoundToList(int type, int index, const char *name, int low_limit, int high_limit )
