@@ -91,6 +91,9 @@ obj/simmgrDemo: src/simmgrDemo.cpp obj/sim-log.o obj/sim-util.o obj/simpulseDemo
 
 obj/simpulse: src/simpulse.cpp obj/sim-util.o include/simmgr.h
 	g++ $(CPPFLAGS) $(CXXFLAGS)  -lcgicc -o obj/simpulse src/simpulse.cpp  obj/sim-util.o $(LDFLAGS)
+
+obj/playAudio: src/playAudio.c
+	g++ -pthread -Wall -g -ggdb -rdynamic -fpermissive -o obj/playAudio src/playAudio.c -lmpg123 -lout123
 	
 install: $(TARGETS) installBase installDaemon installDemo installSounds
 
