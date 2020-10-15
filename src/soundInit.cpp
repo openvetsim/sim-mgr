@@ -276,7 +276,7 @@ createSoundFileList(void )
 		extention = strrchr(namelist[i]->d_name, '.' );
 		if ( extention )
 		{
-			if ( strncmp(extention, ".mp3", 4 ) == 0 )
+			if ( strncmp(extention, ".ogg", 4 ) == 0 )
 			{
 				index = atoi(namelist[i]->d_name );
 				if ( index > 0 )
@@ -335,7 +335,7 @@ createSoundFile(void )
 			if ( debug > 1 ) printf("%03d: %s\n", soundFileList[i].index, soundFileList[i].filename  );
 			if ( soundFileList[i].index > 0 )
 			{
-				fprintf(fd, "    <audio id=\"snd_%d\" preload ><source src=\"/sim-sounds/%s\" type=\"audio/mpeg\"></audio>\n",
+				fprintf(fd, "    <audio id=\"snd_%d\" preload ><source src=\"/sim-sounds/%s\" type=\"audio/ogg\"></audio>\n",
 						soundFileList[i].index, soundFileList[i].filename  );
 			}
 		}
