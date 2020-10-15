@@ -322,16 +322,30 @@ respiration_parse(const char *elem,  const char *value, struct respiration *resp
 	}
 	return ( sts );
 }
+int 
+getVidIndex(const char *value )
+{
+	if ( isdigit((int)value[0] ) )
+	{
+		return ( atoi(value ) );
+	}
+	else if ( strncmp("vid", value, 3 ) == 0 )
+	{
+		return ( atoi(&value[3] ) );
+	}
+	return ( -1 );
+}
 int
 telesim_parse(const char *elem,  const char *value, struct telesim *ts )
 {
 	int sts = 0;
 	int index;
+	const char *ptr;
 	const char *arg;
 	
 	char buf[512];
-	//sprintf(buf, "%s %s %s", "telesim", elem, value );
-	//log_message("", buf );
+	sprintf(buf, "%s %s %s", "telesim", elem, value );
+	log_message("", buf );
 	
 	if ( ( ! elem ) || ( ! value) || ( ! ts ) )
 	{
@@ -344,130 +358,97 @@ telesim_parse(const char *elem,  const char *value, struct telesim *ts )
 	}
 	else if ( strncmp(elem, "name", 4 ) == 0 )
 	{
-		index = atoi(value );
+		index = getVidIndex(value );
+		ptr = strchr(value, ':' );
 		if ( index < 0 )
 		{
-			//sprintf(buf, "Index less than zero, %d", index );
-			//log_message("", buf );
 			sts = 1;
 		}
 		else if ( index > TSIM_WINDOWS )
 		{
-			//sprintf(buf, "Index More than %d, %d", TSIM_WINDOWS, index );
-			//log_message("", buf );
 			sts = 1;
 		}
-		else if ( value[1] != ':' )
+		else if ( ptr[0] != ':' )
 		{
-			//sprintf(buf, "Value not ':', \'%c\'", value[1] );
-			//log_message("", buf );
 			sts = 1;
 		}
 		else
 		{
-			arg = &value[2];
+			arg = &ptr[1];
 			snprintf(ts->vid[index].name, STR_SIZE, "%s", arg );
-			//sprintf(buf, "%s Chan %d = \'%s\'", "Set Name", index, arg );
-			//log_message("", buf );
+			ts->vid[index].next = simmgr_shm->status.telesim.vid[index].next + 1;
 		}
-		/*else
-		{
-			sprintf(buf, "%s %s Chan %d value[1] %c", "name", "Fail", index, value[1] );
-			log_message("", buf );
-			sts = 1;
-		}*/
 	}
 	else if ( strncmp(elem, "command", 7 ) == 0 )
 	{
-		index = atoi(value );
+		index = getVidIndex(value );
+		ptr = strchr(value, ':' );
 		if ( index < 0 )
 		{
-			//sprintf(buf, "Index less than zero, %d", index );
-			//log_message("", buf );
 			sts = 1;
 		}
 		else if ( index > TSIM_WINDOWS )
 		{
-			//sprintf(buf, "Index More than %d, %d", TSIM_WINDOWS, index );
-			//log_message("", buf );
 			sts = 1;
 		}
-		else if ( value[1] != ':' )
+		else if ( ptr[0] != ':' )
 		{
-			//sprintf(buf, "Value not ':', \'%c\'", value[1] );
-			//log_message("", buf );
 			sts = 1;
 		}
 		else
 		{
-			arg = &value[2];
+			arg = &ptr[1];
 			ts->vid[index].command = atoi(arg );
-			//sprintf(buf, "%s Chan %d = %d", "Set Command", index, ts->vid[index].command );
-			//log_message("", buf );
+			ts->vid[index].next = simmgr_shm->status.telesim.vid[index].next + 1;
 		}
 	}
 	else if ( strncmp(elem, "param", 5 ) == 0 )
 	{
-		index = atoi(value );
+		index = getVidIndex(value );
+		ptr = strchr(value, ':' );
 		if ( index < 0 )
 		{
-			//sprintf(buf, "Index less than zero, %d", index );
-			//log_message("", buf );
 			sts = 1;
 		}
 		else if ( index > TSIM_WINDOWS )
 		{
-			//sprintf(buf, "Index More than %d, %d", TSIM_WINDOWS, index );
-			//log_message("", buf );
 			sts = 1;
 		}
-		else if ( value[1] != ':' )
+		else if ( ptr[0] != ':' )
 		{
-			//sprintf(buf, "Value not ':', \'%c\'", value[1] );
-			//log_message("", buf );
 			sts = 1;
 		}
 		else
 		{
-			arg = &value[2];
+			arg = &ptr[1];
 			ts->vid[index].param = atof (arg );
-			//sprintf(buf, "Telesim: %s Chan %d = %f", "Set Param", index, ts->vid[index].param );
-			//log_message("", buf );
+			ts->vid[index].next = simmgr_shm->status.telesim.vid[index].next + 1;
 		}
 	}
 	else if ( strncmp(elem, "next", 4 ) == 0 )
 	{
-		index = atoi(value );
+		index = getVidIndex(value );
+		ptr = strchr(value, ':' );
 		if ( index < 0 )
 		{
-			//sprintf(buf, "Index less than zero, %d", index );
-			//log_message("", buf );
 			sts = 1;
 		}
 		else if ( index > TSIM_WINDOWS )
 		{
-			//sprintf(buf, "Index More than %d, %d", TSIM_WINDOWS, index );
-			//log_message("", buf );
 			sts = 1;
 		}
-		else if ( value[1] != ':' )
+		else if ( ptr[0] != ':' )
 		{
-			//sprintf(buf, "Value not ':', \'%c\'", value[1] );
-			//log_message("", buf );
 			sts = 1;
 		}
 		else
 		{
-			arg = &value[2];
+			arg = &ptr[1];
 			ts->vid[index].next = atoi(arg );
-			//sprintf(buf, "%s Chan %d = %d", "Set Next", index, ts->vid[index].next );
-			//log_message("", buf );
 		}
 	}
 	else
 	{
-		sprintf(buf, "Bad elem \"%s\"", elem );
-		log_message("", elem );
 	}
 	return ( sts );
 }
@@ -653,6 +634,15 @@ initializeParameterStruct(struct instructor *initParams )
 	initParams->cpr.release = -1;
 	initParams->cpr.last = -1;
 	
+	initParams->telesim.enable = -1;
+	initParams->telesim.vid[0].name[0] = 0;
+	initParams->telesim.vid[0].command = -1;
+	initParams->telesim.vid[0].param = -1;
+	initParams->telesim.vid[0].next = -1;
+	initParams->telesim.vid[1].name[0] = 0;
+	initParams->telesim.vid[1].command = -1;
+	initParams->telesim.vid[1].param = -1;
+	initParams->telesim.vid[1].next = -1;
 }
 
 /**
@@ -676,6 +666,19 @@ processInit(struct instructor *initParams  )
 	memcpy(&simmgr_shm->instructor.media, &initParams->media, sizeof(struct media) );
 	memcpy(&simmgr_shm->instructor.cpr, &initParams->cpr, sizeof(struct cpr) );
 	
+	if ( strlen(initParams->telesim.vid[0].name ) > 0 ||
+		initParams->telesim.vid[0].command != -1 ||
+		initParams->telesim.vid[0].param != -1 )
+	{
+		initParams->telesim.vid[0].next = simmgr_shm->status.telesim.vid[0].next + 1;
+	}
+	if ( strlen(initParams->telesim.vid[1].name ) > 0 ||
+		initParams->telesim.vid[1].command != -1 ||
+		initParams->telesim.vid[1].param != -1 )
+	{
+		initParams->telesim.vid[1].next = simmgr_shm->status.telesim.vid[1].next + 1;
+	}
+	memcpy(&simmgr_shm->instructor.telesim, &initParams->telesim, sizeof(struct telesim) );
 	releaseInstructorLock();
 	
 	// Delay to allow simmgr to pick up the changes

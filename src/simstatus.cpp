@@ -126,11 +126,10 @@ void simstatus_signal_handler(int sig )
 		break;
 	}
 }
-
 int
 main( int argc, const char* argv[] )
 {
-    char buffer[256];
+    char buffer[MSGBUF_LENGTH];
 	char cmd[32];
     //struct tm* tm_info;
 	//unsigned int val;
@@ -215,7 +214,7 @@ main( int argc, const char* argv[] )
 	sts = initSHM(OPEN_ACCESS, sesid );
 	if ( sts < 0 )
 	{
-		sprintf(buffer, "%d: %s %s", sts, "initSHM failed", sesid );
+		snprintf(buffer, MSGBUF_LENGTH, "%d: %s %s", sts, "initSHM failed", sesid );
 		makejson(cout, "error", buffer );
 		cout << "\n}\n";
 		return ( 0 );

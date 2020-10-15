@@ -87,7 +87,7 @@ int runningAsDemo;
 int scenarioPid = -1;
 char sesid[1024] = { 0, };
 char msgbuf[MSGBUF_LENGTH];
-char sessionsPath[MSGBUF_LENGTH];
+char sessionsPath[1024+64];
 
 // Time values, to track start time and elapsed time
 // This is the "absolute" time
@@ -1625,6 +1625,7 @@ scan_commands(void )
 		if ( simmgr_shm->instructor.telesim.vid[v].next > 0 &&
 			 simmgr_shm->instructor.telesim.vid[v].next != simmgr_shm->status.telesim.vid[v].next )
 		{
+			syslog(LOG_NOTICE, "TeleSim vid %d Next %d:%d", v, simmgr_shm->status.telesim.vid[v].next, simmgr_shm->instructor.telesim.vid[v].next );
 			simmgr_shm->status.telesim.vid[v].command = simmgr_shm->instructor.telesim.vid[v].command;
 			simmgr_shm->status.telesim.vid[v].param = simmgr_shm->instructor.telesim.vid[v].param;
 			simmgr_shm->status.telesim.vid[v].next = simmgr_shm->instructor.telesim.vid[v].next;
@@ -1791,7 +1792,7 @@ int
 start_scenario(const char *name )
 {
 	char timeBuf[64];
-	char fname[128];
+	char fname[1400];
 	int fileCountBefore;
 	int fileCountAfter;
 	

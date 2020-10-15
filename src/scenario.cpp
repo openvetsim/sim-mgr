@@ -69,6 +69,7 @@
 #include <unistd.h>
 #include <time.h>
 
+#include <syslog.h>
 
 #include <libxml2/libxml/xmlreader.h>
 #include <libxml2/libxml/tree.h>
@@ -139,13 +140,13 @@ const char *parse_states[] =
 const char *parse_init_states[] =
 {
 	"NONE", "CARDIAC", "RESPIRATION",
-	"GENERAL", "SCENE", "VOCALS"
+	"GENERAL", "SCENE", "VOCALS", "TELESIM"
 };
 
 const char *parse_scene_states[] =
 {
 	"NONE", "INIT", "CARDIAC", "RESPIRATION",
-	"GENERAL", "VOCALS", "TIMEOUT", "TRIGS", "TRIG"
+	"GENERAL", "VOCALS", "TIMEOUT", "TRIGS", "TRIG", "TELESIM"
 };
 
 const char *parse_header_states[] =
@@ -381,6 +382,7 @@ main(int argc, char **argv)
 	simmgr_shm->status.respiration.manual_count = 0;
 	
 	simmgr_shm->status.general.temperature_enable = 0;
+
 	
 	// Log the Scenario Name
 	snprintf(msgbuf, MAX_MSGBUF_SIZE, "Title: %s", scenario->title );
@@ -1009,6 +1011,7 @@ saveData(const xmlChar *xmlName, const xmlChar *xmlValue )
 	int sts = 0;
 	int i;
 	char *value2;
+	char complex[1024];
 	
 	switch ( parse_state )
 	{
@@ -1053,6 +1056,11 @@ saveData(const xmlChar *xmlName, const xmlChar *xmlValue )
 					if ( xml_current_level == 3 )
 					{
 						sts = telesim_parse(xmlLevels[xml_current_level].name, value, &scenario->initParams.telesim );
+					}
+					else if ( xml_current_level == 4 )
+					{
+						sprintf(complex, "%s:%s", xmlLevels[3].name, value );
+						sts = telesim_parse(xmlLevels[xml_current_level].name, complex, &scenario->initParams.telesim );
 					}
 					break;
 				case PARSE_INIT_STATE_VOCALS:
@@ -1169,9 +1177,15 @@ saveData(const xmlChar *xmlName, const xmlChar *xmlValue )
 					}
 					break;
 				case PARSE_SCENE_STATE_INIT_TELESIM:
-					if ( xml_current_level == 4 )
+					if ( xml_current_level == 5 )
 					{
-						sts = telesim_parse(xmlLevels[4].name, value, &new_scene->initParams.telesim );
+						sprintf(complex, "%s:%s", xmlLevels[4].name, value );
+						sts = telesim_parse(xmlLevels[xml_current_level].name, complex, &new_scene->initParams.telesim );
+					}
+					else if ( xml_current_level == 4 )
+					{
+						sprintf(complex, "%s:%s", xmlLevels[3].name, value );
+						sts = telesim_parse(xmlLevels[xml_current_level].name, complex, &new_scene->initParams.telesim );
 					}
 					break;
 				case PARSE_SCENE_STATE_INIT_VOCALS:
@@ -1471,6 +1485,10 @@ startParseState(int lvl, char *name )
 					{
 						parse_init_state = PARSE_INIT_STATE_SCENE;
 					}
+					else if ( strcmp(name, "telesim" ) == 0 )
+					{
+						parse_init_state = PARSE_INIT_STATE_TELESIM;
+					}
 					else
 					{
 						parse_init_state = PARSE_INIT_STATE_NONE;
@@ -1548,6 +1566,11 @@ startParseState(int lvl, char *name )
 					{
 						parse_scene_state = PARSE_SCENE_STATE_INIT_CPR;
 					}
+					else if ( strcmp(name, "telesim" ) == 0 )
+					{
+						parse_scene_state = PARSE_SCENE_STATE_INIT_TELESIM;
+					}
+					
 					if ( ( parse_scene_state == PARSE_SCENE_STATE_TRIGS ) &&
 						 ( strcmp(name, "trigger" ) == 0 ) )
 					{
@@ -1798,7 +1821,15 @@ readScenario(const char *filename)
         xmlFreeTextReader(reader);
         if (ret != 0)
 		{
-            fprintf(stderr, "%s : failed to parse\n", filename);
+            snprintf(msgbuf, MAX_MSGBUF_SIZE, "%s : failed to parse\n", filename);
+			if ( !checkOnly )
+			{
+				log_message("", msgbuf );
+			}
+			if ( verbose )
+			{
+				fprintf(stderr, "%s\n", msgbuf );
+			}
 			return ( -1 );
         }
     } 

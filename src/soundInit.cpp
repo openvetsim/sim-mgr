@@ -102,6 +102,8 @@ typeNameToIndex(char *typeName )
 
 #define SOUND_NAME_LENGTH	32
 #define FILE_NAME_LENGTH	256
+#define MSGBUF_LENGTH	2048
+
 struct sound
 {
 	int type;
@@ -115,7 +117,7 @@ struct sound
 int maxSounds = 0;
 struct sound *soundList;
 int soundIndex = 0;
-char msgbuf[1024];
+char msgbuf[MSGBUF_LENGTH];
 
 int
 addSoundToList(int type, int index, const char *name, int low_limit, int high_limit )
