@@ -140,13 +140,13 @@ const char *parse_states[] =
 const char *parse_init_states[] =
 {
 	"NONE", "CARDIAC", "RESPIRATION",
-	"GENERAL", "SCENE", "VOCALS", "TELESIM"
+	"GENERAL", "SCENE", "VOCALS", "TELESIM", "CPR"
 };
 
 const char *parse_scene_states[] =
 {
 	"NONE", "INIT", "CARDIAC", "RESPIRATION",
-	"GENERAL", "VOCALS", "TIMEOUT", "TRIGS", "TRIG", "TELESIM"
+	"GENERAL", "VOCALS", "TIMEOUT", "TRIGS", "TRIG", "TELESIM", "CPR"
 };
 
 const char *parse_header_states[] =
