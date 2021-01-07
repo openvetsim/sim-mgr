@@ -59,7 +59,7 @@ int scan_commands(void );
 void checkScenarioProcess(void );
 void comm_check(void );
 void time_update(void );
-int msec_time_update(void );
+long int msec_time_update(void );
 void awrr_check(void );
 void cpr_check(void);
 void shock_check(void);
@@ -536,15 +536,15 @@ awrr_check(void)
 	}
 }
 
-int cprLast = 0;
-int cprRunTime = 0;
-int cprDuration = 2000;
+long int cprLast = 0;
+long int cprRunTime = 0;
+long int cprDuration = 2000;
 
 void
 cpr_check(void)
 {
-	int now = simmgr_shm->server.msec_time; 
-	int cprCurrent = simmgr_shm->status.cpr.last;
+	long int now = simmgr_shm->server.msec_time; 
+	long int cprCurrent = simmgr_shm->status.cpr.last;
 	
 	if ( cprCurrent != cprLast )
 	{
@@ -572,15 +572,15 @@ cpr_check(void)
 		}
 	}
 }
-int shockLast = 0;
-int shockStartTime = 0;
-int shockDuration = 2000;
+long int shockLast = 0;
+long int shockStartTime = 0;
+long int shockDuration = 2000;
 
 void
 shock_check(void)
 {
-	int now = simmgr_shm->server.msec_time; 
-	int shockCurrent = simmgr_shm->status.defibrillation.last;
+	long int now = simmgr_shm->server.msec_time; 
+	long int shockCurrent = simmgr_shm->status.defibrillation.last;
 	
 	if ( shockCurrent != shockLast )
 	{
@@ -631,13 +631,13 @@ int hrLogReportLoops = 0;
 static void 
 hrcheck_handler(int sig, siginfo_t *si, void *uc)
 {
-	int now; // Current msec time
-	int prev;
+	long int now; // Current msec time
+	long int prev;
 	int beats;
-	int totalTime;
-	unsigned int lastTime;
-	int firstTime;
-	int diff;
+	long int totalTime;
+	long int lastTime;
+	long int firstTime;
+	long int diff;
 	float avg_rate;
 	float seconds;
 	float minutes;
@@ -779,10 +779,10 @@ hrcheck_handler(int sig, siginfo_t *si, void *uc)
 /*
  * msec_timer_update
 */
-int
+long int
 msec_time_update(void )
 {
-	int msec;
+	long int msec;
 	struct timeval tv;
 	int sts;
 	

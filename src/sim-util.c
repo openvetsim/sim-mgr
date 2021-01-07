@@ -499,7 +499,35 @@ itoa(int val, char *buf, int radix )
 	}
 	return ( buf );
 }
-
+/*
+ * ltoa
+ * @val - Value to be converted
+ * @buf - Pointer to buffer for the string to be returned
+ * @radix - the Radix (8,10,16)
+ *
+* Return the 'val' as a string in the requested radix
+*/
+char *
+ltoa(long int val, char *buf, int radix )
+{
+	if ( radix == 10 )
+	{
+		sprintf(buf, "%ld", val );
+	}
+	else if ( radix == 16 )
+	{
+		sprintf(buf, "%lx", val );
+	}
+	else if ( radix == 8 )
+	{
+		sprintf(buf, "%lo", val );
+	}
+	else
+	{
+		sprintf(buf, "%s", "" );
+	}
+	return ( buf );
+}
 /**
  * cleanString
  *

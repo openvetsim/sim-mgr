@@ -975,7 +975,8 @@ sendStatus(void )
 	cout << "},\n";
 	
 	cout << " \"cpr\" : {\n";
-	makejson(cout, "last", itoa(simmgr_shm->status.cpr.last, buffer, 10 ) );
+
+	makejson(cout, "last", ltoa(simmgr_shm->status.cpr.last, buffer, 10 ) );
 	cout << ",\n";
 	makejson(cout, "running", itoa(simmgr_shm->status.cpr.running, buffer, 10 ) );
 	cout << ",\n";
@@ -985,7 +986,7 @@ sendStatus(void )
 	cout << "\n},\n";
 	
 	cout << " \"defibrillation\" : {\n";
-	makejson(cout, "last", itoa(simmgr_shm->status.defibrillation.last, buffer, 10 ) );
+	makejson(cout, "last", ltoa(simmgr_shm->status.defibrillation.last, buffer, 10 ) );
 	cout << ",\n";
 	makejson(cout, "shock", itoa(simmgr_shm->status.defibrillation.shock, buffer, 10 ) );
 	cout << ",\n";
@@ -993,7 +994,7 @@ sendStatus(void )
 	cout << "\n},\n";
 	
 	cout << " \"debug\" : {\n";
-	makejson(cout, "msec", itoa(simmgr_shm->server.msec_time, buffer, 10 ) );
+	makejson(cout, "msec", ltoa(simmgr_shm->server.msec_time, buffer, 10 ) );
 	cout << ",\n";
 	makejson(cout, "avg_rate", itoa(simmgr_shm->status.cardiac.avg_rate, buffer, 10 ) );
 	cout << ",\n";
@@ -1064,7 +1065,7 @@ sendQuickStatus(void )
 	cout << "\n},\n";
 	
 	cout << " \"debug\" : {\n";
-	makejson(cout, "msec", itoa(simmgr_shm->server.msec_time, buffer, 10 ) );
+	makejson(cout, "msec", ltoa(simmgr_shm->server.msec_time, buffer, 10 ) );
 	cout << ",\n";
 	makejson(cout, "avg_rate", itoa(simmgr_shm->status.cardiac.avg_rate, buffer, 10 ) );
 	cout << ",\n";

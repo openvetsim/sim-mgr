@@ -83,8 +83,8 @@ struct cardiac
 	int nibp_freq;		// Number of minutes for NIBP timer. 0 is manual.
 	int transfer_time;	// Trend length for change in rate;
 	char pwave[STR_SIZE];
-	int pr_interval;	// PR interval in msec
-	int qrs_interval;		// QRS in msec
+	long int pr_interval;	// PR interval in msec
+	long int qrs_interval;		// QRS in msec
 	int bps_sys;	// Systolic
 	int bps_dia;	// Diastolic
 	int right_dorsal_pulse_strength; 	// 0 - None, 3 - strong
@@ -113,8 +113,8 @@ struct scenario
 	char scene_name[STR_SIZE];	// Currently running scene
 	int scene_id;				// Currently running scene
 	int record;					// Set in initiator section to start/stop video recording
-	int elapsed_msec_scenario;
-	int elapsed_msec_scene;
+	long int elapsed_msec_scenario;
+	long int elapsed_msec_scene;
 };
 
 struct respiration
@@ -184,7 +184,7 @@ struct pulse
 
 struct cpr
 {
-	int last;			// msec time of last compression
+	long int last;			// msec time of last compression
 	int	compression;	// 0 to 100%
 	int release;		// 0 to 100%
 	int duration;
@@ -192,7 +192,7 @@ struct cpr
 };
 struct defibrillation
 {
-	int last;			// msec time of last shock
+	long int last;			// msec time of last shock
 	int energy;			// Energy in Joules of shock
 	int shock;			// Request a shock event
 };
@@ -209,7 +209,7 @@ struct server
 	char ip_addr[STR_SIZE];		// ETH0 Network IP Address
 	char wifi_ip_addr[STR_SIZE];		// WiFi Network IP Address
 	char server_time[STR_SIZE];	// Linux date/timestamp
-	int msec_time;				// msec timer.
+	long int msec_time;				// msec timer.
 	int dbg1;
 	int dbg2;
 	int dbg3;
@@ -389,6 +389,7 @@ void get_date(char *buffer );
 char *getETH0_IP();
 char *getWIFI_IP();
 char *itoa(int val, char *buf, int radix );
+char *ltoa(long int val, char *buf, int radix );
 void signal_fault_handler(int sig);
 void cleanString(char *strIn );
 

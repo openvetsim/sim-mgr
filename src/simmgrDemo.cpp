@@ -81,8 +81,8 @@ void simmgrRun(void );
 extern int scenarioPid;
 extern int runningAsDemo;
 
-int demoStartTime;
-int demoEndLimit;
+long int demoStartTime;
+long int demoEndLimit;
 #define DEMO_MAX_RUNTIME	(2*60*60*1000)	// Limit to 2 hours runtime.
 
 
@@ -194,6 +194,6 @@ main(int argc, char *argv[] )
 		}
 		usleep(10000);	// Sleep for 10 msec
 	}
-	snprintf(msgbuf, MSGBUF_LENGTH, "Demo Limit Exceeded: %d %d", simmgr_shm->server.msec_time, demoEndLimit );
+	snprintf(msgbuf, MSGBUF_LENGTH, "Demo Limit Exceeded: %ld %ld", simmgr_shm->server.msec_time, demoEndLimit );
 	log_message("", msgbuf );
 }
