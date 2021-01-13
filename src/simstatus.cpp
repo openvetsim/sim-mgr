@@ -557,7 +557,7 @@ sendSimctrData(void )
 	cout << ",\n";
 	makejson(cout, "rate", itoa(simmgr_shm->status.cardiac.rate, buffer, 10 ) );
 	cout << ",\n";
-	makejson(cout, "avg_rate", itoa(simmgr_shm->status.cardiac.avg_rate, buffer, 10 ) );
+	makejson(cout, "avg_rate", ltoa(simmgr_shm->status.cardiac.avg_rate, buffer, 10 ) );
 	cout << ",\n";
 	makejson(cout, "nibp_rate", itoa(simmgr_shm->status.cardiac.nibp_rate, buffer, 10 ) );
 	cout << ",\n";
@@ -753,7 +753,7 @@ sendStatus(void )
 	cout << ",\n";
 	makejson(cout, "rate", itoa(simmgr_shm->status.cardiac.rate, buffer, 10 ) );
 	cout << ",\n";
-	makejson(cout, "avg_rate", itoa(simmgr_shm->status.cardiac.avg_rate, buffer, 10 ) );
+	makejson(cout, "avg_rate", ltoa(simmgr_shm->status.cardiac.avg_rate, buffer, 10 ) );
 	cout << ",\n";
 	makejson(cout, "nibp_rate", itoa(simmgr_shm->status.cardiac.nibp_rate, buffer, 10 ) );
 	cout << ",\n";
@@ -996,7 +996,7 @@ sendStatus(void )
 	cout << " \"debug\" : {\n";
 	makejson(cout, "msec", ltoa(simmgr_shm->server.msec_time, buffer, 10 ) );
 	cout << ",\n";
-	makejson(cout, "avg_rate", itoa(simmgr_shm->status.cardiac.avg_rate, buffer, 10 ) );
+	makejson(cout, "avg_rate", ltoa(simmgr_shm->status.cardiac.avg_rate, buffer, 10 ) );
 	cout << ",\n";
 	makejson(cout, "debug1", itoa(simmgr_shm->server.dbg1, buffer, 10 ) );
 	cout << ",\n";
@@ -1039,7 +1039,7 @@ sendQuickStatus(void )
 	cout << ",\n";
 	makejson(cout, "rate", itoa(simmgr_shm->status.cardiac.rate, buffer, 10 ) );
 	cout << ",\n";
-	makejson(cout, "avg_rate", itoa(simmgr_shm->status.cardiac.avg_rate, buffer, 10 ) );
+	makejson(cout, "avg_rate", ltoa(simmgr_shm->status.cardiac.avg_rate, buffer, 10 ) );
 	cout << "\n},\n";
 	
 	cout << " \"respiration\" : {\n";
@@ -1067,7 +1067,7 @@ sendQuickStatus(void )
 	cout << " \"debug\" : {\n";
 	makejson(cout, "msec", ltoa(simmgr_shm->server.msec_time, buffer, 10 ) );
 	cout << ",\n";
-	makejson(cout, "avg_rate", itoa(simmgr_shm->status.cardiac.avg_rate, buffer, 10 ) );
+	makejson(cout, "avg_rate", ltoa(simmgr_shm->status.cardiac.avg_rate, buffer, 10 ) );
 	cout << ",\n";
 	makejson(cout, "debug1", itoa(simmgr_shm->server.dbg1, buffer, 10 ) );
 	cout << ",\n";

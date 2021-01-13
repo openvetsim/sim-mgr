@@ -76,7 +76,7 @@ struct cardiac
 	char vfib_amplitude[STR_SIZE];	// low, med, high
 	int pea;			// Pulse-less Electrical Activity
 	int rate;			// Heart Rate in Beats per Minute
-	int avg_rate;		// Calculated heart rate
+	long int avg_rate;		// Calculated heart rate
 	int nibp_rate;		// Non-Invasive Rate - Only reports when cuff is on
 	int nibp_read;		// Set to 1 to start reading, set to 0 when reading is complete.
 	int nibp_linked_hr;		// Set to 1 to keep NIBP linked with Cardiac Rate, set to 0 to unlink.

@@ -616,7 +616,7 @@ shock_check(void)
 */
 #define HR_CALC_LIMIT		10		// Max number of recorded beats to count in calculation
 #define HR_LOG_LEN	128
-unsigned int hrLog[HR_LOG_LEN] = { 0, };
+unsigned long int hrLog[HR_LOG_LEN] = { 0, };
 int hrLogNext = 0;
 
 unsigned int hrLogLastNatural = 0;	// beatCount, last natural
@@ -705,18 +705,18 @@ hrcheck_handler(int sig, siginfo_t *si, void *uc)
 		lastTime = hrLog[prev];
 		if ( lastTime < 0 )  // Don't look at empty logs
 		{
-			simmgr_shm->status.cardiac.avg_rate = 0;
+			simmgr_shm->status.cardiac.avg_rate = 2;
 		}
 		else if ( lastTime == 0 )  // Don't look at empty logs
 		{
-			simmgr_shm->status.cardiac.avg_rate = 0;
+			simmgr_shm->status.cardiac.avg_rate = 3;
 		}
 		else
 		{
 			diff = now - lastTime;
 			if ( diff > 20000 )
 			{
-				simmgr_shm->status.cardiac.avg_rate = 0;
+				simmgr_shm->status.cardiac.avg_rate = 4;
 			}
 			else
 			{
@@ -751,7 +751,7 @@ hrcheck_handler(int sig, siginfo_t *si, void *uc)
 				totalTime = lastTime - firstTime;
 				if ( totalTime == 0 )
 				{
-					avg_rate = 0;
+					avg_rate = 7;
 				}
 				else
 				{
@@ -761,7 +761,7 @@ hrcheck_handler(int sig, siginfo_t *si, void *uc)
 				}
 				if ( avg_rate < 0 )
 				{
-					avg_rate = 0;
+					avg_rate = 6;
 				}
 				else if ( avg_rate > 360 )
 				{
@@ -770,7 +770,7 @@ hrcheck_handler(int sig, siginfo_t *si, void *uc)
 			}
 			else
 			{
-				avg_rate = 0;
+				avg_rate = 5;
 			}
 			simmgr_shm->status.cardiac.avg_rate = round(avg_rate );
 		}
