@@ -2,7 +2,7 @@
 #
 # This file is part of the sim-mgr distribution (https://github.com/OpenVetSimDevelopers/sim-mgr).
 # 
-# Copyright (c) 2019 VetSim, Cornell University College of Veterinary Medicine Ithaca, NY
+# Copyright (c) 2019-2020 VetSim, Cornell University College of Veterinary Medicine Ithaca, NY
 # 
 # This program is free software: you can redistribute it and/or modify  
 # it under the terms of the GNU General Public License as published by  
@@ -16,10 +16,21 @@
 # You should have received a copy of the GNU General Public License 
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-if [[ ${XDG_VTNR} != 1 ]]; then
-	echo This shell is intended to run on the GUI window only.
-	exit;
+if [[ ${WINDOWPATH} == "2" ]];
+    then 
+    echo "Detected Main Screen on 20.04";
+elif [[ ${XDG_VTNR} == 1 ]]; 
+    then
+    echo "Detected Main Screen on 18.04";
+else
+    echo This shell is intended to run on the GUI window only.
+	echo If you get this message in error, you may need to edit the ~vitals/vitals.sh and ~vitals/.profile files.
+	echo env Variables:
+    echo WINDOWPATH $WINDOWPATH
+    echo XDG_VTNR $XDG_VTNR
+    exit;
 fi
+
 ## Loop until the local HTTP server is responding
 URL='http://localhost/'
 URL_FOUND=0
