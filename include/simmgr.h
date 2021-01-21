@@ -109,6 +109,7 @@ struct scenario
 	char runtimeAbsolute[STR_SIZE];
 	char runtimeScenario[STR_SIZE];
 	char runtimeScene[STR_SIZE];
+	char clockDisplay[STR_SIZE];
 	char state[STR_SIZE];
 	char scene_name[STR_SIZE];	// Currently running scene
 	int scene_id;				// Currently running scene
@@ -222,6 +223,8 @@ struct general
 	int transfer_time;			// Trend length
 	int temperature_enable;		// 0 : No Probe, 1 : Probe Attached
 	char temperature_units[4];	// F or C are valid
+	char clockStart[STR_SIZE];	// Used to set the display time start
+	int clockStartSec;
 };
 
 struct media

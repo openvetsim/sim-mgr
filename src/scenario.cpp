@@ -284,6 +284,13 @@ main(int argc, char **argv)
 	initializeParameterStruct(&scenario->initParams );
 	
 	eventLast = simmgr_shm->eventListNext;	// Start processing event at the next posted event
+
+	// For display Time
+	time_t rawtime;
+	struct tm *info;
+	time( &rawtime );
+	info = localtime( &rawtime );
+	simmgr_shm->status.general.clockStartSec = ( info->tm_hour * 60 * 60 ) + ( info->tm_min * 60 ) + info->tm_sec;
 	
     // Initialize the library and check potential ABI mismatches 
     LIBXML_TEST_VERSION

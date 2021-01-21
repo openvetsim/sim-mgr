@@ -833,6 +833,11 @@ time_update(void )
 		min = (sec / 60);
 		hour = min / 60;
 		sprintf(simmgr_shm->status.scenario.runtimeAbsolute, "%02d:%02d:%02d", hour, min%60, sec%60);
+		
+		sec = elapsedTimeSeconds + simmgr_shm->status.general.clockStartSec;
+		min = (sec / 60);
+		hour = min / 60;
+		sprintf(simmgr_shm->status.scenario.clockDisplay, "%02d:%02d:%02d", hour, min%60, sec%60);
 	}
 	if ( ( elapsedTimeSeconds > MAX_SCENARIO_RUNTIME ) &&
 		 ( ( scenario_state == ScenarioRunning ) || 
@@ -1565,7 +1570,18 @@ scan_commands(void )
 		simmgr_shm->instructor.general.temperature_enable = -1;
 	}
 	simmgr_shm->instructor.general.transfer_time = -1;
-	
+	if ( strlen(simmgr_shm->instructor.general.clockStart ) > 0 )
+	{
+		struct tm tm;
+		sprintf(simmgr_shm->status.general.clockStart, "%s", simmgr_shm->instructor.general.clockStart );
+		sprintf(simmgr_shm->instructor.general.clockStart, "%s", "" );
+		
+		strptime(simmgr_shm->status.general.clockStart, "%H:%M:%S", &tm );
+		sprintf(buf, "%s %02d %02d %02d", "time returned", tm.tm_hour, tm.tm_min, tm.tm_sec );
+		log_message("", buf );
+		
+		simmgr_shm->status.general.clockStartSec = ( tm.tm_hour * 60 * 60 ) + ( tm.tm_min * 60 ) + tm.tm_sec;
+	}
 	// vocals
 	if ( strlen(simmgr_shm->instructor.vocals.filename) > 0 )
 	{
@@ -1795,7 +1811,7 @@ start_scenario(const char *name )
 	char fname[1400];
 	int fileCountBefore;
 	int fileCountAfter;
-	
+		
 	sprintf(msgbuf, "Start Scenario Request: %s", name );
 	log_message("", msgbuf ); 
 
@@ -1821,7 +1837,7 @@ start_scenario(const char *name )
 	
 	scenario_start_time = std::time(nullptr );
 	std::strftime(timeBuf, 60, "%c", std::localtime(&scenario_start_time ));
-	
+		
 	// exec the new scenario
 	scenarioPid = fork();
 	if ( scenarioPid == 0 )
@@ -1854,6 +1870,7 @@ start_scenario(const char *name )
 		sprintf(simmgr_shm->status.scenario.runtimeAbsolute, "%s", "00:00:00" );		
 		sprintf(simmgr_shm->status.scenario.runtimeScenario, "%s", "00:00:00" );
 		sprintf(simmgr_shm->status.scenario.runtimeScene, "%s", "00:00:00" );
+		
 		//sprintf(simmgr_shm->status.scenario.scene_name, "%s", "init" );
 		//simmgr_shm->status.scenario.scene_id = 0;
 		

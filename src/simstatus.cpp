@@ -721,6 +721,8 @@ sendStatus(void )
 	cout << ",\n";
 	makejson(cout, "runtimeScene", simmgr_shm->status.scenario.runtimeScene );
 	cout << ",\n";
+	makejson(cout, "clockDisplay", simmgr_shm->status.scenario.clockDisplay );
+	cout << ",\n";
 	makejson(cout, "scene_name", simmgr_shm->status.scenario.scene_name );
 	cout << ",\n";
 	makejson(cout, "scene_id", itoa(simmgr_shm->status.scenario.scene_id, buffer, 10 ) );

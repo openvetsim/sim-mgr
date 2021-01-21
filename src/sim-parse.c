@@ -455,7 +455,8 @@ telesim_parse(const char *elem,  const char *value, struct telesim *ts )
 int
 general_parse(const char *elem,  const char *value, struct general *gen )
 {
-	int sts = 0;
+	int sts = 0;	
+	
 	if ( ( ! elem ) || ( ! value) || ( ! gen ) )
 	{
 		return ( -13 );
@@ -475,6 +476,10 @@ general_parse(const char *elem,  const char *value, struct general *gen )
 	else if ( strcmp(elem, "transfer_time" ) == 0 )
 	{
 		gen->transfer_time = atoi(value );
+	}
+	else if ( strcmp(elem, "clock_start" ) == 0 )
+	{
+		sprintf(gen->clockStart, "%s", value );
 	}
 	else 
 	{
