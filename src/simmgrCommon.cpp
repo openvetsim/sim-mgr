@@ -59,7 +59,7 @@ int scan_commands(void );
 void checkScenarioProcess(void );
 void comm_check(void );
 void time_update(void );
-int msec_time_update(void );
+long int msec_time_update(void );
 void awrr_check(void );
 void cpr_check(void);
 void shock_check(void);
@@ -87,7 +87,7 @@ int runningAsDemo;
 int scenarioPid = -1;
 char sesid[1024] = { 0, };
 char msgbuf[MSGBUF_LENGTH];
-char sessionsPath[MSGBUF_LENGTH];
+char sessionsPath[1024+64];
 
 // Time values, to track start time and elapsed time
 // This is the "absolute" time
@@ -536,15 +536,15 @@ awrr_check(void)
 	}
 }
 
-int cprLast = 0;
-int cprRunTime = 0;
-int cprDuration = 2000;
+long int cprLast = 0;
+long int cprRunTime = 0;
+long int cprDuration = 2000;
 
 void
 cpr_check(void)
 {
-	int now = simmgr_shm->server.msec_time; 
-	int cprCurrent = simmgr_shm->status.cpr.last;
+	long int now = simmgr_shm->server.msec_time; 
+	long int cprCurrent = simmgr_shm->status.cpr.last;
 	
 	if ( cprCurrent != cprLast )
 	{
@@ -572,15 +572,15 @@ cpr_check(void)
 		}
 	}
 }
-int shockLast = 0;
-int shockStartTime = 0;
-int shockDuration = 2000;
+long int shockLast = 0;
+long int shockStartTime = 0;
+long int shockDuration = 2000;
 
 void
 shock_check(void)
 {
-	int now = simmgr_shm->server.msec_time; 
-	int shockCurrent = simmgr_shm->status.defibrillation.last;
+	long int now = simmgr_shm->server.msec_time; 
+	long int shockCurrent = simmgr_shm->status.defibrillation.last;
 	
 	if ( shockCurrent != shockLast )
 	{
@@ -616,7 +616,7 @@ shock_check(void)
 */
 #define HR_CALC_LIMIT		10		// Max number of recorded beats to count in calculation
 #define HR_LOG_LEN	128
-unsigned int hrLog[HR_LOG_LEN] = { 0, };
+unsigned long int hrLog[HR_LOG_LEN] = { 0, };
 int hrLogNext = 0;
 
 unsigned int hrLogLastNatural = 0;	// beatCount, last natural
@@ -631,13 +631,13 @@ int hrLogReportLoops = 0;
 static void 
 hrcheck_handler(int sig, siginfo_t *si, void *uc)
 {
-	int now; // Current msec time
-	int prev;
+	long int now; // Current msec time
+	long int prev;
 	int beats;
-	int totalTime;
-	unsigned int lastTime;
-	int firstTime;
-	int diff;
+	long int totalTime;
+	long int lastTime;
+	long int firstTime;
+	long int diff;
 	float avg_rate;
 	float seconds;
 	float minutes;
@@ -705,18 +705,18 @@ hrcheck_handler(int sig, siginfo_t *si, void *uc)
 		lastTime = hrLog[prev];
 		if ( lastTime < 0 )  // Don't look at empty logs
 		{
-			simmgr_shm->status.cardiac.avg_rate = 0;
+			simmgr_shm->status.cardiac.avg_rate = 2;
 		}
 		else if ( lastTime == 0 )  // Don't look at empty logs
 		{
-			simmgr_shm->status.cardiac.avg_rate = 0;
+			simmgr_shm->status.cardiac.avg_rate = 3;
 		}
 		else
 		{
 			diff = now - lastTime;
 			if ( diff > 20000 )
 			{
-				simmgr_shm->status.cardiac.avg_rate = 0;
+				simmgr_shm->status.cardiac.avg_rate = 4;
 			}
 			else
 			{
@@ -751,7 +751,7 @@ hrcheck_handler(int sig, siginfo_t *si, void *uc)
 				totalTime = lastTime - firstTime;
 				if ( totalTime == 0 )
 				{
-					avg_rate = 0;
+					avg_rate = 7;
 				}
 				else
 				{
@@ -761,7 +761,7 @@ hrcheck_handler(int sig, siginfo_t *si, void *uc)
 				}
 				if ( avg_rate < 0 )
 				{
-					avg_rate = 0;
+					avg_rate = 6;
 				}
 				else if ( avg_rate > 360 )
 				{
@@ -770,7 +770,7 @@ hrcheck_handler(int sig, siginfo_t *si, void *uc)
 			}
 			else
 			{
-				avg_rate = 0;
+				avg_rate = 5;
 			}
 			simmgr_shm->status.cardiac.avg_rate = round(avg_rate );
 		}
@@ -779,10 +779,10 @@ hrcheck_handler(int sig, siginfo_t *si, void *uc)
 /*
  * msec_timer_update
 */
-int
+long int
 msec_time_update(void )
 {
-	int msec;
+	long int msec;
 	struct timeval tv;
 	int sts;
 	
@@ -1068,6 +1068,8 @@ scan_commands(void )
 	int newRate;
 	int currentIsPulsed;
 	int newIsPulsed;
+	int v;
+	
 	// Lock the command interface before processing commands
 	trycount = 0;
 	while ( ( sts = sem_trywait(&simmgr_shm->instructor.sema) ) != 0 )
@@ -1602,7 +1604,33 @@ scan_commands(void )
 		simmgr_shm->status.media.play = simmgr_shm->instructor.media.play;
 		simmgr_shm->instructor.media.play = -1;
 	}
-	
+	// telesim
+	if ( simmgr_shm->instructor.telesim.enable >= 0 )
+	{
+		if ( simmgr_shm->status.telesim.enable != simmgr_shm->instructor.telesim.enable )
+		{
+			simmgr_shm->status.telesim.enable = simmgr_shm->instructor.telesim.enable;
+			sprintf(buf, "TeleSim Mode: %s", (simmgr_shm->status.telesim.enable == 1 ? "Enabled": "Disabled") );
+			simlog_entry(buf );
+		}
+		simmgr_shm->instructor.telesim.enable = -1;
+	}
+	for ( v = 0 ; v < TSIM_WINDOWS ; v++ )
+	{
+		if ( strlen(simmgr_shm->instructor.telesim.vid[v].name) > 0 )
+		{
+			sprintf(simmgr_shm->status.telesim.vid[v].name, "%s", simmgr_shm->instructor.telesim.vid[v].name );
+			sprintf(simmgr_shm->instructor.telesim.vid[v].name, "%s", "" );
+		}
+		if ( simmgr_shm->instructor.telesim.vid[v].next > 0 &&
+			 simmgr_shm->instructor.telesim.vid[v].next != simmgr_shm->status.telesim.vid[v].next )
+		{
+			syslog(LOG_NOTICE, "TeleSim vid %d Next %d:%d", v, simmgr_shm->status.telesim.vid[v].next, simmgr_shm->instructor.telesim.vid[v].next );
+			simmgr_shm->status.telesim.vid[v].command = simmgr_shm->instructor.telesim.vid[v].command;
+			simmgr_shm->status.telesim.vid[v].param = simmgr_shm->instructor.telesim.vid[v].param;
+			simmgr_shm->status.telesim.vid[v].next = simmgr_shm->instructor.telesim.vid[v].next;
+		}
+	}
 	// CPR
 	if ( simmgr_shm->instructor.cpr.compression >= 0 )
 	{
@@ -1764,7 +1792,7 @@ int
 start_scenario(const char *name )
 {
 	char timeBuf[64];
-	char fname[128];
+	char fname[1400];
 	int fileCountBefore;
 	int fileCountAfter;
 	
@@ -1981,7 +2009,18 @@ resetAllParameters(void )
 	// status/media
 	sprintf(simmgr_shm->status.media.filename, "%s", "" );
 	simmgr_shm->status.media.play = 0;
-		
+	
+	// status/telesim
+	// simmgr_shm->status.telesim.enable = 0;
+	sprintf(simmgr_shm->status.telesim.vid[0].name, "%s", "" );
+	simmgr_shm->status.telesim.vid[0].command = 0;
+	simmgr_shm->status.telesim.vid[0].param = 0;
+	simmgr_shm->status.telesim.vid[0].next = 0;
+	sprintf(simmgr_shm->status.telesim.vid[1].name, "%s", "" );
+	simmgr_shm->status.telesim.vid[1].command = 0;
+	simmgr_shm->status.telesim.vid[1].param = 0;
+	simmgr_shm->status.telesim.vid[1].next = 0;
+	
 	// instructor/cardiac
 	sprintf(simmgr_shm->instructor.cardiac.rhythm, "%s", "" );
 	simmgr_shm->instructor.cardiac.rate = -1;
@@ -2037,6 +2076,17 @@ resetAllParameters(void )
 	// instructor/media
 	sprintf(simmgr_shm->instructor.media.filename, "%s", "" );
 	simmgr_shm->instructor.media.play = -1;
+	
+	// instructor/telesim
+	simmgr_shm->instructor.telesim.enable = -1;
+	sprintf(simmgr_shm->instructor.telesim.vid[0].name, "%s", "" );
+	simmgr_shm->instructor.telesim.vid[0].command = -1;
+	simmgr_shm->instructor.telesim.vid[0].param = -1;
+	simmgr_shm->instructor.telesim.vid[0].next = -1;
+	sprintf(simmgr_shm->instructor.telesim.vid[1].name, "%s", "" );
+	simmgr_shm->instructor.telesim.vid[1].command = -1;
+	simmgr_shm->instructor.telesim.vid[1].param = -1;
+	simmgr_shm->instructor.telesim.vid[1].next = -1;
 	
 	// instructor/general
 	simmgr_shm->instructor.general.temperature = -1;

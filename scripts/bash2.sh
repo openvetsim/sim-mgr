@@ -25,6 +25,12 @@ then
 	sudo apt install -y php-dev libmcrypt-dev php-pear
 	sudo pecl channel-update pecl.php.net
 	sudo pecl install mcrypt-1.0.1
+elif [[  ${RELEASE} == "20.04" ]];
+then
+	## echo Running 20.04.
+	sudo apt install -y php-dev libmcrypt-dev php-pear
+	sudo pecl channel-update pecl.php.net
+	sudo pecl install mcrypt-1.0.3
 else
 	## echo Not Running 18.04.
 	sudo apt-get install -y php-mbstring php7.0 php-gettext

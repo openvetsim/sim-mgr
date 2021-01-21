@@ -17,7 +17,7 @@
 
 
 OBJDIR := obj
-TARGETS= $(OBJDIR) obj/simmgr obj/simmgrDemo obj/simpulse obj/simstatus.cgi obj/scenario obj/obscmd obj/obsmon
+TARGETS= $(OBJDIR) obj/simmgr obj/simmgrDemo obj/simpulse obj/simstatus.cgi obj/scenario obj/obscmd obj/obsmon obj/simSoundInit
 
 ## -pthread (Posix Threads) is required where shared memory and/or multiple threads are used
 CFLAGS=-pthread -Wall -g -ggdb -rdynamic
@@ -30,7 +30,7 @@ LDFLAGS=-lrt
 CGIBIN=/var/lib/cgi-bin
 BIN=/usr/local/bin
 
-default: $(OBJDIR) obj/simstatus.cgi obj/simmgr obj/simmgrDemo obj/simpulse obj/scenario obj/obscmd obj/obsmon 
+default: $(OBJDIR) obj/simstatus.cgi obj/simmgr obj/simmgrDemo obj/simpulse obj/scenario obj/obscmd obj/obsmon obj/simSoundInit
 
 $(OBJDIR):
 	mkdir -p $(OBJDIR)
@@ -76,6 +76,9 @@ obj/simmgrVideo.o: src/simmgrVideo.cpp  include/simmgr.h
 obj/simstatus.cgi: src/simstatus.cpp obj/sim-util.o obj/sim-parse.o obj/sim-log.o include/simmgr.h
 	g++ $(CPPFLAGS) $(CXXFLAGS) -o obj/simstatus.cgi src/simstatus.cpp obj/sim-util.o obj/sim-parse.o obj/sim-log.o $(LDFLAGS) -lcgicc
 
+obj/simSoundInit: src/soundInit.cpp 
+	g++ $(CPPFLAGS) $(CXXFLAGS) -o obj/simSoundInit src/soundInit.cpp 
+	
 obj/cookie.cgi: src/cookie.cpp 
 	g++ $(CPPFLAGS) $(CXXFLAGS) -o obj/cookie.cgi src/cookie.cpp -lcgicc
 	
@@ -88,8 +91,11 @@ obj/simmgrDemo: src/simmgrDemo.cpp obj/sim-log.o obj/sim-util.o obj/simpulseDemo
 
 obj/simpulse: src/simpulse.cpp obj/sim-util.o include/simmgr.h
 	g++ $(CPPFLAGS) $(CXXFLAGS)  -lcgicc -o obj/simpulse src/simpulse.cpp  obj/sim-util.o $(LDFLAGS)
+
+obj/playAudio: src/playAudio.c
+	g++ -pthread -Wall -g -ggdb -rdynamic -fpermissive -o obj/playAudio src/playAudio.c -lmpg123 -lout123
 	
-install: $(TARGETS) installBase installDaemon installDemo
+install: $(TARGETS) installBase installDaemon installDemo installSounds
 
 installBase:
 	sudo cp -u obj/simstatus.cgi $(CGIBIN)
@@ -107,7 +113,7 @@ installBase:
 	sudo chmod u+s $(BIN)/scenario
 	sudo cp -u scripts/obs_*.sh $(BIN)
 	sudo chmod 0755 $(BIN)/obs_*.sh $(BIN)/obsmon
-
+	
 installDaemon:
 	sudo cp -u simmgr.init /etc/init.d/simmgr
 	sudo update-rc.d simmgr defaults
@@ -119,6 +125,13 @@ installDemo:
 	@sudo cp -u obj/simmgrDemo $(BIN)
 	@sudo chown simmgr:simmgr $(BIN)/simmgrDemo
 	@sudo chmod u+s $(BIN)/simmgrDemo
+	
+installSounds: obj/simSoundInit
+	sudo mkdir -p /var/www/html/sim-sounds
+	sudo chown www-data:www-data /var/www/html/sim-sounds
+	sudo chmod 0755 /var/www/html/sim-sounds
+	sudo cp -u simSounds/* /var/www/html/sim-sounds
+	sudo cp -u obj/simSoundInit $(BIN)
 	
 clean:
 	rm obj/*

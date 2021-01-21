@@ -26,10 +26,15 @@ Files in ths directory:
 	*.wav - Sounds used for auscultation and vocalizations
 	tsunami.ini - Tsunami Configuration
 	tsunamix.hex - Tsunami Mono Firmware
+	soundList.csv - sound reference list, used by sim-ctl for lookup of sounds and cross reference to file numbers. Also
+	                used in TeleSim mode.
 	
 The files of this directory should be copied to a FAT16 or FAT32 formatted MicroSD card 
 and installed in the Tsunami. The MicroSD card should be speed class 4 or 10, non-UHS.
 See http://robertsonics.com/microsd-cards-for-audio/ for details.
+
+For TeleSim, the content is also copied to /var/www/html/sim-sounds.
+
 
 The Tsunami is used in Mono mode, but is initialy installed with Stereo firmware. To load the
 new firmware:

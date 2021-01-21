@@ -126,11 +126,10 @@ void simstatus_signal_handler(int sig )
 		break;
 	}
 }
-
 int
 main( int argc, const char* argv[] )
 {
-    char buffer[256];
+    char buffer[MSGBUF_LENGTH];
 	char cmd[32];
     //struct tm* tm_info;
 	//unsigned int val;
@@ -215,7 +214,7 @@ main( int argc, const char* argv[] )
 	sts = initSHM(OPEN_ACCESS, sesid );
 	if ( sts < 0 )
 	{
-		sprintf(buffer, "%d: %s %s", sts, "initSHM failed", sesid );
+		snprintf(buffer, MSGBUF_LENGTH, "%d: %s %s", sts, "initSHM failed", sesid );
 		makejson(cout, "error", buffer );
 		cout << "\n}\n";
 		return ( 0 );
@@ -370,6 +369,10 @@ main( int argc, const char* argv[] )
 				else if ( v[1].compare("general" ) == 0 )
 				{
 					sts = general_parse(v[2].c_str(), value.c_str(), &simmgr_shm->instructor.general );
+				}
+				else if ( v[1].compare("telesim" ) == 0 )
+				{
+					sts = telesim_parse(v[2].c_str(), value.c_str(), &simmgr_shm->instructor.telesim );
 				}
 				else if ( v[1].compare("vocals" ) == 0 )
 				{
@@ -554,7 +557,7 @@ sendSimctrData(void )
 	cout << ",\n";
 	makejson(cout, "rate", itoa(simmgr_shm->status.cardiac.rate, buffer, 10 ) );
 	cout << ",\n";
-	makejson(cout, "avg_rate", itoa(simmgr_shm->status.cardiac.avg_rate, buffer, 10 ) );
+	makejson(cout, "avg_rate", ltoa(simmgr_shm->status.cardiac.avg_rate, buffer, 10 ) );
 	cout << ",\n";
 	makejson(cout, "nibp_rate", itoa(simmgr_shm->status.cardiac.nibp_rate, buffer, 10 ) );
 	cout << ",\n";
@@ -705,6 +708,7 @@ void
 sendStatus(void )
 {
     char buffer[256];
+	int i;
 	
 	cout << " \"scenario\" : {\n";
 	makejson(cout, "active", simmgr_shm->status.scenario.active );
@@ -749,7 +753,7 @@ sendStatus(void )
 	cout << ",\n";
 	makejson(cout, "rate", itoa(simmgr_shm->status.cardiac.rate, buffer, 10 ) );
 	cout << ",\n";
-	makejson(cout, "avg_rate", itoa(simmgr_shm->status.cardiac.avg_rate, buffer, 10 ) );
+	makejson(cout, "avg_rate", ltoa(simmgr_shm->status.cardiac.avg_rate, buffer, 10 ) );
 	cout << ",\n";
 	makejson(cout, "nibp_rate", itoa(simmgr_shm->status.cardiac.nibp_rate, buffer, 10 ) );
 	cout << ",\n";
@@ -942,8 +946,37 @@ sendStatus(void )
 	makejson(cout, "play", itoa(simmgr_shm->status.media.play, buffer, 10 ) );
 	cout << "\n},\n";
 	
+	cout << " \"telesim\" : {\n";
+	
+	makejson(cout, "enable", itoa(simmgr_shm->status.telesim.enable, buffer, 10 ) );
+	cout << ",\n";
+	int vidCount = 0;
+	for ( i = 0 ; i < TSIM_WINDOWS ; i++ )
+	{
+		if ( vidCount > 0 )
+		{
+			cout << ",\n";
+		}
+		cout << " \"" << vidCount << "\" : {\n";
+		vidCount++;
+		makejson(cout, "name", simmgr_shm->status.telesim.vid[i].name );
+		cout << ",\n";
+		makejson(cout, "command", itoa(simmgr_shm->status.telesim.vid[i].command, buffer, 10)  );
+		cout << ",\n";
+		makejson(cout, "param", gcvt(simmgr_shm->status.telesim.vid[i].param, 8, buffer )  );
+		cout << ",\n";
+		makejson(cout, "next", itoa(simmgr_shm->status.telesim.vid[i].next, buffer, 10)  );
+		cout << "  }";
+	}
+	if ( vidCount > 0 )
+	{
+		cout << "\n";
+	}
+	cout << "},\n";
+	
 	cout << " \"cpr\" : {\n";
-	makejson(cout, "last", itoa(simmgr_shm->status.cpr.last, buffer, 10 ) );
+
+	makejson(cout, "last", ltoa(simmgr_shm->status.cpr.last, buffer, 10 ) );
 	cout << ",\n";
 	makejson(cout, "running", itoa(simmgr_shm->status.cpr.running, buffer, 10 ) );
 	cout << ",\n";
@@ -953,7 +986,7 @@ sendStatus(void )
 	cout << "\n},\n";
 	
 	cout << " \"defibrillation\" : {\n";
-	makejson(cout, "last", itoa(simmgr_shm->status.defibrillation.last, buffer, 10 ) );
+	makejson(cout, "last", ltoa(simmgr_shm->status.defibrillation.last, buffer, 10 ) );
 	cout << ",\n";
 	makejson(cout, "shock", itoa(simmgr_shm->status.defibrillation.shock, buffer, 10 ) );
 	cout << ",\n";
@@ -961,16 +994,36 @@ sendStatus(void )
 	cout << "\n},\n";
 	
 	cout << " \"debug\" : {\n";
-	makejson(cout, "msec", itoa(simmgr_shm->server.msec_time, buffer, 10 ) );
+	makejson(cout, "msec", ltoa(simmgr_shm->server.msec_time, buffer, 10 ) );
 	cout << ",\n";
-	makejson(cout, "avg_rate", itoa(simmgr_shm->status.cardiac.avg_rate, buffer, 10 ) );
+	makejson(cout, "avg_rate", ltoa(simmgr_shm->status.cardiac.avg_rate, buffer, 10 ) );
 	cout << ",\n";
 	makejson(cout, "debug1", itoa(simmgr_shm->server.dbg1, buffer, 10 ) );
 	cout << ",\n";
 	makejson(cout, "debug2", itoa(simmgr_shm->server.dbg2, buffer, 10 ) );
 	cout << ",\n";
 	makejson(cout, "debug3", itoa(simmgr_shm->server.dbg3, buffer, 10 ) );
-	cout << "\n}\n";
+	cout << "\n},\n";
+	
+	cout << "\"controllers\" : {\n";
+	int ctrlCount = 0;
+	for ( i = 0 ; i < MAX_CONTROLLERS ; i++ )
+	{
+		if ( simmgr_shm->simControllers[i].allocated )
+		{
+			if ( ctrlCount > 0 )
+			{
+				cout << ",\n";
+			}
+			ctrlCount++;
+			makejson(cout, itoa(1, buffer, 10), simmgr_shm->simControllers[i].ipAddr );
+		}
+	}
+	if ( ctrlCount > 0 )
+	{
+		cout << "\n";
+	}
+	cout << "}\n";
 }
 
 void
@@ -986,7 +1039,7 @@ sendQuickStatus(void )
 	cout << ",\n";
 	makejson(cout, "rate", itoa(simmgr_shm->status.cardiac.rate, buffer, 10 ) );
 	cout << ",\n";
-	makejson(cout, "avg_rate", itoa(simmgr_shm->status.cardiac.avg_rate, buffer, 10 ) );
+	makejson(cout, "avg_rate", ltoa(simmgr_shm->status.cardiac.avg_rate, buffer, 10 ) );
 	cout << "\n},\n";
 	
 	cout << " \"respiration\" : {\n";
@@ -1012,9 +1065,9 @@ sendQuickStatus(void )
 	cout << "\n},\n";
 	
 	cout << " \"debug\" : {\n";
-	makejson(cout, "msec", itoa(simmgr_shm->server.msec_time, buffer, 10 ) );
+	makejson(cout, "msec", ltoa(simmgr_shm->server.msec_time, buffer, 10 ) );
 	cout << ",\n";
-	makejson(cout, "avg_rate", itoa(simmgr_shm->status.cardiac.avg_rate, buffer, 10 ) );
+	makejson(cout, "avg_rate", ltoa(simmgr_shm->status.cardiac.avg_rate, buffer, 10 ) );
 	cout << ",\n";
 	makejson(cout, "debug1", itoa(simmgr_shm->server.dbg1, buffer, 10 ) );
 	cout << ",\n";

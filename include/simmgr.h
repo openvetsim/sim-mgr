@@ -76,15 +76,15 @@ struct cardiac
 	char vfib_amplitude[STR_SIZE];	// low, med, high
 	int pea;			// Pulse-less Electrical Activity
 	int rate;			// Heart Rate in Beats per Minute
-	int avg_rate;		// Calculated heart rate
+	long int avg_rate;		// Calculated heart rate
 	int nibp_rate;		// Non-Invasive Rate - Only reports when cuff is on
 	int nibp_read;		// Set to 1 to start reading, set to 0 when reading is complete.
 	int nibp_linked_hr;		// Set to 1 to keep NIBP linked with Cardiac Rate, set to 0 to unlink.
 	int nibp_freq;		// Number of minutes for NIBP timer. 0 is manual.
 	int transfer_time;	// Trend length for change in rate;
 	char pwave[STR_SIZE];
-	int pr_interval;	// PR interval in msec
-	int qrs_interval;		// QRS in msec
+	long int pr_interval;	// PR interval in msec
+	long int qrs_interval;		// QRS in msec
 	int bps_sys;	// Systolic
 	int bps_dia;	// Diastolic
 	int right_dorsal_pulse_strength; 	// 0 - None, 3 - strong
@@ -113,8 +113,8 @@ struct scenario
 	char scene_name[STR_SIZE];	// Currently running scene
 	int scene_id;				// Currently running scene
 	int record;					// Set in initiator section to start/stop video recording
-	int elapsed_msec_scenario;
-	int elapsed_msec_scene;
+	long int elapsed_msec_scenario;
+	long int elapsed_msec_scene;
 };
 
 struct respiration
@@ -184,7 +184,7 @@ struct pulse
 
 struct cpr
 {
-	int last;			// msec time of last compression
+	long int last;			// msec time of last compression
 	int	compression;	// 0 to 100%
 	int release;		// 0 to 100%
 	int duration;
@@ -192,7 +192,7 @@ struct cpr
 };
 struct defibrillation
 {
-	int last;			// msec time of last shock
+	long int last;			// msec time of last shock
 	int energy;			// Energy in Joules of shock
 	int shock;			// Request a shock event
 };
@@ -202,17 +202,20 @@ struct hdr
 	int	version;
 	int size;
 };
+
 struct server
 {
 	char name[STR_SIZE]; 		// SimCtl Hostname
 	char ip_addr[STR_SIZE];		// ETH0 Network IP Address
 	char wifi_ip_addr[STR_SIZE];		// WiFi Network IP Address
 	char server_time[STR_SIZE];	// Linux date/timestamp
-	int msec_time;				// msec timer.
+	long int msec_time;				// msec timer.
 	int dbg1;
 	int dbg2;
 	int dbg3;
+	
 };
+
 struct general
 {
 	int temperature;			// degrees * 10, (eg 96.8 is 968)
@@ -220,11 +223,32 @@ struct general
 	int temperature_enable;		// 0 : No Probe, 1 : Probe Attached
 	char temperature_units[4];	// F or C are valid
 };
+
 struct media
 {
 	char filename[FILENAME_SIZE];
 	int play;
 };
+
+#define TSIM_WINDOWS	2
+
+#define TSV_CMD_STOP	0
+#define TSV_CMD_START	1
+#define TSV_CMD_SEEK	2	// param is Time 
+
+struct telesimVideo
+{
+	char name[STR_SIZE];	// Name specifies the element within the scenario
+	int command;
+	float param;
+	int next;	// Incremented when a command is passed
+};
+struct telesim
+{
+	int enable;	// 0 off, 1 on
+	struct telesimVideo	vid[TSIM_WINDOWS];
+};
+
 struct vocals
 {
 	char filename[FILENAME_SIZE];
@@ -256,7 +280,7 @@ struct status
 	struct pulse			pulse;
 	struct cpr				cpr;
 	struct defibrillation	defibrillation;
-	
+	struct telesim			telesim;
 	char 	eventName[STR_SIZE];
 };
 
@@ -272,6 +296,7 @@ struct instructor
 	struct media		media;
 	struct cpr			cpr;
 	struct defibrillation	defibrillation;
+	struct telesim			telesim;
 	char	eventName[STR_SIZE];
 };
 
@@ -292,6 +317,14 @@ struct comment_inj
 #define DECAY_SECONDS			10
 #define MS_PER_MIN				(60*1000)
 
+
+// List of attached Listeners SimControllers
+#define MAX_CONTROLLERS			20
+struct simControllers
+{
+	int allocated;
+	char ipAddr[256];
+};
 // Data Structure of Shared memory file
 struct simmgr_shm
 {
@@ -327,6 +360,8 @@ struct simmgr_shm
 	
 	int cardiacTimeList[CARDIAC_HISTORY_DEPTH];	// ms per beat
 	int cardiacTimeNextWrite;
+	
+	struct simControllers simControllers[MAX_CONTROLLERS];
 };
 
 // For generic trend processor
@@ -354,6 +389,7 @@ void get_date(char *buffer );
 char *getETH0_IP();
 char *getWIFI_IP();
 char *itoa(int val, char *buf, int radix );
+char *ltoa(long int val, char *buf, int radix );
 void signal_fault_handler(int sig);
 void cleanString(char *strIn );
 
@@ -381,6 +417,7 @@ void forceInstructorLock(void );
 int cardiac_parse(const char *elem, const char *value, struct cardiac *card );
 int respiration_parse(const char *elem,  const char *value, struct respiration *resp );
 int general_parse(const char *elem,  const char *value, struct general *gen );
+int telesim_parse(const char *elem,  const char *value, struct telesim *ts );
 int vocals_parse(const char *elem,  const char *value, struct vocals *voc );
 int media_parse(const char *elem,  const char *value, struct media *med );
 int cpr_parse(const char *elem,  const char *value, struct cpr *cpr );
