@@ -335,6 +335,7 @@ getVidIndex(const char *value )
 	}
 	return ( -1 );
 }
+
 int
 telesim_parse(const char *elem,  const char *value, struct telesim *ts )
 {
@@ -376,7 +377,6 @@ telesim_parse(const char *elem,  const char *value, struct telesim *ts )
 		{
 			arg = &ptr[1];
 			snprintf(ts->vid[index].name, STR_SIZE, "%s", arg );
-			ts->vid[index].next = simmgr_shm->status.telesim.vid[index].next + 1;
 		}
 	}
 	else if ( strncmp(elem, "command", 7 ) == 0 )
@@ -399,7 +399,7 @@ telesim_parse(const char *elem,  const char *value, struct telesim *ts )
 		{
 			arg = &ptr[1];
 			ts->vid[index].command = atoi(arg );
-			ts->vid[index].next = simmgr_shm->status.telesim.vid[index].next + 1;
+			//ts->vid[index].next = rand();
 		}
 	}
 	else if ( strncmp(elem, "param", 5 ) == 0 )
@@ -422,7 +422,6 @@ telesim_parse(const char *elem,  const char *value, struct telesim *ts )
 		{
 			arg = &ptr[1];
 			ts->vid[index].param = atof (arg );
-			ts->vid[index].next = simmgr_shm->status.telesim.vid[index].next + 1;
 		}
 	}
 	else if ( strncmp(elem, "next", 4 ) == 0 )
@@ -675,13 +674,13 @@ processInit(struct instructor *initParams  )
 		initParams->telesim.vid[0].command != -1 ||
 		initParams->telesim.vid[0].param != -1 )
 	{
-		initParams->telesim.vid[0].next = simmgr_shm->status.telesim.vid[0].next + 1;
+		initParams->telesim.vid[0].next = rand();
 	}
 	if ( strlen(initParams->telesim.vid[1].name ) > 0 ||
 		initParams->telesim.vid[1].command != -1 ||
 		initParams->telesim.vid[1].param != -1 )
 	{
-		initParams->telesim.vid[1].next = simmgr_shm->status.telesim.vid[1].next + 1;
+		initParams->telesim.vid[1].next = rand();
 	}
 	memcpy(&simmgr_shm->instructor.telesim, &initParams->telesim, sizeof(struct telesim) );
 	releaseInstructorLock();
