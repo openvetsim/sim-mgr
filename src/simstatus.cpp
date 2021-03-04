@@ -1018,7 +1018,7 @@ sendStatus(void )
 				cout << ",\n";
 			}
 			ctrlCount++;
-			makejson(cout, itoa(1, buffer, 10), simmgr_shm->simControllers[i].ipAddr );
+			makejson(cout, itoa(i+1, buffer, 10), simmgr_shm->simControllers[i].ipAddr );
 		}
 	}
 	if ( ctrlCount > 0 )
