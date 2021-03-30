@@ -88,6 +88,7 @@ int xml_current_level = 0;
 int line_number = 0;
 const char *xml_filename;
 int verbose = 0;
+int diag = 0;
 int checkOnly = 0;
 int runningAsDemo = 0;
 int errCount = 0;
@@ -129,7 +130,7 @@ struct timespec cprStart; // Time of first CPR detected
 int cprActive = 0;				// Flag to indicate CPR is active
 int cprCumulative = 0;		// Cumulative time for CPR active in this scene
 int shockActive = 0;	// Flag to indicate Defibrillation is active
-struct pulse puseStatus = { 0, 0, 0, 0 };
+struct pulse pulseStatus = { 0, 0, 0, 0 };
 
 const char *parse_states[] =
 {
@@ -179,7 +180,7 @@ char logMsg[512];
 char usage[] = "[-cv] [-S sessionID] xml-file-name";
 #define MAX_MSGBUF_SIZE 1024
 char msgbuf[MAX_MSGBUF_SIZE];
-char getArgList[] = "cvS:qh";
+char getArgList[] = "cdvS:qh";
 
 int 
 main(int argc, char **argv)
@@ -200,6 +201,9 @@ main(int argc, char **argv)
 				break;
 			case 'v':
 				verbose = 1;
+				break;
+			case 'd':
+				diag = 1;
 				break;
 			case 'S':
 				sesid = optarg;
@@ -239,7 +243,7 @@ main(int argc, char **argv)
 	
 	
 		
-	if ( checkOnly )
+	if ( checkOnly || diag )
 	{
 		// For check only, fake the share memory space
 		simmgr_shm = (struct simmgr_shm *)calloc(1, sizeof(struct simmgr_shm ) );
@@ -314,6 +318,10 @@ main(int argc, char **argv)
     // this is to debug memory for regression tests
     xmlMemoryDump();
 	
+	if ( diag )
+	{
+		return ( 0 );
+	}
 	if ( verbose || checkOnly )
 	{
 		printf("Showing scenes\n" );
@@ -747,54 +755,54 @@ logTrigger(struct scenario_trigger *trig, int time )
 */
 static void pulse_check(void )
 {
-	if ( ! puseStatus.right_dorsal && simmgr_shm->status.pulse.right_dorsal )
+	if ( ! pulseStatus.right_dorsal && simmgr_shm->status.pulse.right_dorsal )
 	{
-		puseStatus.right_dorsal = true;
+		pulseStatus.right_dorsal = true;
 		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Action: Start Pulse Palpation Right Dorsal " );
 		lockAndComment(msgbuf);
 	}
-	else if ( puseStatus.right_dorsal && ! simmgr_shm->status.pulse.right_dorsal )
+	else if ( pulseStatus.right_dorsal && ! simmgr_shm->status.pulse.right_dorsal )
 	{
-		puseStatus.right_dorsal = false;
+		pulseStatus.right_dorsal = false;
 		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Action: End Pulse Palpation Right Dorsal " );
 		lockAndComment(msgbuf);
 	}
 	
-	if ( ! puseStatus.left_dorsal && simmgr_shm->status.pulse.left_dorsal )
+	if ( ! pulseStatus.left_dorsal && simmgr_shm->status.pulse.left_dorsal )
 	{
-		puseStatus.left_dorsal = true;
+		pulseStatus.left_dorsal = true;
 		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Action: Start Pulse Palpation Left Dorsal " );
 		lockAndComment(msgbuf);
 	}
-	else if ( puseStatus.left_dorsal && ! simmgr_shm->status.pulse.left_dorsal )
+	else if ( pulseStatus.left_dorsal && ! simmgr_shm->status.pulse.left_dorsal )
 	{
-		puseStatus.left_dorsal = false;
+		pulseStatus.left_dorsal = false;
 		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Action: End Pulse Palpation Left Dorsal " );
 		lockAndComment(msgbuf);
 	}
 	
-	if ( ! puseStatus.right_femoral && simmgr_shm->status.pulse.right_femoral )
+	if ( ! pulseStatus.right_femoral && simmgr_shm->status.pulse.right_femoral )
 	{
-		puseStatus.right_femoral = true;
+		pulseStatus.right_femoral = true;
 		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Action: Start Pulse Palpation Right Femoral " );
 		lockAndComment(msgbuf);
 	}
-	else if ( puseStatus.right_femoral && ! simmgr_shm->status.pulse.right_femoral )
+	else if ( pulseStatus.right_femoral && ! simmgr_shm->status.pulse.right_femoral )
 	{
-		puseStatus.right_femoral = false;
+		pulseStatus.right_femoral = false;
 		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Action: End Pulse Palpation Right Femoral " );
 		lockAndComment(msgbuf);
 	}
 	
-	if ( ! puseStatus.left_femoral && simmgr_shm->status.pulse.left_femoral )
+	if ( ! pulseStatus.left_femoral && simmgr_shm->status.pulse.left_femoral )
 	{
-		puseStatus.left_femoral = true;
+		pulseStatus.left_femoral = true;
 		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Action: Start Pulse Palpation Left Femoral " );
 		lockAndComment(msgbuf);
 	}
-	else if ( puseStatus.left_femoral && ! simmgr_shm->status.pulse.left_femoral )
+	else if ( pulseStatus.left_femoral && ! simmgr_shm->status.pulse.left_femoral )
 	{
-		puseStatus.left_femoral = false;
+		pulseStatus.left_femoral = false;
 		snprintf(msgbuf, MAX_MSGBUF_SIZE, "Action: End Pulse Palpation Left Femoral " );
 		lockAndComment(msgbuf);
 	}
@@ -1707,6 +1715,7 @@ processNode(xmlTextReaderPtr reader)
     const xmlChar *name;
 	const xmlChar *value;
 	int lvl;
+	int type;
 	
     name = xmlTextReaderConstName(reader);
     if ( name == NULL )
@@ -1717,10 +1726,15 @@ processNode(xmlTextReaderPtr reader)
 	
     value = xmlTextReaderConstValue(reader);
 	// Node Type Definitions in http://www.gnu.org/software/dotgnu/pnetlib-doc/System/Xml/XmlNodeType.html
+	type = xmlTextReaderNodeType(reader);
 	
-	switch ( xmlTextReaderNodeType(reader) )
+	switch ( type )
 	{
 		case 1: // Element
+			if ( diag )
+			{
+				printf("Element\t%s\t=>\t%s\n", name, value);
+			}
 			xml_current_level = xmlTextReaderDepth(reader);
 			xmlLevels[xml_current_level].num = xml_current_level;
 			if ( xmlStrlen(name) >= PARAMETER_NAME_LENGTH )
@@ -1738,6 +1752,10 @@ processNode(xmlTextReaderPtr reader)
 			break;
 		
 		case 3:	// Text
+			if ( diag )
+			{
+				printf("Text\t%s\t=>\t%s\n", name, value);
+			}
 			cleanString((char *)value );
 			if ( verbose )
 			{
@@ -1753,8 +1771,16 @@ processNode(xmlTextReaderPtr reader)
 		case 13: // Whitespace
 		case 14: // Significant Whitespace 
 		case 8: // Comment
+			if ( diag )
+			{
+				printf("SPACE\t%s\t=>\t%s\n", name, value);
+			}
 			break;
 		case 15: // End Element
+			if ( diag )
+			{
+				printf("End\t%s\t=>\t%s\n", name, value);
+			}
 			// printf("End %d\n", xml_current_level );
 			endParseState(xml_current_level );
 			xml_current_level--;
@@ -1775,6 +1801,10 @@ processNode(xmlTextReaderPtr reader)
 		case 17: // XmlDeclaration
 		
 		default:
+			if ( diag )
+			{
+				printf("OTHER\t%d:\n%s\t=>\t%s\n", type, name, value);
+			}
 			if ( verbose )
 			{
 				printf("Node: %d %d %s %d %d", 
