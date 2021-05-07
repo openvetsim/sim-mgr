@@ -51,10 +51,15 @@ struct obsShmData
 	char newFilename[512];
 };
 	
+#define OBS_NOT_RUNNING		0
+#define OBS_RUNNING			1
+#define OBS_CLOSED			2
+
 #define OBSMON_START	100
 #define OBSMON_STOP		101
 #define OBSMON_OPEN		102
 #define OBSMON_CLOSE	103
+#define OBSMON_CLOSE_VIDEO	104
 
 #define OBS_SHM_NAME	"obs_shm"
 

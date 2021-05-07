@@ -247,48 +247,47 @@ main( int argc, char **argv )
 	while ( 1 )
 	{
 		sts = initOBSSHM(OPEN_ACCESS );
-		if ( sts < 0  )
+		if ( sts == 0  )
 		{
-			// No SHM file
+			// SHM file Exists
+			break;
 		}
-		else
+		usleep(2000000 );
+	}
+	while ( 1 )
+	{
+		if ( obsShm->next_write != obsShm->next_read )
 		{
-			if ( obsShm->next_write != obsShm->next_read )
+			cc = obsShm->buff[obsShm->next_read];
+			obsShm->next_read = ( obsShm->next_read + 1 ) MOD obsShm->buff_size;
+			printf("%d\n", cc );
+			switch ( cc )
 			{
-				cc = obsShm->buff[obsShm->next_read];
-				obsShm->next_read = ( obsShm->next_read + 1 ) MOD obsShm->buff_size;
-				printf("%d\n", cc );
-				switch ( cc )
-				{
-					case OBSMON_START:
-						sts = system("obs_start.sh > /dev/null" );
-						if ( sts == 0 )
-						{
-							obsShm->obsRunning = 1;
-						}
-						break;
-					case OBSMON_STOP:
-						sts = system("obs_stop.sh > /dev/null" );
-						closeVideoCapture();
-						break;
-					case OBSMON_OPEN:
-						sts = system("obs_open.sh > /dev/null" );
-						break;
-					case OBSMON_CLOSE:
-						sts = system("obs_close.sh > /dev/null" );
-						{
-							obsShm->obsRunning = 0;
-						}
-						break;
-					default:
-						sts = -100;
-						printf("obsmon: Unsupported Command %d\n", cc );
-						break;
-				}
+				case OBSMON_START:
+					// Start operation will be triggered by vitals page
+					sts = system("obs_start.sh > /dev/null" );
+					obsShm->obsRunning = OBS_RUNNING;
+					break;
+				case OBSMON_STOP:
+					// Stop operation will be triggered by vitals page
+					sts = system("obs_stop.sh > /dev/null" );
+					closeVideoCapture();
+					break;
+				case OBSMON_OPEN:
+					sts = system("obs_open.sh > /dev/null" );
+					break;
+				case OBSMON_CLOSE:
+					sts = system("obs_close.sh > /dev/null" );
+					obsShm->obsRunning = OBS_NOT_RUNNING;
+					break;
+				default:
+					sts = -100;
+					printf("obsmon: Unsupported Command %d\n", cc );
+					break;
 			}
-			close(obsShmFp );
 		}
 		usleep(500000 );
 	}
+
 	exit ( sts );
 }
