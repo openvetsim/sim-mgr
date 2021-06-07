@@ -1973,9 +1973,9 @@ resetAllParameters(void )
 	sprintf(simmgr_shm->status.respiration.right_sound_in, "%s", "normal" );
 	sprintf(simmgr_shm->status.respiration.right_sound_out, "%s", "normal" );
 	sprintf(simmgr_shm->status.respiration.right_sound_back, "%s", "normal" );
-	simmgr_shm->status.respiration.left_lung_sound_volume = 10;
+	simmgr_shm->status.respiration.left_lung_sound_volume = 2;
 	simmgr_shm->status.respiration.left_lung_sound_mute = 1;
-	simmgr_shm->status.respiration.right_lung_sound_volume = 10;
+	simmgr_shm->status.respiration.right_lung_sound_volume = 2;
 	simmgr_shm->status.respiration.right_lung_sound_mute = 0;
 	simmgr_shm->status.respiration.inhalation_duration = 1350;
 	simmgr_shm->status.respiration.exhalation_duration = 1050;
