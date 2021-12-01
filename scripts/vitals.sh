@@ -49,7 +49,7 @@ sleep 10  ## This allows .profile to complete execution before firefox starts. O
 
 /usr/bin/firefox -private "http://localhost/sim-ii/vitals.php" &
 
-xdotool search --name --sync "Vet School Simulator" windowfocus %1 key F11
+xdotool search --name --sync "Patient Vitals Monitor" windowfocus %1 key F11
 
 # command to disable screen shutdown and dimming
 gsettings set org.gnome.desktop.session idle-delay 0
