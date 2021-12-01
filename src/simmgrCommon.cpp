@@ -1940,7 +1940,7 @@ resetAllParameters(void )
 	sprintf(simmgr_shm->status.cardiac.rhythm, "%s", "sinus" );
 	sprintf(simmgr_shm->status.cardiac.vpc, "%s", "none" );
 	sprintf(simmgr_shm->status.cardiac.vfib_amplitude, "%s", "high" );
-	simmgr_shm->status.cardiac.vpc_freq = 10;
+	simmgr_shm->status.cardiac.vpc_freq = 0;
 	simmgr_shm->status.cardiac.vpc_delay = 0;
 	simmgr_shm->status.cardiac.pea = 0;
 	simmgr_shm->status.cardiac.rate = 80;

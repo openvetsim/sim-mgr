@@ -94,7 +94,6 @@ struct listener
     int allocated;
 	int thread_no;
 	int cfd;
-	char ipAddr[32];
 };
 #define MAX_LISTENERS 20
 
@@ -125,6 +124,14 @@ sem_t breathSema;
 int beatPhase = 0;
 int vpcState = 0;
 int vpcCount = 0;
+
+void
+resetVpc(void)
+{
+	beatPhase = 0;
+	vpcState = 0;
+	vpcCount = 0;
+}
 
 /* vpcState is set at the beginning of a sinus cycle where VPCs will follow.
 	vpcState is set to the number of VPCs to be injected.
@@ -158,7 +165,11 @@ beat_handler(int sig, siginfo_t *si, void *uc)
 		{
 			if ( beatPhase-- <= 0 )
 			{
-				if ( vpcState > 0 )
+				if ( vpcType == 0 && vpcState != 0 )
+				{
+					resetVpc();
+				}
+				if ( vpcType > 0 && vpcState > 0 )
 				{
 					// VPC Injection
 					simmgr_shm->status.cardiac.pulseCountVpc++;
@@ -188,7 +199,6 @@ beat_handler(int sig, siginfo_t *si, void *uc)
 				}
 				else
 				{
-					
 					// Normal Cycle
 					simmgr_shm->status.cardiac.pulseCount++;
 					if ( afibActive )
@@ -496,6 +506,8 @@ main(int argc, char *argv[] )
 	sigset_t mask;
 	int i;
 	char *sesid = NULL;
+	char newIpAddr[32];
+	int found;
 	
 //#ifndef DEBUG
 	daemonize();
@@ -520,6 +532,8 @@ main(int argc, char *argv[] )
 	{
 		listeners[i].allocated = 0;
 		simmgr_shm->simControllers[i].allocated = 0;
+		listeners[i].thread_no = 0;
+		listeners[i].cfd = 0;
 	}
 	
 	sfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -658,32 +672,35 @@ main(int argc, char *argv[] )
 		if ( cfd >= 0 )
 		{	
 			printf("Accept returns %d\n", cfd );
+			inet_ntop(AF_INET, &client_addr.sa_data[2], newIpAddr, 20 );
+			// Check for reopen from an existing controller
+			found = 0;
 			for ( i = 0 ; i < MAX_LISTENERS ; i++ )
 			{
-				if ( listeners[i].allocated == 0 )
+				if ( listeners[i].allocated == 1 && strcmp(newIpAddr, simmgr_shm->simControllers[i].ipAddr ) == 0 )
 				{
-					listeners[i].allocated = 1;
+					close(listeners[i].cfd );
 					listeners[i].cfd = cfd;
-					listeners[i].thread_no = i;
-					simmgr_shm->simControllers[i].allocated = 1;
-					/*sprintf(simmgr_shm->simControllers[i].ipAddr, "%d %d %d %d %d %d %d %d %d %d %d %d %d %d", 
-						client_addr.sa_data[0] & 0xff,
-						client_addr.sa_data[1] & 0xff,
-						client_addr.sa_data[2] & 0xff,
-						client_addr.sa_data[3] & 0xff,
-						client_addr.sa_data[4] & 0xff,
-						client_addr.sa_data[5] & 0xff,
-						client_addr.sa_data[6] & 0xff,
-						client_addr.sa_data[7] & 0xff,
-						client_addr.sa_data[8] & 0xff,
-						client_addr.sa_data[9] & 0xff,
-						client_addr.sa_data[10] & 0xff,
-						client_addr.sa_data[11] & 0xff,
-						client_addr.sa_data[12] & 0xff,
-						client_addr.sa_data[13] & 0xff
-						);*/
-					inet_ntop(AF_INET, &client_addr.sa_data[2], simmgr_shm->simControllers[i].ipAddr, 20 );
+					found = 1;
+					printf("ReOpened: %s\n", newIpAddr);
 					break;
+				}
+			}
+			if ( found == 0 )
+			{
+				for ( i = 0 ; i < MAX_LISTENERS ; i++ )
+				{
+					if ( listeners[i].allocated == 0 )
+					{
+						listeners[i].allocated = 1;
+						listeners[i].cfd = cfd;
+						listeners[i].thread_no = i;
+						simmgr_shm->simControllers[i].allocated = 1;
+						
+						inet_ntop(AF_INET, &client_addr.sa_data[2], simmgr_shm->simControllers[i].ipAddr, 20 );
+						found = 1;
+						break;
+					}
 				}
 			}
 			if ( i == MAX_LISTENERS )
