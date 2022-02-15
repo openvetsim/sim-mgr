@@ -26,6 +26,9 @@ Files in ths directory:
 	*.wav - Sounds used for auscultation and vocalizations
 	tsunami.ini - Tsunami Configuration
 	tsunamix.hex - Tsunami Mono Firmware
+		For SimSounds, rename the appropriate file to tsunamix.hex
+			tsunamix1.hex is the mono file for the origional Tsunami
+			tsunamix2.hex is the mono file for the Tsunami QWIC
 	soundList.csv - sound reference list, used by sim-ctl for lookup of sounds and cross reference to file numbers. Also
 	                used in TeleSim mode.
 	
