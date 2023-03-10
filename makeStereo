@@ -1,0 +1,13 @@
+#!/bin/bash
+
+#for filename in simSounds/*.wav; do
+#	[ -e "$filename" ] || continue
+#	out="$(basename $filename)"
+#	ffmpeg -i "$filename" -ac 2 "simSoundsWT/$out"
+#done
+
+for filename in simSounds/*.ogg; do
+	[ -e "$filename" ] || continue
+	out="$(basename $filename)"
+	ffmpeg -i "$filename" -ac 2 "simSoundsWT/$out"
+done
