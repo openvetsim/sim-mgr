@@ -1,13 +1,15 @@
 #!/bin/bash
 
-#for filename in simSounds/*.wav; do
-#	[ -e "$filename" ] || continue
-#	out="$(basename $filename)"
-#	ffmpeg -i "$filename" -ac 2 "simSoundsWT/$out"
-#done
-
-for filename in simSounds/*.ogg; do
+for filename in simSounds/*.wav; do
 	[ -e "$filename" ] || continue
 	out="$(basename $filename)"
-	ffmpeg -i "$filename" -ac 2 "simSoundsWT/$out"
+	#ffmpeg -i "$filename" -map_metadata -1 -c:v copy -c:a copy -fflags +bitexact -flags:v +bitexact -flags:a +bitexact "simSoundsWT/$out"
+	ffmpeg -i "$filename" -map_metadata -1 -ac 2 -fflags +bitexact -flags:v +bitexact -flags:a +bitexact "simSoundsWT/$out"
+	
 done
+
+#for filename in simSounds/*.ogg; do
+#	[ -e "$filename" ] || continue
+#	out="$(basename $filename)"
+#	ffmpeg -i "$filename" -ac 2 -map_metadata -1 "simSoundsWT/$out"
+#done
